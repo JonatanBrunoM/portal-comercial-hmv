@@ -1,4 +1,5 @@
 import streamlit as st
+from textwrap import dedent
 
 
 COLORS = {
@@ -21,7 +22,8 @@ def apply_theme() -> None:
     """Aplica o tema visual global do Portal Comercial."""
 
     st.markdown(
-        f"""
+        dedent(
+            f"""
         <style>
             /* ==============================
                CONFIGURAÇÕES GERAIS
@@ -213,6 +215,7 @@ def apply_theme() -> None:
                 }}
             }}
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+    ),
+    unsafe_allow_html=True,
+)
