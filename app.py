@@ -46,9 +46,7 @@ selected_page = render_sidebar()
 PAGE_RENDERERS = {
     "Início": render_home,
     "Pesquisa": render_pesquisa,
-
     "Operadoras": render_operadoras,
-    ),
 
     "Portais": lambda: render_placeholder_page(
         "Portais",
