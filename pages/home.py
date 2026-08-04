@@ -5,14 +5,23 @@ from components.cards import (
     render_module_card,
 )
 from components.hero import render_hero
+from core.dashboard_service import get_dashboard_summary
 
 
 def render_home() -> None:
     """Renderiza a página inicial do Portal Comercial."""
 
+    try:
+        summary = get_dashboard_summary()
+        data_error = None
+
+    except RuntimeError as error:
+        summary = None
+        data_error = str(error)
+    
     render_hero(
         eyebrow="Hospital Moinhos de Vento",
-        title="Informação comercial sem complicação.",
+        title="Comercial - Hospital Moinhos de Vento.",
         description=(
             "Consulte operadoras, planos, documentos, portais, "
             "contatos e orientações em um único ambiente."
@@ -35,6 +44,12 @@ def render_home() -> None:
             "nas próximas etapas."
         )
 
+    if data_error:
+        st.warning(
+            "A base comercial não pôde ser carregada neste momento. "
+            "Os indicadores serão exibidos como indisponíveis."
+        )
+
     st.markdown("## Hoje")
 
     col_1, col_2, col_3, col_4 = st.columns(4)
@@ -42,33 +57,37 @@ def render_home() -> None:
     with col_1:
         render_metric_card(
             title="Comunicados",
-            value=0,
-            description="Nenhum comunicado ativo.",
-            icon="📢",
-        )
+            value=summary.comunicados if summary else "—",
+            description=(
+                "Comunicados ativos."
+                if summary and summary.comunicados
+                else "Nenhum comunicado publicado."
+            ),
 
     with col_2:
         render_metric_card(
             title="Contingências",
-            value=0,
-            description="Nenhuma contingência publicada.",
-            icon="⚠️",
-        )
+            value=summary.contingencias if summary else "—",
+            description=(
+                "Contingências ativas."
+                if summary and summary.contingencias
+                else "Nenhuma contingência publicada."
+            ),
 
     with col_3:
         render_metric_card(
             title="Operadoras",
             value=35,
-            description="Operadoras na base inicial.",
-            icon="🏥",
+            value=summary.operadoras if summary else "—",
+            description="Operadoras ativas na base comercial.",
         )
 
     with col_4:
         render_metric_card(
             title="Planos",
             value=155,
-            description="Planos identificados na base.",
-            icon="📋",
+            value=summary.planos if summary else "—",
+            description="Planos ativos cadastrados.",
         )
 
     st.markdown("## Acessos rápidos")
