@@ -46,39 +46,47 @@ selected_page = render_sidebar()
 PAGE_RENDERERS = {
     "Início": render_home,
     "Pesquisa": render_pesquisa,
-    ),
+
     "Operadoras": lambda: render_placeholder_page(
         "Operadoras",
         "Consulte planos, coberturas e orientações.",
     ),
+
     "Portais": lambda: render_placeholder_page(
         "Portais",
         "Acesse os sistemas utilizados pelas operadoras.",
     ),
+
     "Documentos": lambda: render_placeholder_page(
         "Documentos",
         "Consulte documentos necessários e validade.",
     ),
+
     "Contatos": lambda: render_placeholder_page(
         "Contatos",
         "Encontre centrais, telefones e e-mails.",
     ),
+
     "Consultores": lambda: render_placeholder_page(
         "Consultores",
         "Consulte os responsáveis por cada carteira.",
     ),
+
     "Comunicados": lambda: render_placeholder_page(
         "Comunicados",
         "Acompanhe atualizações importantes.",
     ),
+
     "Contingências": lambda: render_placeholder_page(
         "Contingências",
         "Consulte fluxos alternativos e alertas ativos.",
     ),
+
     "Fórum": lambda: render_placeholder_page(
         "Fórum",
         "Compartilhe informações com outros colaboradores.",
     ),
+
     "Assistente": lambda: render_placeholder_page(
         "Assistente Comercial",
         "Faça perguntas usando a base oficial do Comercial.",
