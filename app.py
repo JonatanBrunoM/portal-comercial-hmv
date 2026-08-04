@@ -1,6 +1,7 @@
 import streamlit as st
 
 from components.hero import render_hero
+from pages.pesquisa import render_pesquisa
 from components.sidebar import render_sidebar
 from config.constants import APP_CONFIG
 from config.theme import apply_theme
@@ -44,9 +45,7 @@ selected_page = render_sidebar()
 
 PAGE_RENDERERS = {
     "Início": render_home,
-    "Pesquisa": lambda: render_placeholder_page(
-        "Pesquisa inteligente",
-        "Encontre qualquer informação da base comercial.",
+    "Pesquisa": render_pesquisa,
     ),
     "Operadoras": lambda: render_placeholder_page(
         "Operadoras",
