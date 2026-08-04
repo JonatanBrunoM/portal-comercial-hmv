@@ -6,7 +6,7 @@ from components.sidebar import render_sidebar
 from config.constants import APP_CONFIG
 from config.theme import apply_theme
 from pages.home import render_home
-
+from pages.operadoras import render_operadoras
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -47,9 +47,7 @@ PAGE_RENDERERS = {
     "Início": render_home,
     "Pesquisa": render_pesquisa,
 
-    "Operadoras": lambda: render_placeholder_page(
-        "Operadoras",
-        "Consulte planos, coberturas e orientações.",
+    "Operadoras": render_operadoras,
     ),
 
     "Portais": lambda: render_placeholder_page(
