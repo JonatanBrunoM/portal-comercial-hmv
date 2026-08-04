@@ -14,12 +14,7 @@ logger = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_sheets_connection() -> GSheetsConnection:
-    """
-    Retorna uma única conexão compartilhada com o Google Sheets.
-
-    A conexão é mantida em cache para evitar recriação
-    em cada rerun do Streamlit.
-    """
+    """Retorna a conexão compartilhada com o Google Sheets."""
 
     return st.connection(
         "gsheets",
@@ -59,19 +54,7 @@ def read_worksheet(
     worksheet: str,
     ttl: int = 600,
 ) -> pd.DataFrame:
-    """
-    Lê uma aba do Google Sheets.
-
-    Args:
-        worksheet: Nome exato da aba.
-        ttl: Tempo de cache da leitura em segundos.
-
-    Returns:
-        DataFrame limpo.
-
-    Raises:
-        RuntimeError: quando a leitura não puder ser realizada.
-    """
+    """Lê uma aba da base comercial."""
 
     try:
         connection = get_sheets_connection()
@@ -90,7 +73,8 @@ def read_worksheet(
         )
 
         raise RuntimeError(
-            f"Não foi possível carregar a aba '{worksheet}'."
+            f"Erro ao carregar '{worksheet}': "
+            f"{type(error).__name__}: {error}"
         ) from error
 
 
