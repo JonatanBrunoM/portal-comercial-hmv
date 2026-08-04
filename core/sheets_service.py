@@ -71,9 +71,9 @@ def read_worksheet(
             "Erro ao ler a aba %s.",
             worksheet,
         )
-
+    
         raise RuntimeError(
-            f"Erro ao carregar '{worksheet}': "
+            f"Erro ao carregar a aba '{worksheet}': "
             f"{type(error).__name__}: {error}"
         ) from error
 
