@@ -261,6 +261,65 @@ def apply_theme() -> None:
             line-height: 1.55;
         }}
 
+                .portal-operadora-card {{
+            min-height: 185px;
+            padding: 0.25rem 0;
+        }}
+
+        .portal-operadora-card-top {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }}
+
+        .portal-operadora-icon {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background-color: var(--primary-light);
+            font-size: 1.2rem;
+        }}
+
+        .portal-operadora-status {{
+            padding: 0.32rem 0.6rem;
+            border-radius: 999px;
+            background-color: #E3F4E8;
+            color: #166534;
+            font-size: 0.7rem;
+            font-weight: 750;
+            text-transform: uppercase;
+        }}
+
+        .portal-operadora-name {{
+            margin-top: 1rem;
+            color: var(--text);
+            font-size: 1.08rem;
+            font-weight: 750;
+            line-height: 1.3;
+        }}
+
+        .portal-operadora-full-name {{
+            min-height: 40px;
+            margin-top: 0.3rem;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }}
+
+        .portal-operadora-plans {{
+            margin-top: 0.9rem;
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+        }}
+
+        .portal-operadora-plans strong {{
+            color: var(--primary);
+        }}
+
         .stButton > button {{
             min-height: 42px;
             border: 1px solid var(--border);
