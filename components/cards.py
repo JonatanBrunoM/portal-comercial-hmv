@@ -1,4 +1,5 @@
 import html
+from textwrap import dedent
 
 import streamlit as st
 
@@ -18,7 +19,7 @@ def render_metric_card(
     safe_description = html.escape(str(description))
     safe_icon = html.escape(icon)
 
-    st.markdown(
+    card_html = dedent(
         f"""
         <article style="
             min-height: 160px;
@@ -43,7 +44,7 @@ def render_metric_card(
                 ">
                     {safe_title}
                 </div>
-
+    
                 <div style="
                     display: flex;
                     align-items: center;
@@ -57,7 +58,7 @@ def render_metric_card(
                     {safe_icon}
                 </div>
             </div>
-
+    
             <div style="
                 margin-top: 1rem;
                 color: #17212B;
@@ -66,7 +67,7 @@ def render_metric_card(
             ">
                 {safe_value}
             </div>
-
+    
             <div style="
                 margin-top: 0.4rem;
                 color: #5B6773;
@@ -76,7 +77,11 @@ def render_metric_card(
                 {safe_description}
             </div>
         </article>
-        """,
+        """
+    )
+    
+    st.markdown(
+        card_html,
         unsafe_allow_html=True,
     )
 
@@ -99,7 +104,7 @@ def render_module_card(
     safe_icon = html.escape(icon)
 
     with st.container(border=True):
-        st.markdown(
+        module_html = dedent(
             f"""
             <div style="
                 display: flex;
@@ -119,7 +124,7 @@ def render_module_card(
                 ">
                     {safe_icon}
                 </div>
-
+        
                 <div>
                     <div style="
                         color: #17212B;
@@ -128,7 +133,7 @@ def render_module_card(
                     ">
                         {safe_title}
                     </div>
-
+        
                     <div style="
                         margin-top: 0.35rem;
                         color: #5B6773;
@@ -139,10 +144,13 @@ def render_module_card(
                     </div>
                 </div>
             </div>
-            """,
+            """
+        )
+        
+        st.markdown(
+            module_html,
             unsafe_allow_html=True,
         )
-
         return st.button(
             "Acessar",
             key=button_key,
