@@ -171,6 +171,41 @@ def get_comunicados() -> pd.DataFrame:
     )
 
 
+def get_elegibilidade() -> pd.DataFrame:
+    """Retorna as regras de elegibilidade."""
+
+    return read_worksheet(
+        worksheet=SHEETS["elegibilidade"],
+        ttl=CACHE_SETTINGS.ELEGIBILIDADE,
+    )
+
+
+def get_autorizacoes() -> pd.DataFrame:
+    """Retorna as regras de autorização."""
+
+    return read_worksheet(
+        worksheet=SHEETS["autorizacoes"],
+        ttl=CACHE_SETTINGS.AUTORIZACOES,
+    )
+
+
+def get_coberturas() -> pd.DataFrame:
+    """Retorna as regras de cobertura."""
+
+    return read_worksheet(
+        worksheet=SHEETS["coberturas"],
+        ttl=CACHE_SETTINGS.COBERTURAS,
+    )
+
+
+def get_dicas_operacionais() -> pd.DataFrame:
+    """Retorna as dicas operacionais."""
+
+    return read_worksheet(
+        worksheet=SHEETS["dicas"],
+        ttl=CACHE_SETTINGS.DICAS,
+    )
+
 def clear_sheets_cache() -> None:
     """
     Limpa o cache das leituras e da conexão.
