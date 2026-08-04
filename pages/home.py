@@ -1,1 +1,156 @@
+import streamlit as st
 
+from components.cards import (
+    render_metric_card,
+    render_module_card,
+)
+from components.hero import render_hero
+
+
+def render_home() -> None:
+    """Renderiza a página inicial do Portal Comercial."""
+
+    render_hero(
+        eyebrow="Hospital Moinhos de Vento",
+        title="Informação comercial sem complicação.",
+        description=(
+            "Consulte operadoras, planos, documentos, portais, "
+            "contatos e orientações em um único ambiente."
+        ),
+    )
+
+    search_query = st.text_input(
+        label="Pesquisa global",
+        placeholder=(
+            "Pesquise por operadora, plano, documento, "
+            "procedimento ou orientação..."
+        ),
+        label_visibility="collapsed",
+        key="home_search",
+    )
+
+    if search_query:
+        st.info(
+            "A pesquisa será conectada à base comercial "
+            "nas próximas etapas."
+        )
+
+    st.markdown("## Hoje")
+
+    col_1, col_2, col_3, col_4 = st.columns(4)
+
+    with col_1:
+        render_metric_card(
+            title="Comunicados",
+            value=0,
+            description="Nenhum comunicado ativo.",
+            icon="📢",
+        )
+
+    with col_2:
+        render_metric_card(
+            title="Contingências",
+            value=0,
+            description="Nenhuma contingência publicada.",
+            icon="⚠️",
+        )
+
+    with col_3:
+        render_metric_card(
+            title="Operadoras",
+            value=35,
+            description="Operadoras na base inicial.",
+            icon="🏥",
+        )
+
+    with col_4:
+        render_metric_card(
+            title="Planos",
+            value=155,
+            description="Planos identificados na base.",
+            icon="📋",
+        )
+
+    st.markdown("## Acessos rápidos")
+
+    row_1 = st.columns(3)
+
+    with row_1[0]:
+        if render_module_card(
+            title="Operadoras",
+            description=(
+                "Consulte planos, coberturas, documentos "
+                "e informações relacionadas."
+            ),
+            icon="🏥",
+            button_key="home_operadoras",
+        ):
+            st.session_state.current_page = "Operadoras"
+            st.rerun()
+
+    with row_1[1]:
+        if render_module_card(
+            title="Portais",
+            description=(
+                "Encontre os portais utilizados para "
+                "elegibilidade e autorizações."
+            ),
+            icon="🌐",
+            button_key="home_portais",
+        ):
+            st.session_state.current_page = "Portais"
+            st.rerun()
+
+    with row_1[2]:
+        if render_module_card(
+            title="Documentos",
+            description=(
+                "Consulte documentos obrigatórios, "
+                "validade e orientações."
+            ),
+            icon="📄",
+            button_key="home_documentos",
+        ):
+            st.session_state.current_page = "Documentos"
+            st.rerun()
+
+    row_2 = st.columns(3)
+
+    with row_2[0]:
+        if render_module_card(
+            title="Contatos",
+            description=(
+                "Localize telefones, e-mails, centrais "
+                "e responsáveis."
+            ),
+            icon="📞",
+            button_key="home_contatos",
+        ):
+            st.session_state.current_page = "Contatos"
+            st.rerun()
+
+    with row_2[1]:
+        if render_module_card(
+            title="Contingências",
+            description=(
+                "Consulte indisponibilidades e fluxos "
+                "alternativos."
+            ),
+            icon="⚠️",
+            button_key="home_contingencias",
+        ):
+            st.session_state.current_page = "Contingências"
+            st.rerun()
+
+    with row_2[2]:
+        if render_module_card(
+            title="Assistente Comercial",
+            description=(
+                "Faça perguntas utilizando a futura "
+                "base de conhecimento oficial."
+            ),
+            icon="✨",
+            button_key="home_assistente",
+        ):
+            st.session_state.current_page = "Assistente"
+            st.rerun()
