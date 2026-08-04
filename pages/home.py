@@ -21,7 +21,7 @@ def render_home() -> None:
 
     render_hero(
         eyebrow="Hospital Moinhos de Vento",
-        title="Informação comercial sem complicação.",
+        title="Comercial - Hospital Moinhos de Vento",
         description=(
             "Consulte operadoras, planos, documentos, portais, "
             "contatos e orientações em um único ambiente."
