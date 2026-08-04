@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from textwrap import dedent
 
 import streamlit as st
 
@@ -29,7 +30,7 @@ def render_sidebar(on_change: Callable[[], None] | None = None) -> str:
     """
 
     with st.sidebar:
-        st.markdown(
+        sidebar_header = dedent(
             f"""
             <div style="
                 padding: 0.25rem 0 1.4rem 0;
@@ -45,7 +46,7 @@ def render_sidebar(on_change: Callable[[], None] | None = None) -> str:
                 ">
                     {APP_CONFIG.ORGANIZATION_NAME}
                 </div>
-
+        
                 <div style="
                     color: #17212B;
                     font-size: 1.25rem;
@@ -55,7 +56,11 @@ def render_sidebar(on_change: Callable[[], None] | None = None) -> str:
                     {APP_CONFIG.APP_NAME}
                 </div>
             </div>
-            """,
+            """
+        )
+        
+        st.markdown(
+            sidebar_header,
             unsafe_allow_html=True,
         )
 
