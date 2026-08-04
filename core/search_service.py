@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 import streamlit as st
+import logging
 
 from config.settings import CACHE_SETTINGS
 from core.sheets_service import (
@@ -19,6 +20,8 @@ from core.sheets_service import (
     get_portais,
 )
 from utils.formatting import normalize_text, shorten_text
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -230,6 +233,28 @@ def _create_result(
     ttl=CACHE_SETTINGS.SEARCH_INDEX,
     show_spinner=False,
 )
+def _safe_load_dataset(
+    loader,
+    dataset_name: str,
+) -> pd.DataFrame:
+    """
+    Carrega uma aba sem derrubar toda a pesquisa.
+
+    Se uma aba falhar, registra o erro e retorna
+    um DataFrame vazio.
+    """
+
+    try:
+        return loader()
+
+    except Exception as error:
+        logger.exception(
+            "Não foi possível carregar o conjunto %s.",
+            dataset_name,
+        )
+
+        return pd.DataFrame()
+
 def build_search_index() -> list[dict]:
     """
     Monta um índice único com as informações pesquisáveis.
@@ -243,7 +268,10 @@ def build_search_index() -> list[dict]:
         (
             "Operadoras",
             "02_OPERADORAS",
-            get_operadoras(),
+            _safe_load_dataset(
+                get_operadoras,
+                "Operadoras",
+            ),
             "ID Operadora",
             ["Nome curto", "Operadora"],
             ["Operadora"],
@@ -254,7 +282,10 @@ def build_search_index() -> list[dict]:
         (
             "Planos",
             "03_PLANOS",
-            get_planos(),
+            _safe_load_dataset(
+                get_planos,
+                "Planos",
+            ),
             "ID Plano",
             ["Nome padronizado", "Plano"],
             ["Unidade", "Tipo do plano"],
@@ -265,7 +296,10 @@ def build_search_index() -> list[dict]:
         (
             "Portais",
             "04_PORTAIS",
-            get_portais(),
+            _safe_load_dataset(
+                get_portais,
+                "Portais",
+            ),
             "ID Portal",
             ["Nome do portal"],
             ["Tipo", "Unidade"],
@@ -276,7 +310,10 @@ def build_search_index() -> list[dict]:
         (
             "Elegibilidade",
             "05_ELEGIBILIDADE",
-            get_elegibilidade(),
+            _safe_load_dataset(
+                get_elegibilidade,
+                "Elegibilidade",
+            ),
             "ID Elegibilidade",
             ["Tipo atendimento"],
             ["Unidade"],
@@ -291,7 +328,10 @@ def build_search_index() -> list[dict]:
         (
             "Documentos",
             "06_DOCUMENTOS",
-            get_documentos(),
+            _safe_load_dataset(
+                get_documentos,
+                "Documentos",
+            ),
             "ID Documento",
             ["Documento"],
             ["Tipo atendimento", "Unidade"],
@@ -306,7 +346,10 @@ def build_search_index() -> list[dict]:
         (
             "Autorizações",
             "07_AUTORIZACOES",
-            get_autorizacoes(),
+            _safe_load_dataset(
+                get_autorizacoes,
+                "Autorizações",
+            ),
             "ID Autorização",
             ["Tipo atendimento"],
             ["Meio de solicitação", "Unidade"],
@@ -321,7 +364,10 @@ def build_search_index() -> list[dict]:
         (
             "Coberturas",
             "08_COBERTURAS",
-            get_coberturas(),
+            _safe_load_dataset(
+                get_coberturas,
+                "Coberturas",
+            ),
             "ID Cobertura",
             ["Tipo atendimento"],
             ["Coberto", "Unidade"],
@@ -336,7 +382,10 @@ def build_search_index() -> list[dict]:
         (
             "Contatos",
             "09_CONTATOS",
-            get_contatos(),
+            _safe_load_dataset(
+                get_contatos,
+                "Contatos",
+            ),
             "ID Contato",
             ["Nome/Setor", "Finalidade"],
             ["Tipo", "Contato"],
@@ -351,7 +400,10 @@ def build_search_index() -> list[dict]:
         (
             "Contingências",
             "10_CONTINGENCIAS",
-            get_contingencias(),
+            _safe_load_dataset(
+                get_contingencias,
+                "Contingências",
+            ),
             "ID Contingência",
             ["Evento"],
             ["Prioridade", "Unidade"],
@@ -365,7 +417,10 @@ def build_search_index() -> list[dict]:
         (
             "Dicas operacionais",
             "11_DICAS_OPERACIONAIS",
-            get_dicas_operacionais(),
+            _safe_load_dataset(
+                get_dicas_operacionais,
+                "Dicas operacionais",
+            ),
             "ID Dica",
             ["Título", "Categoria"],
             ["Unidade", "Palavras-chave"],
