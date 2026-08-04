@@ -18,10 +18,10 @@ def render_home() -> None:
     except RuntimeError as error:
         summary = None
         data_error = str(error)
-    
+
     render_hero(
         eyebrow="Hospital Moinhos de Vento",
-        title="Comercial - Hospital Moinhos de Vento.",
+        title="Informação comercial sem complicação.",
         description=(
             "Consulte operadoras, planos, documentos, portais, "
             "contatos e orientações em um único ambiente."
@@ -63,6 +63,8 @@ def render_home() -> None:
                 if summary and summary.comunicados
                 else "Nenhum comunicado publicado."
             ),
+            icon="📢",
+        )
 
     with col_2:
         render_metric_card(
@@ -73,21 +75,23 @@ def render_home() -> None:
                 if summary and summary.contingencias
                 else "Nenhuma contingência publicada."
             ),
+            icon="⚠️",
+        )
 
     with col_3:
         render_metric_card(
             title="Operadoras",
-            value=35,
             value=summary.operadoras if summary else "—",
             description="Operadoras ativas na base comercial.",
+            icon="🏥",
         )
 
     with col_4:
         render_metric_card(
             title="Planos",
-            value=155,
             value=summary.planos if summary else "—",
             description="Planos ativos cadastrados.",
+            icon="📋",
         )
 
     st.markdown("## Acessos rápidos")
