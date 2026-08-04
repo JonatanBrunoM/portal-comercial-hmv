@@ -1,5 +1,4 @@
 import html
-from textwrap import dedent
 
 import streamlit as st
 
@@ -10,80 +9,26 @@ def render_metric_card(
     description: str,
     icon: str,
 ) -> None:
-    """
-    Renderiza um card resumido para indicadores da página inicial.
-    """
+    """Renderiza um card resumido de indicador."""
 
     safe_title = html.escape(str(title))
     safe_value = html.escape(str(value))
     safe_description = html.escape(str(description))
     safe_icon = html.escape(icon)
 
-    card_html = dedent(
-        f"""
-        <article style="
-            min-height: 160px;
-            padding: 1.25rem;
-            background-color: #FFFFFF;
-            border: 1px solid #DCE3E8;
-            border-radius: 14px;
-            box-shadow: 0 4px 16px rgba(0, 61, 102, 0.045);
-        ">
-            <div style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 1rem;
-            ">
-                <div style="
-                    color: #5B6773;
-                    font-size: 0.82rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                ">
-                    {safe_title}
-                </div>
-    
-                <div style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 10px;
-                    background-color: #EAF4FA;
-                    font-size: 1.15rem;
-                ">
-                    {safe_icon}
-                </div>
-            </div>
-    
-            <div style="
-                margin-top: 1rem;
-                color: #17212B;
-                font-size: 1.85rem;
-                font-weight: 750;
-            ">
-                {safe_value}
-            </div>
-    
-            <div style="
-                margin-top: 0.4rem;
-                color: #5B6773;
-                font-size: 0.88rem;
-                line-height: 1.45;
-            ">
-                {safe_description}
-            </div>
-        </article>
-        """
-    )
-    
-    st.markdown(
-        card_html,
-        unsafe_allow_html=True,
-    )
+    card_html = f"""
+    <article class="portal-metric-card">
+        <div class="portal-metric-header">
+            <div class="portal-metric-label">{safe_title}</div>
+            <div class="portal-metric-icon">{safe_icon}</div>
+        </div>
+
+        <div class="portal-metric-value">{safe_value}</div>
+        <div class="portal-metric-description">{safe_description}</div>
+    </article>
+    """
+
+    st.html(card_html)
 
 
 def render_module_card(
@@ -92,65 +37,28 @@ def render_module_card(
     icon: str,
     button_key: str,
 ) -> bool:
-    """
-    Renderiza um card de acesso rápido.
-
-    Retorna:
-        True quando o botão do card é acionado.
-    """
+    """Renderiza um card de acesso rápido."""
 
     safe_title = html.escape(title)
     safe_description = html.escape(description)
     safe_icon = html.escape(icon)
 
     with st.container(border=True):
-        module_html = dedent(
-            f"""
-            <div style="
-                display: flex;
-                align-items: flex-start;
-                gap: 0.9rem;
-                min-height: 92px;
-            ">
-                <div style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
-                    background-color: #EAF4FA;
-                    font-size: 1.3rem;
-                ">
-                    {safe_icon}
-                </div>
-        
-                <div>
-                    <div style="
-                        color: #17212B;
-                        font-size: 1rem;
-                        font-weight: 700;
-                    ">
-                        {safe_title}
-                    </div>
-        
-                    <div style="
-                        margin-top: 0.35rem;
-                        color: #5B6773;
-                        font-size: 0.88rem;
-                        line-height: 1.45;
-                    ">
-                        {safe_description}
-                    </div>
+        module_html = f"""
+        <div class="portal-module-card">
+            <div class="portal-module-icon">{safe_icon}</div>
+
+            <div class="portal-module-content">
+                <div class="portal-module-title">{safe_title}</div>
+                <div class="portal-module-description">
+                    {safe_description}
                 </div>
             </div>
-            """
-        )
-        
-        st.markdown(
-            module_html,
-            unsafe_allow_html=True,
-        )
+        </div>
+        """
+
+        st.html(module_html)
+
         return st.button(
             "Acessar",
             key=button_key,
