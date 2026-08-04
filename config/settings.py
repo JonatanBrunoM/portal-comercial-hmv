@@ -8,10 +8,15 @@ class CacheSettings:
     OPERADORAS: int = 600
     PLANOS: int = 600
     PORTAIS: int = 600
+    ELEGIBILIDADE: int = 600
     DOCUMENTOS: int = 600
+    AUTORIZACOES: int = 600
+    COBERTURAS: int = 600
     CONTATOS: int = 600
     CONTINGENCIAS: int = 300
+    DICAS: int = 600
     COMUNICADOS: int = 300
+    SEARCH_INDEX: int = 600
 
 
 CACHE_SETTINGS = CacheSettings()
