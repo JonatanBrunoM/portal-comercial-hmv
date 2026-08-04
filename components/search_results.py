@@ -114,6 +114,22 @@ def render_search_results(
             result=result,
             key_prefix=key_prefix,
         ):
-            st.session_state.selected_search_result = result
-            st.session_state.current_page = "Pesquisa"
+            if result.operator_id:
+                st.session_state[
+                    "selected_operator_id"
+                ] = result.operator_id
+        
+                st.session_state.current_page = (
+                    "Operadoras"
+                )
+        
+            else:
+                st.session_state[
+                    "selected_search_result"
+                ] = result
+        
+                st.session_state.current_page = (
+                    "Pesquisa"
+                )
+        
             st.rerun()
