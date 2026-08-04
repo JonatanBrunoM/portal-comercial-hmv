@@ -6,6 +6,8 @@ from components.cards import (
 )
 from components.hero import render_hero
 from core.dashboard_service import get_dashboard_summary
+from components.search_results import render_search_results
+from core.search_service import search_global
 
 
 def render_home() -> None:
@@ -39,10 +41,22 @@ def render_home() -> None:
     )
 
     if search_query:
-        st.info(
-            "A pesquisa será conectada à base comercial "
-            "nas próximas etapas."
+        with st.spinner(
+            "Pesquisando na base comercial..."
+        ):
+            search_results = search_global(
+                query=search_query,
+                limit=12,
+            )
+    
+        st.markdown("### Resultados da pesquisa")
+    
+        render_search_results(
+            results=search_results,
+            key_prefix="home_search",
         )
+    
+        st.divider()
 
     if data_error:
         st.error(
