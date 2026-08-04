@@ -1,1 +1,7 @@
-
+streamlit>=1.49,<2.0
+pandas>=2.2,<3.0
+numpy>=2.0,<3.0
+st-gsheets-connection>=0.1.0
+google-api-python-client>=2.170,<3.0
+google-auth>=2.40,<3.0
+google-auth-oauthlib>=1.2,<2.0
