@@ -229,10 +229,6 @@ def _create_result(
     )
 
 
-@st.cache_data(
-    ttl=CACHE_SETTINGS.SEARCH_INDEX,
-    show_spinner=False,
-)
 def _safe_load_dataset(
     loader,
     dataset_name: str,
@@ -254,6 +250,11 @@ def _safe_load_dataset(
         )
 
         return pd.DataFrame()
+
+@st.cache_data(
+    ttl=CACHE_SETTINGS.SEARCH_INDEX,
+    show_spinner=False,
+)
 
 def build_search_index() -> list[dict]:
     """
