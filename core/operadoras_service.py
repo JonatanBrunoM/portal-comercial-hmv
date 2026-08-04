@@ -45,8 +45,17 @@ def _safe_value(
 def get_operadoras_summary() -> list[OperadoraSummary]:
     """Retorna as operadoras com a quantidade de planos."""
 
-    operadoras = get_operadoras()
-    planos = get_planos()
+    try:
+        operadoras = get_operadoras()
+    
+    except RuntimeError:
+        return []
+    
+    try:
+        planos = get_planos()
+    
+    except RuntimeError:
+        planos = pd.DataFrame()
 
     if operadoras.empty:
         return []
