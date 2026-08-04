@@ -45,10 +45,11 @@ def render_home() -> None:
         )
 
     if data_error:
-        st.warning(
-            "A base comercial não pôde ser carregada neste momento. "
-            "Os indicadores serão exibidos como indisponíveis."
+        st.error(
+            "A base comercial não pôde ser carregada."
         )
+    
+        st.code(data_error)
 
     st.markdown("## Hoje")
 
