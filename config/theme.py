@@ -217,49 +217,49 @@ def apply_theme() -> None:
             margin-top: 0.3rem;
         }}
 
-        .portal-search-result {
+        .portal-search-result {{
             padding: 0.2rem 0;
-        }
+        }}
         
-        .portal-search-result-top {
+        .portal-search-result-top {{
             display: flex;
             align-items: center;
             gap: 0.45rem;
             margin-bottom: 0.7rem;
-        }
+        }}
         
-        .portal-search-result-icon {
+        .portal-search-result-icon {{
             font-size: 1rem;
-        }
+        }}
         
-        .portal-search-result-category {
+        .portal-search-result-category {{
             color: var(--primary);
             font-size: 0.74rem;
             font-weight: 750;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-        }
+        }}
         
-        .portal-search-result-title {
+        .portal-search-result-title {{
             color: var(--text);
             font-size: 1.05rem;
             font-weight: 750;
             line-height: 1.35;
-        }
+        }}
         
-        .portal-search-result-subtitle {
+        .portal-search-result-subtitle {{
             margin-top: 0.3rem;
             color: var(--text-secondary);
             font-size: 0.82rem;
             font-weight: 600;
-        }
+        }}
         
-        .portal-search-result-description {
+        .portal-search-result-description {{
             margin-top: 0.65rem;
             color: var(--text-secondary);
             font-size: 0.88rem;
             line-height: 1.55;
-        }
+        }}
 
         .stButton > button {{
             min-height: 42px;
