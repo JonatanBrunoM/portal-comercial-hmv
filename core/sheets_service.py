@@ -210,6 +210,14 @@ def get_dicas_operacionais() -> pd.DataFrame:
         ttl=CACHE_SETTINGS.DICAS,
     )
 
+def get_particular() -> pd.DataFrame:
+    """Retorna as informações de atendimento particular."""
+
+    return read_worksheet(
+        worksheet=SHEETS["particular"],
+        ttl=CACHE_SETTINGS.PARTICULAR,
+    )
+
 def clear_sheets_cache() -> None:
     """
     Limpa o cache das leituras e da conexão.
