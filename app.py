@@ -15,6 +15,7 @@ from views.comunicados import render_comunicados
 from views.consultores import render_consultores
 from views.forum import render_forum
 from views.assistente import render_assistente
+from views.particular import render_particular
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -61,6 +62,7 @@ PAGE_RENDERERS = {
     "Contingências": render_contingencias,
     "Comunicados": render_comunicados,
     "Consultores": render_consultores,
+    "Particular": render_particular,
     "Fórum": render_forum,
     "Assistente": render_assistente,
 }
