@@ -21,23 +21,36 @@ NAVIGATION_ITEMS = {
 
 def navigate_to(page: str) -> None:
     """
-    Altera a página atual e sincroniza a navegação lateral.
+    Agenda a navegação para a próxima execução do Streamlit.
+
+    Não altera diretamente a chave do widget da sidebar,
+    pois isso gera StreamlitAPIException após o st.radio()
+    já ter sido criado.
     """
 
     if page not in NAVIGATION_ITEMS:
         page = APP_CONFIG.DEFAULT_PAGE
 
-    icon = NAVIGATION_ITEMS[page]
-    label = f"{icon}  {page}"
-
-    st.session_state.current_page = page
-    st.session_state.main_navigation = label
+    st.session_state.pending_page = page
 
 def render_sidebar(
     on_change: Callable[[], None] | None = None,
 ) -> str:
     """Renderiza a navegação lateral."""
 
+    pending_page = st.session_state.pop(
+        "pending_page",
+        None,
+    )
+
+    if pending_page in NAVIGATION_ITEMS:
+        st.session_state.current_page = pending_page
+    
+        st.session_state.pop(
+            "main_navigation",
+            None,
+        )
+    
     with st.sidebar:
         sidebar_header = f"""
         <div class="portal-sidebar-header">
