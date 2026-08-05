@@ -50,6 +50,10 @@ def _clean_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     return cleaned.reset_index(drop=True)
 
 
+@st.cache_data(
+    ttl=600,
+    show_spinner=False,
+)
 def read_worksheet(
     worksheet: str,
     ttl: int = 600,
