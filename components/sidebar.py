@@ -19,6 +19,19 @@ NAVIGATION_ITEMS = {
     "Assistente": "✨",
 }
 
+def navigate_to(page: str) -> None:
+    """
+    Altera a página atual e sincroniza a navegação lateral.
+    """
+
+    if page not in NAVIGATION_ITEMS:
+        page = APP_CONFIG.DEFAULT_PAGE
+
+    icon = NAVIGATION_ITEMS[page]
+    label = f"{icon}  {page}"
+
+    st.session_state.current_page = page
+    st.session_state.main_navigation = label
 
 def render_sidebar(
     on_change: Callable[[], None] | None = None,
