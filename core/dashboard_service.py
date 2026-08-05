@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import streamlit as st
 import pandas as pd
 
 from core.sheets_service import (
@@ -81,6 +82,10 @@ def _count_published(dataframe: pd.DataFrame) -> int:
         normalized_status.isin(valid_statuses).sum()
     )
 
+@st.cache_data(
+    ttl=600,
+    show_spinner=False,
+)
 
 def get_dashboard_summary() -> DashboardSummary:
     """Carrega os indicadores reais da Home."""
