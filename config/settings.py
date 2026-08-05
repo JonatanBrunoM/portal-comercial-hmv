@@ -17,6 +17,7 @@ class CacheSettings:
     DICAS: int = 1800
     COMUNICADOS: int = 600
     SEARCH_INDEX: int = 1800
+    PARTICULAR: int = 1800
 
 
 CACHE_SETTINGS = CacheSettings()
@@ -39,4 +40,5 @@ SHEETS = {
     "forum_posts": "15_FORUM_POSTS",
     "forum_comentarios": "16_FORUM_COMENTARIOS",
     "conhecimento": "18_CONHECIMENTO_IA",
+    "particular": "23_PARTICULAR",
 }
