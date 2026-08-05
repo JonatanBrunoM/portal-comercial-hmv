@@ -5,18 +5,18 @@ from dataclasses import dataclass
 class CacheSettings:
     """Tempos de cache em segundos."""
 
-    OPERADORAS: int = 600
-    PLANOS: int = 600
-    PORTAIS: int = 600
-    ELEGIBILIDADE: int = 600
-    DOCUMENTOS: int = 600
-    AUTORIZACOES: int = 600
-    COBERTURAS: int = 600
-    CONTATOS: int = 600
-    CONTINGENCIAS: int = 300
-    DICAS: int = 600
-    COMUNICADOS: int = 300
-    SEARCH_INDEX: int = 600
+    OPERADORAS: int = 1800
+    PLANOS: int = 1800
+    PORTAIS: int = 1800
+    ELEGIBILIDADE: int = 1800
+    DOCUMENTOS: int = 1800
+    AUTORIZACOES: int = 1800
+    COBERTURAS: int = 1800
+    CONTATOS: int = 1800
+    CONTINGENCIAS: int = 600
+    DICAS: int = 1800
+    COMUNICADOS: int = 600
+    SEARCH_INDEX: int = 1800
 
 
 CACHE_SETTINGS = CacheSettings()
