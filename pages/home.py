@@ -49,8 +49,6 @@ def render_home() -> None:
                 limit=12,
             )
     
-        st.markdown("### Resultados da pesquisa")
-    
         render_search_results(
             results=search_results,
             key_prefix="home_search",
