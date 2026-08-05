@@ -7,6 +7,7 @@ from config.theme import apply_theme
 from views.home import render_home
 from views.pesquisa import render_pesquisa
 from views.operadoras import render_operadoras
+from views.portais import render_portais
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -47,11 +48,7 @@ PAGE_RENDERERS = {
     "Início": render_home,
     "Pesquisa": render_pesquisa,
     "Operadoras": render_operadoras,
-
-    "Portais": lambda: render_placeholder_page(
-        "Portais",
-        "Acesse os sistemas utilizados pelas operadoras.",
-    ),
+    "Portais": render_portais,
 
     "Documentos": lambda: render_placeholder_page(
         "Documentos",
