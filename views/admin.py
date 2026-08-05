@@ -12,6 +12,10 @@ from core.sheets_service import (
     clear_sheets_cache,
     read_worksheet,
 )
+from core.data_quality_service import (
+    QualityIssue,
+    analyze_sheet_quality,
+)
 
 
 @dataclass(frozen=True)
@@ -427,6 +431,208 @@ def _render_sheet_diagnostic() -> None:
                 )
 
 
+def _severity_icon(
+    severity: str,
+) -> str:
+    """Retorna o ícone visual da severidade."""
+
+    return {
+        "Crítico": "🔴",
+        "Alerta": "🟠",
+        "Informativo": "🔵",
+    }.get(
+        severity,
+        "⚪",
+    )
+
+
+def _render_quality_issue(
+    issue: QualityIssue,
+    position: int,
+) -> None:
+    """Renderiza um problema de qualidade."""
+
+    icon = _severity_icon(
+        issue.severity
+    )
+
+    with st.container(
+        border=True,
+    ):
+        st.markdown(
+            f"### {icon} {issue.issue_type}"
+        )
+
+        st.caption(
+            f"{issue.severity} • Coluna: {issue.column}"
+        )
+
+        st.write(
+            issue.message
+        )
+
+        st.metric(
+            "Registros afetados",
+            issue.affected_rows,
+        )
+
+        if issue.examples:
+            with st.expander(
+                "Ver exemplos",
+                expanded=False,
+            ):
+                for example in issue.examples:
+                    st.markdown(
+                        f"- `{example}`"
+                    )
+
+
+def _render_quality_panel() -> None:
+    """Renderiza o painel de qualidade da base."""
+
+    st.markdown(
+        "## Qualidade da base"
+    )
+
+    st.caption(
+        "A análise é executada em apenas uma aba por vez "
+        "para reduzir o consumo da API do Google Sheets."
+    )
+
+    available_keys = [
+        key
+        for key in EXPECTED_COLUMNS
+        if key in SHEETS
+    ]
+
+    selected_key = st.selectbox(
+        label="Módulo para análise",
+        options=available_keys,
+        format_func=lambda key: (
+            f"{key.replace('_', ' ').title()} "
+            f"— {SHEETS[key]}"
+        ),
+        key="admin_quality_module",
+    )
+
+    if not st.button(
+        "Analisar qualidade",
+        type="primary",
+        use_container_width=True,
+        key="admin_run_quality",
+    ):
+        return
+
+    try:
+        with st.spinner(
+            f"Analisando {SHEETS[selected_key]}..."
+        ):
+            report = analyze_sheet_quality(
+                selected_key
+            )
+
+    except (RuntimeError, ValueError) as error:
+        st.error(
+            "Não foi possível executar a análise."
+        )
+
+        with st.expander(
+            "Detalhes técnicos",
+            expanded=False,
+        ):
+            st.code(
+                str(error)
+            )
+
+        return
+
+    score_1, score_2, score_3, score_4 = (
+        st.columns(4)
+    )
+
+    score_1.metric(
+        "Nota da base",
+        f"{report.score}/100",
+    )
+
+    score_2.metric(
+        "Problemas críticos",
+        report.critical_issues,
+    )
+
+    score_3.metric(
+        "Alertas",
+        report.warning_issues,
+    )
+
+    score_4.metric(
+        "Informativos",
+        report.info_issues,
+    )
+
+    if report.score >= 90:
+        st.success(
+            "A aba apresenta boa qualidade para testes."
+        )
+
+    elif report.score >= 70:
+        st.warning(
+            "A aba pode ser utilizada, mas possui "
+            "pontos que precisam de revisão."
+        )
+
+    else:
+        st.error(
+            "A aba possui problemas relevantes e deve "
+            "ser revisada antes da publicação."
+        )
+
+    st.caption(
+        f"{report.total_rows} registro(s) • "
+        f"{report.total_columns} coluna(s) • "
+        f"Aba: {report.worksheet}"
+    )
+
+    if not report.issues:
+        st.success(
+            "Nenhum problema foi identificado pelas "
+            "regras atuais."
+        )
+        return
+
+    severity_filter = st.multiselect(
+        label="Filtrar severidade",
+        options=[
+            "Crítico",
+            "Alerta",
+            "Informativo",
+        ],
+        default=[
+            "Crítico",
+            "Alerta",
+            "Informativo",
+        ],
+        key="admin_quality_severity_filter",
+    )
+
+    filtered_issues = [
+        issue
+        for issue in report.issues
+        if issue.severity in severity_filter
+    ]
+
+    st.caption(
+        f"{len(filtered_issues)} problema(s) exibido(s)."
+    )
+
+    for position, issue in enumerate(
+        filtered_issues
+    ):
+        _render_quality_issue(
+            issue=issue,
+            position=position,
+        )
+
 def render_admin() -> None:
     """Renderiza a primeira versão da área administrativa."""
 
@@ -494,3 +700,7 @@ def render_admin() -> None:
     st.divider()
 
     _render_sheet_diagnostic()
+
+    st.divider()
+
+    _render_quality_panel()
