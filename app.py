@@ -9,6 +9,7 @@ from views.pesquisa import render_pesquisa
 from views.operadoras import render_operadoras
 from views.portais import render_portais
 from views.documentos import render_documentos
+from views.contatos import render_contatos
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -51,11 +52,7 @@ PAGE_RENDERERS = {
     "Operadoras": render_operadoras,
     "Portais": render_portais,
     "Documentos": render_documentos,
-
-    "Contatos": lambda: render_placeholder_page(
-        "Contatos",
-        "Encontre centrais, telefones e e-mails.",
-    ),
+    "Contatos": render_contatos,
 
     "Consultores": lambda: render_placeholder_page(
         "Consultores",
