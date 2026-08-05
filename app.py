@@ -8,6 +8,7 @@ from views.home import render_home
 from views.pesquisa import render_pesquisa
 from views.operadoras import render_operadoras
 from views.portais import render_portais
+from views.documentos import render_documentos
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -49,11 +50,7 @@ PAGE_RENDERERS = {
     "Pesquisa": render_pesquisa,
     "Operadoras": render_operadoras,
     "Portais": render_portais,
-
-    "Documentos": lambda: render_placeholder_page(
-        "Documentos",
-        "Consulte documentos necessários e validade.",
-    ),
+    "Documentos": render_documentos,
 
     "Contatos": lambda: render_placeholder_page(
         "Contatos",
