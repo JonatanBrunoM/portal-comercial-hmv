@@ -12,6 +12,7 @@ from core.dashboard_service import get_dashboard_summary
 from core.sheets_service import (
     clear_sheets_cache,
     read_worksheet,
+    update_worksheet,
 )
 from core.data_quality_service import (
     QualityIssue,
@@ -112,6 +113,117 @@ EXPECTED_COLUMNS = {
         "Título",
         "Status",
     ],
+}
+
+STATUS_EDIT_RULES = {
+    "operadoras": {
+        "id_column": "ID Operadora",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
+    "planos": {
+        "id_column": "ID Plano",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
+    "portais": {
+        "id_column": "ID Portal",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
+    "documentos": {
+        "id_column": "ID Documento",
+        "status_column": "Status revisão",
+        "options": [
+            "Pendente",
+            "Em revisão",
+            "Revisado",
+            "Publicável",
+        ],
+    },
+    "contatos": {
+        "id_column": "ID Contato",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
+    "contingencias": {
+        "id_column": "ID Contingência",
+        "status_column": "Status contingência",
+        "options": [
+            "Pendente",
+            "Ativa",
+            "Encerrada",
+            "Inativa",
+        ],
+    },
+    "comunicados": {
+        "id_column": "ID Comunicado",
+        "status_column": "Status",
+        "options": [
+            "Rascunho",
+            "Pendente",
+            "Publicado",
+            "Inativo",
+        ],
+    },
+    "consultores": {
+        "id_column": "ID Consultor",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
+    "forum_posts": {
+        "id_column": "ID Post",
+        "status_column": "Status",
+        "options": [
+            "Pendente",
+            "Publicado",
+            "Oculto",
+            "Inativo",
+        ],
+    },
+    "forum_comentarios": {
+        "id_column": "ID Comentário",
+        "status_column": "Status",
+        "options": [
+            "Pendente",
+            "Publicado",
+            "Oculto",
+            "Inativo",
+        ],
+    },
+    "conhecimento": {
+        "id_column": "ID Conhecimento",
+        "status_column": "Status revisão",
+        "options": [
+            "Pendente",
+            "Em revisão",
+            "Revisado",
+            "Publicável",
+        ],
+    },
+    "particular": {
+        "id_column": "ID Particular",
+        "status_column": "Status",
+        "options": [
+            "Ativo",
+            "Inativo",
+        ],
+    },
 }
 
 
@@ -972,6 +1084,332 @@ def _render_publication_panel() -> None:
             "sendo exibidos nesta versão."
         )
 
+def _update_record_status(
+    sheet_key: str,
+    record_id: str,
+    new_status: str,
+) -> None:
+    """
+    Atualiza somente o campo de status de um registro.
+    """
+
+    if sheet_key not in STATUS_EDIT_RULES:
+        raise ValueError(
+            "Este módulo não permite edição de status."
+        )
+
+    if sheet_key not in SHEETS:
+        raise ValueError(
+            "A aba deste módulo não foi configurada."
+        )
+
+    rules = STATUS_EDIT_RULES[
+        sheet_key
+    ]
+
+    worksheet = SHEETS[
+        sheet_key
+    ]
+
+    id_column = rules[
+        "id_column"
+    ]
+
+    status_column = rules[
+        "status_column"
+    ]
+
+    allowed_options = rules[
+        "options"
+    ]
+
+    if new_status not in allowed_options:
+        raise ValueError(
+            "O status selecionado não é permitido."
+        )
+
+    dataframe = read_worksheet(
+        worksheet=worksheet,
+        ttl=0,
+    ).copy()
+
+    if dataframe.empty:
+        raise ValueError(
+            "A aba selecionada não possui registros."
+        )
+
+    if id_column not in dataframe.columns:
+        raise ValueError(
+            f"A coluna '{id_column}' não existe "
+            f"na aba '{worksheet}'."
+        )
+
+    if status_column not in dataframe.columns:
+        dataframe[
+            status_column
+        ] = ""
+
+    normalized_ids = (
+        dataframe[id_column]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+
+    record_mask = normalized_ids.eq(
+        str(record_id).strip()
+    )
+
+    affected_rows = int(
+        record_mask.sum()
+    )
+
+    if affected_rows == 0:
+        raise ValueError(
+            "O registro selecionado não foi localizado."
+        )
+
+    if affected_rows > 1:
+        raise ValueError(
+            "Existem IDs duplicados na aba. "
+            "A atualização foi bloqueada para evitar "
+            "alterações em múltiplos registros."
+        )
+
+    dataframe.loc[
+        record_mask,
+        status_column,
+    ] = new_status
+
+    update_worksheet(
+        worksheet=worksheet,
+        dataframe=dataframe,
+    )
+
+    clear_sheets_cache()
+
+def _render_status_editor() -> None:
+    """
+    Renderiza a primeira ferramenta administrativa
+    de escrita no Google Sheets.
+    """
+
+    st.markdown(
+        "## Alteração de status"
+    )
+
+    st.warning(
+        "Esta ferramenta altera somente o status do "
+        "registro selecionado. Os demais campos serão "
+        "preservados."
+    )
+
+    available_modules = [
+        key
+        for key in STATUS_EDIT_RULES
+        if key in SHEETS
+    ]
+
+    selected_module = st.selectbox(
+        label="Módulo",
+        options=available_modules,
+        format_func=lambda key: (
+            f"{key.replace('_', ' ').title()} "
+            f"— {SHEETS[key]}"
+        ),
+        key="admin_status_module",
+    )
+
+    rules = STATUS_EDIT_RULES[
+        selected_module
+    ]
+
+    worksheet = SHEETS[
+        selected_module
+    ]
+
+    try:
+        dataframe = read_worksheet(
+            worksheet=worksheet,
+            ttl=600,
+        )
+
+    except RuntimeError as error:
+        st.error(
+            "Não foi possível carregar os registros."
+        )
+
+        with st.expander(
+            "Detalhes técnicos",
+            expanded=False,
+        ):
+            st.code(
+                str(error)
+            )
+
+        return
+
+    if dataframe.empty:
+        st.info(
+            "A aba selecionada não possui registros."
+        )
+        return
+
+    id_column = rules[
+        "id_column"
+    ]
+
+    status_column = rules[
+        "status_column"
+    ]
+
+    if id_column not in dataframe.columns:
+        st.error(
+            f"A coluna obrigatória '{id_column}' "
+            "não existe nesta aba."
+        )
+        return
+
+    record_options = (
+        dataframe[id_column]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+
+    record_options = [
+        value
+        for value in record_options
+        if value
+    ]
+
+    if not record_options:
+        st.error(
+            "Nenhum registro com identificador válido "
+            "foi encontrado."
+        )
+        return
+
+    selected_record_id = st.selectbox(
+        label="Registro",
+        options=record_options,
+        key="admin_status_record",
+    )
+
+    selected_row = dataframe[
+        dataframe[id_column]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .eq(selected_record_id)
+    ].iloc[0]
+
+    current_status = ""
+
+    if status_column in selected_row.index:
+        value = selected_row[
+            status_column
+        ]
+
+        if not pd.isna(value):
+            current_status = str(
+                value
+            ).strip()
+
+    st.info(
+        f"Status atual: "
+        f"{current_status or 'Não informado'}"
+    )
+
+    new_status = st.selectbox(
+        label="Novo status",
+        options=rules[
+            "options"
+        ],
+        index=(
+            rules["options"].index(
+                current_status
+            )
+            if current_status
+            in rules["options"]
+            else 0
+        ),
+        key="admin_new_status",
+    )
+
+    with st.expander(
+        "Visualizar registro antes da alteração",
+        expanded=False,
+    ):
+        preview = pd.DataFrame(
+            [selected_row]
+        )
+
+        st.dataframe(
+            preview,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    confirmation = st.checkbox(
+        label=(
+            "Confirmo que revisei o registro e desejo "
+            "alterar seu status."
+        ),
+        key="admin_status_confirmation",
+    )
+
+    save_disabled = (
+        not confirmation
+        or new_status == current_status
+    )
+
+    if st.button(
+        "Salvar novo status",
+        type="primary",
+        use_container_width=True,
+        disabled=save_disabled,
+        key="admin_save_status",
+    ):
+        try:
+            with st.spinner(
+                "Atualizando a planilha..."
+            ):
+                _update_record_status(
+                    sheet_key=selected_module,
+                    record_id=selected_record_id,
+                    new_status=new_status,
+                )
+
+        except (
+            RuntimeError,
+            ValueError,
+        ) as error:
+            st.error(
+                "Não foi possível atualizar o status."
+            )
+
+            with st.expander(
+                "Detalhes técnicos",
+                expanded=False,
+            ):
+                st.code(
+                    str(error)
+                )
+
+            return
+
+        st.success(
+            f"O registro '{selected_record_id}' "
+            f"foi atualizado para '{new_status}'."
+        )
+
+        st.session_state[
+            "admin_status_confirmation"
+        ] = False
+
+        st.rerun()
+
 def render_admin() -> None:
     """Renderiza a primeira versão da área administrativa."""
 
@@ -1047,3 +1485,7 @@ def render_admin() -> None:
     st.divider()
 
     _render_publication_panel()
+
+    st.divider()
+
+    _render_status_editor()
