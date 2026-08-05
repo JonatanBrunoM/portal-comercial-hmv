@@ -339,42 +339,78 @@ def render_operadora_detail(operator_id: str) -> None:
         with st.expander("Observações da operadora", expanded=False):
             st.write(operadora.observations)
 
-    st.markdown("## Informações da operadora")
-
-    tab_planos, tab_portais, tab_elegibilidade, tab_documentos = st.tabs(
-        [
-            "📋 Planos",
-            "🌐 Portais",
-            "✅ Elegibilidade",
-            "📄 Documentos",
-        ]
+    st.markdown(
+        "## Informações da operadora"
     )
 
-    tab_autorizacoes, tab_coberturas, tab_contatos, tab_contingencias = st.tabs(
-        [
-            "🔑 Autorizações",
-            "🩺 Coberturas",
-            "📞 Contatos",
-            "⚠️ Contingências",
-        ]
+    module_options = {
+        "Planos": "📋",
+        "Portais": "🌐",
+        "Elegibilidade": "✅",
+        "Documentos": "📄",
+        "Autorizações": "🔑",
+        "Coberturas": "🩺",
+        "Contatos": "📞",
+        "Contingências": "⚠️",
+    }
+
+    selected_module = st.segmented_control(
+        label="Selecione uma categoria",
+        options=list(module_options),
+        default="Planos",
+        format_func=lambda option: (
+            f"{module_options[option]} {option}"
+        ),
+        key=(
+            "operator_module_"
+            f"{operator_id}"
+        ),
+        selection_mode="single",
+        width="stretch",
+        label_visibility="collapsed",
     )
 
-    with tab_planos:
-        _render_planos(operator_id)
-    with tab_portais:
-        _render_portais(operator_id)
-    with tab_elegibilidade:
-        _render_elegibilidade(operator_id)
-    with tab_documentos:
-        _render_documentos(operator_id)
-    with tab_autorizacoes:
-        _render_autorizacoes(operator_id)
-    with tab_coberturas:
-        _render_coberturas(operator_id)
-    with tab_contatos:
-        _render_contatos(operator_id)
-    with tab_contingencias:
-        _render_contingencias(operator_id)
+    st.divider()
+
+    if selected_module == "Planos":
+        _render_planos(
+            operator_id
+        )
+
+    elif selected_module == "Portais":
+        _render_portais(
+            operator_id
+        )
+
+    elif selected_module == "Elegibilidade":
+        _render_elegibilidade(
+            operator_id
+        )
+
+    elif selected_module == "Documentos":
+        _render_documentos(
+            operator_id
+        )
+
+    elif selected_module == "Autorizações":
+        _render_autorizacoes(
+            operator_id
+        )
+
+    elif selected_module == "Coberturas":
+        _render_coberturas(
+            operator_id
+        )
+
+    elif selected_module == "Contatos":
+        _render_contatos(
+            operator_id
+        )
+
+    elif selected_module == "Contingências":
+        _render_contingencias(
+            operator_id
+        )
 
 
 def render_operadoras() -> None:
