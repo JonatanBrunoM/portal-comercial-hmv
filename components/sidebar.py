@@ -18,6 +18,7 @@ NAVIGATION_ITEMS = {
     "Contingências": "⚠️",
     "Fórum": "💬",
     "Assistente": "✨",
+    "Administração": "⚙️",
 }
 
 def navigate_to(page: str) -> None:
