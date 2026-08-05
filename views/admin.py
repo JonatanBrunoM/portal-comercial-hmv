@@ -1,9 +1,10 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
+from utils.formatting import normalize_text
 
 import pandas as pd
 import streamlit as st
+
 
 from components.hero import render_hero
 from config.settings import SHEETS
@@ -15,6 +16,10 @@ from core.sheets_service import (
 from core.data_quality_service import (
     QualityIssue,
     analyze_sheet_quality,
+)
+from core.publication_service import (
+    PUBLICATION_RULES,
+    analyze_publication_status,
 )
 
 
@@ -633,6 +638,340 @@ def _render_quality_panel() -> None:
             position=position,
         )
 
+def _publication_status_icon(
+    status: str,
+) -> str:
+    """Retorna o ícone de publicação."""
+
+    icons = {
+        "Pronto": "🟢",
+        "Pendente": "🟡",
+        "Incompleto": "🔴",
+        "Inativo": "⚪",
+        "Não identificado": "🟠",
+    }
+
+    return icons.get(
+        status,
+        "⚪",
+    )
+
+
+def _render_publication_record(
+    row: pd.Series,
+    position: int,
+) -> None:
+    """Renderiza um registro da central de publicação."""
+
+    record_id = str(
+        row.get(
+            "_record_id",
+            "Sem ID",
+        )
+    )
+
+    title = str(
+        row.get(
+            "_record_title",
+            "Registro sem título",
+        )
+    )
+
+    publication_status = str(
+        row.get(
+            "_publication_status",
+            "Não identificado",
+        )
+    )
+
+    original_status = str(
+        row.get(
+            "_status_original",
+            "",
+        )
+    )
+
+    missing_fields = str(
+        row.get(
+            "_missing_fields",
+            "",
+        )
+    )
+
+    icon = _publication_status_icon(
+        publication_status
+    )
+
+    with st.container(
+        border=True,
+    ):
+        title_col, status_col = st.columns(
+            [4, 1]
+        )
+
+        with title_col:
+            st.markdown(
+                f"### {icon} {title}"
+            )
+
+            st.caption(
+                f"Identificador: {record_id}"
+            )
+
+        with status_col:
+            st.markdown(
+                f"**{publication_status}**"
+            )
+
+        if original_status:
+            st.markdown(
+                f"**Status na planilha:** "
+                f"{original_status}"
+            )
+
+        else:
+            st.warning(
+                "O registro não possui status preenchido."
+            )
+
+        if missing_fields:
+            st.error(
+                "Campos obrigatórios ausentes: "
+                f"{missing_fields}"
+            )
+
+        with st.expander(
+            "Visualizar dados do registro",
+            expanded=False,
+        ):
+            hidden_columns = {
+                "_record_id",
+                "_record_title",
+                "_status_original",
+                "_status_normalized",
+                "_missing_fields",
+                "_publication_status",
+                "_status_order",
+            }
+
+            visible_items = [
+                (
+                    column,
+                    row[column],
+                )
+                for column in row.index
+                if column not in hidden_columns
+                and not pd.isna(
+                    row[column]
+                )
+                and str(
+                    row[column]
+                ).strip()
+                not in {
+                    "",
+                    "nan",
+                    "None",
+                }
+            ]
+
+            if not visible_items:
+                st.caption(
+                    "Nenhuma informação adicional "
+                    "foi encontrada."
+                )
+
+            for column, value in visible_items:
+                st.markdown(
+                    f"**{column}:** {value}"
+                )
+
+
+def _render_publication_panel() -> None:
+    """Renderiza a central de revisão e publicação."""
+
+    st.markdown(
+        "## Revisão e publicação"
+    )
+
+    st.caption(
+        "Esta tela ainda não altera a planilha. "
+        "Ela identifica quais registros estão prontos, "
+        "pendentes, incompletos ou inativos."
+    )
+
+    available_keys = [
+        key
+        for key in PUBLICATION_RULES
+        if key in SHEETS
+    ]
+
+    selected_key = st.selectbox(
+        label="Módulo para revisão",
+        options=available_keys,
+        format_func=lambda key: (
+            f"{key.replace('_', ' ').title()} "
+            f"— {SHEETS[key]}"
+        ),
+        key="admin_publication_module",
+    )
+
+    if not st.button(
+        "Carregar registros",
+        type="primary",
+        use_container_width=True,
+        key="admin_load_publication",
+    ):
+        return
+
+    try:
+        with st.spinner(
+            f"Analisando {SHEETS[selected_key]}..."
+        ):
+            summary = analyze_publication_status(
+                selected_key
+            )
+
+    except (RuntimeError, ValueError) as error:
+        st.error(
+            "Não foi possível carregar a situação "
+            "de publicação."
+        )
+
+        with st.expander(
+            "Detalhes técnicos",
+            expanded=False,
+        ):
+            st.code(
+                str(error)
+            )
+
+        return
+
+    metric_1, metric_2, metric_3, metric_4 = (
+        st.columns(4)
+    )
+
+    metric_1.metric(
+        "Total",
+        summary.total,
+    )
+
+    metric_2.metric(
+        "Prontos",
+        summary.ready,
+    )
+
+    metric_3.metric(
+        "Pendentes ou incompletos",
+        summary.pending,
+    )
+
+    metric_4.metric(
+        "Inativos",
+        summary.inactive,
+    )
+
+    if summary.unidentified:
+        st.warning(
+            f"{summary.unidentified} registro(s) possuem "
+            "situação de publicação não identificada."
+        )
+
+    if summary.dataframe.empty:
+        st.info(
+            "A aba selecionada não possui registros."
+        )
+        return
+
+    status_options = [
+        "Todos",
+        "Pronto",
+        "Pendente",
+        "Incompleto",
+        "Inativo",
+        "Não identificado",
+    ]
+
+    filter_col, search_col = st.columns(
+        [1, 2]
+    )
+
+    with filter_col:
+        selected_status = st.selectbox(
+            label="Situação",
+            options=status_options,
+            key="admin_publication_status_filter",
+        )
+
+    with search_col:
+        query = st.text_input(
+            label="Pesquisar registros",
+            placeholder=(
+                "Pesquise pelo título ou identificador..."
+            ),
+            key="admin_publication_search",
+        )
+
+    filtered = summary.dataframe.copy()
+
+    if selected_status != "Todos":
+        filtered = filtered[
+            filtered["_publication_status"]
+            .eq(
+                selected_status
+            )
+        ]
+
+    normalized_query = normalize_text(
+        query
+    )
+
+    if normalized_query:
+        search_text = (
+            filtered["_record_id"]
+            .fillna("")
+            .astype(str)
+            + " "
+            + filtered["_record_title"]
+            .fillna("")
+            .astype(str)
+        ).map(
+            normalize_text
+        )
+
+        filtered = filtered[
+            search_text.str.contains(
+                normalized_query,
+                regex=False,
+                na=False,
+            )
+        ]
+
+    st.caption(
+        f"{len(filtered)} registro(s) exibido(s)."
+    )
+
+    if filtered.empty:
+        st.info(
+            "Nenhum registro corresponde aos "
+            "filtros selecionados."
+        )
+        return
+
+    for position, (_, row) in enumerate(
+        filtered.head(30).iterrows()
+    ):
+        _render_publication_record(
+            row=row,
+            position=position,
+        )
+
+    if len(filtered) > 30:
+        st.info(
+            "Somente os primeiros 30 registros estão "
+            "sendo exibidos nesta versão."
+        )
+
 def render_admin() -> None:
     """Renderiza a primeira versão da área administrativa."""
 
@@ -704,3 +1043,7 @@ def render_admin() -> None:
     st.divider()
 
     _render_quality_panel()
+
+    st.divider()
+
+    _render_publication_panel()
