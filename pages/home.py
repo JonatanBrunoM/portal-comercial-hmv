@@ -8,6 +8,7 @@ from components.hero import render_hero
 from core.dashboard_service import get_dashboard_summary
 from components.search_results import render_search_results
 from core.search_service import search_global
+from components.sidebar import navigate_to
 
 
 def render_home() -> None:
@@ -122,7 +123,7 @@ def render_home() -> None:
             icon="🏥",
             button_key="home_operadoras",
         ):
-            st.session_state.current_page = "Operadoras"
+            navigate_to("Operadoras")
             st.rerun()
 
     with row_1[1]:
