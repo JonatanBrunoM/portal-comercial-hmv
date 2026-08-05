@@ -10,6 +10,182 @@ from components.search_results import render_search_results
 from core.search_service import search_global
 from components.sidebar import navigate_to
 
+def _priority_icon(
+    priority: str,
+) -> str:
+    """Retorna o ícone correspondente à prioridade."""
+
+    normalized = priority.strip().casefold()
+
+    icons = {
+        "alta": "🔴",
+        "média": "🟠",
+        "media": "🟠",
+        "baixa": "🔵",
+    }
+
+    return icons.get(
+        normalized,
+        "📌",
+    )
+
+
+def _render_home_notices(
+    summary,
+) -> None:
+    """Renderiza os comunicados ativos da Home."""
+
+    header_left, header_right = st.columns(
+        [5, 1]
+    )
+
+    with header_left:
+        st.markdown(
+            "## Comunicados importantes"
+        )
+
+    with header_right:
+        if st.button(
+            "Ver todos",
+            key="home_all_notices",
+            use_container_width=True,
+        ):
+            navigate_to(
+                "Comunicados"
+            )
+            st.rerun()
+
+    if not summary or not summary.notices:
+        st.info(
+            "Nenhum comunicado ativo neste momento."
+        )
+        return
+
+    for notice in summary.notices:
+        icon = _priority_icon(
+            notice.priority
+        )
+
+        with st.container(
+            border=True,
+        ):
+            st.markdown(
+                f"### {icon} {notice.title}"
+            )
+
+            st.caption(
+                f"{notice.category} • "
+                f"{notice.operator_name}"
+            )
+
+            if notice.summary:
+                st.write(
+                    notice.summary
+                )
+
+            detail_1, detail_2 = st.columns(
+                2
+            )
+
+            detail_1.markdown(
+                f"**Prioridade:** "
+                f"{notice.priority}"
+            )
+
+            period = ""
+
+            if notice.start_date:
+                period = notice.start_date
+
+            if notice.end_date:
+                period = (
+                    f"{period} até "
+                    f"{notice.end_date}"
+                    if period
+                    else (
+                        f"Até "
+                        f"{notice.end_date}"
+                    )
+                )
+
+            detail_2.markdown(
+                f"**Vigência:** "
+                f"{period or 'Não informada'}"
+            )
+
+
+def _render_home_contingencies(
+    summary,
+) -> None:
+    """Renderiza contingências ativas da Home."""
+
+    header_left, header_right = st.columns(
+        [5, 1]
+    )
+
+    with header_left:
+        st.markdown(
+            "## Contingências ativas"
+        )
+
+    with header_right:
+        if st.button(
+            "Ver todas",
+            key="home_all_contingencies",
+            use_container_width=True,
+        ):
+            navigate_to(
+                "Contingências"
+            )
+            st.rerun()
+
+    if (
+        not summary
+        or not summary.contingency_items
+    ):
+        st.success(
+            "Nenhuma contingência ativa neste momento."
+        )
+        return
+
+    for item in summary.contingency_items:
+        icon = _priority_icon(
+            item.priority
+        )
+
+        with st.container(
+            border=True,
+        ):
+            st.markdown(
+                f"### {icon} {item.event}"
+            )
+
+            st.caption(
+                f"{item.operator_name} • "
+                f"{item.unit}"
+            )
+
+            detail_1, detail_2 = st.columns(
+                2
+            )
+
+            detail_1.markdown(
+                f"**Prioridade:** "
+                f"{item.priority}"
+            )
+
+            detail_2.markdown(
+                f"**Status:** "
+                f"{item.status}"
+            )
+
+            if item.guidance:
+                st.markdown(
+                    "**Orientação alternativa:**"
+                )
+                st.write(
+                    item.guidance
+                )
 
 def render_home() -> None:
     """Renderiza a página inicial do Portal Comercial."""
@@ -18,9 +194,9 @@ def render_home() -> None:
         summary = get_dashboard_summary()
         data_error = None
 
-    except RuntimeError as error:
+    except RuntimeError:
         summary = None
-        data_error = str(error)
+        data_error = True
 
     render_hero(
         eyebrow="Hospital Moinhos de Vento",
@@ -65,18 +241,31 @@ def render_home() -> None:
     
         st.code(data_error)
 
-    st.markdown("## Hoje")
+    st.markdown(
+        "## Visão geral"
+    )
 
-    col_1, col_2, col_3, col_4 = st.columns(4)
+    col_1, col_2, col_3, col_4 = (
+        st.columns(4)
+    )
 
     with col_1:
         render_metric_card(
             title="Comunicados",
-            value=summary.comunicados if summary else "—",
+            value=(
+                summary.comunicados
+                if summary
+                else "—"
+            ),
             description=(
                 "Comunicados ativos."
-                if summary and summary.comunicados
-                else "Nenhum comunicado publicado."
+                if (
+                    summary
+                    and summary.comunicados
+                )
+                else (
+                    "Nenhum comunicado ativo."
+                )
             ),
             icon="📢",
         )
@@ -84,11 +273,20 @@ def render_home() -> None:
     with col_2:
         render_metric_card(
             title="Contingências",
-            value=summary.contingencias if summary else "—",
+            value=(
+                summary.contingencias
+                if summary
+                else "—"
+            ),
             description=(
                 "Contingências ativas."
-                if summary and summary.contingencias
-                else "Nenhuma contingência publicada."
+                if (
+                    summary
+                    and summary.contingencias
+                )
+                else (
+                    "Nenhuma contingência ativa."
+                )
             ),
             icon="⚠️",
         )
@@ -96,19 +294,45 @@ def render_home() -> None:
     with col_3:
         render_metric_card(
             title="Operadoras",
-            value=summary.operadoras if summary else "—",
-            description="Operadoras ativas na base comercial.",
+            value=(
+                summary.operadoras
+                if summary
+                else "—"
+            ),
+            description=(
+                "Operadoras ativas na base."
+            ),
             icon="🏥",
         )
 
     with col_4:
         render_metric_card(
             title="Planos",
-            value=summary.planos if summary else "—",
-            description="Planos ativos cadastrados.",
+            value=(
+                summary.planos
+                if summary
+                else "—"
+            ),
+            description=(
+                "Planos ativos cadastrados."
+            ),
             icon="📋",
         )
 
+        st.divider()
+
+    _render_home_notices(
+        summary
+    )
+
+    st.divider()
+
+    _render_home_contingencies(
+        summary
+    )
+
+    st.divider()
+    
     st.markdown("## Acessos rápidos")
 
     row_1 = st.columns(3)
