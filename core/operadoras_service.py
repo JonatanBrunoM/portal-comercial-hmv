@@ -6,8 +6,15 @@ import pandas as pd
 import streamlit as st
 
 from core.sheets_service import (
+    get_autorizacoes,
+    get_coberturas,
+    get_contatos,
+    get_contingencias,
+    get_documentos,
+    get_elegibilidade,
     get_operadoras,
     get_planos,
+    get_portais,
 )
 from utils.formatting import normalize_text
 
@@ -205,4 +212,155 @@ def get_operadora_by_id(
             if operadora.operator_id == operator_id
         ),
         None,
+    )
+
+def _filter_by_operator(
+    dataframe: pd.DataFrame,
+    operator_id: str,
+) -> pd.DataFrame:
+    """
+    Filtra qualquer módulo pelo ID da operadora.
+    """
+
+    if (
+        dataframe is None
+        or dataframe.empty
+        or "ID Operadora" not in dataframe.columns
+    ):
+        return pd.DataFrame()
+
+    filtered = dataframe[
+        dataframe["ID Operadora"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .eq(str(operator_id).strip())
+    ].copy()
+
+    return filtered.reset_index(drop=True)
+
+
+def _safe_module_load(
+    loader,
+    operator_id: str,
+) -> pd.DataFrame:
+    """
+    Carrega um módulo sem impedir a abertura da ficha
+    caso uma aba apresente falha temporária.
+    """
+
+    try:
+        dataframe = loader()
+
+    except RuntimeError:
+        return pd.DataFrame()
+
+    return _filter_by_operator(
+        dataframe=dataframe,
+        operator_id=operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_portais(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna os portais da operadora."""
+
+    return _safe_module_load(
+        get_portais,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_elegibilidade(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna as regras de elegibilidade da operadora."""
+
+    return _safe_module_load(
+        get_elegibilidade,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_documentos(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna os documentos da operadora."""
+
+    return _safe_module_load(
+        get_documentos,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_autorizacoes(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna as autorizações da operadora."""
+
+    return _safe_module_load(
+        get_autorizacoes,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_coberturas(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna as coberturas da operadora."""
+
+    return _safe_module_load(
+        get_coberturas,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=1800,
+    show_spinner=False,
+)
+def get_operadora_contatos(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna os contatos da operadora."""
+
+    return _safe_module_load(
+        get_contatos,
+        operator_id,
+    )
+
+
+@st.cache_data(
+    ttl=600,
+    show_spinner=False,
+)
+def get_operadora_contingencias(
+    operator_id: str,
+) -> pd.DataFrame:
+    """Retorna as contingências da operadora."""
+
+    return _safe_module_load(
+        get_contingencias,
+        operator_id,
     )
