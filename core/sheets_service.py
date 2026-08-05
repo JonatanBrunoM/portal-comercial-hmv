@@ -218,13 +218,52 @@ def get_particular() -> pd.DataFrame:
         ttl=CACHE_SETTINGS.PARTICULAR,
     )
 
+def update_worksheet(
+    worksheet: str,
+    dataframe: pd.DataFrame,
+) -> None:
+    """
+    Substitui o conteúdo de uma aba pelo DataFrame informado.
+
+    Esta função deve ser utilizada apenas por operações
+    administrativas validadas.
+    """
+
+    if not worksheet:
+        raise ValueError(
+            "O nome da aba não foi informado."
+        )
+
+    if dataframe is None:
+        raise ValueError(
+            "O DataFrame para atualização não foi informado."
+        )
+
+    try:
+        connection = get_sheets_connection()
+
+        connection.update(
+            worksheet=worksheet,
+            data=dataframe,
+        )
+
+    except Exception as error:
+        logger.exception(
+            "Erro ao atualizar a aba %s.",
+            worksheet,
+        )
+
+        raise RuntimeError(
+            f"Erro ao atualizar a aba '{worksheet}': "
+            f"{type(error).__name__}: {error}"
+        ) from error
+
 def clear_sheets_cache() -> None:
     """
-    Limpa o cache das leituras e da conexão.
+    Limpa as leituras armazenadas em cache.
 
-    Usaremos essa função futuramente após alterações
-    feitas pela área administrativa.
+    A conexão permanece ativa; somente os dados
+    consultados são descartados.
     """
 
     st.cache_data.clear()
-    st.cache_resource.clear()
