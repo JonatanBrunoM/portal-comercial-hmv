@@ -11,6 +11,7 @@ from views.portais import render_portais
 from views.documentos import render_documentos
 from views.contatos import render_contatos
 from views.contingencias import render_contingencias
+from views.comunicados import render_comunicados
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -55,15 +56,11 @@ PAGE_RENDERERS = {
     "Documentos": render_documentos,
     "Contatos": render_contatos,
     "Contingências": render_contingencias,
+    "Comunicados": render_comunicados,
 
     "Consultores": lambda: render_placeholder_page(
         "Consultores",
         "Consulte os responsáveis por cada carteira.",
-    ),
-
-    "Comunicados": lambda: render_placeholder_page(
-        "Comunicados",
-        "Acompanhe atualizações importantes.",
     ),
 
     "Fórum": lambda: render_placeholder_page(
