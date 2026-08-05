@@ -58,10 +58,11 @@ def render_home() -> None:
     
         st.divider()
 
-    if data_error:
-        st.error(
-            "A base comercial não pôde ser carregada."
-        )
+        if data_error:
+            st.warning(
+                "A base comercial atingiu temporariamente o limite "
+                "de consultas. Aguarde alguns instantes e tente novamente."
+            )
     
         st.code(data_error)
 
