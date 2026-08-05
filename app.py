@@ -1,12 +1,12 @@
 import streamlit as st
 
 from components.hero import render_hero
-from pages.pesquisa import render_pesquisa
 from components.sidebar import render_sidebar
 from config.constants import APP_CONFIG
 from config.theme import apply_theme
-from pages.home import render_home
-from pages.operadoras import render_operadoras
+from views.home import render_home
+from views.pesquisa import render_pesquisa
+from views.operadoras import render_operadoras
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
