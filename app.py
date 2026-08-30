@@ -47,6 +47,8 @@ apply_theme()
 # AUTENTICAÇÃO GOOGLE
 # =========================================================
 
+google_user = get_google_user()
+
 if not google_user:
     st.markdown(
         f"""
