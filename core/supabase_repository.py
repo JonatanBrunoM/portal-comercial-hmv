@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-from supabase import Client, create_client
-
 
 from supabase import Client, create_client
 from supabase.lib.client_options import ClientOptions
