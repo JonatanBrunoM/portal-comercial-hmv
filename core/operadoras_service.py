@@ -4,13 +4,11 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from core.supabase_repository import (
-    get_supabase_client,
-)
+from core.supabase_repository import get_supabase_client
 
 
 # =========================================================
-# MODELO UTILIZADO PELA INTERFACE
+# MODELO
 # =========================================================
 
 
@@ -34,14 +32,18 @@ class OperadoraSummary:
 
 
 def _safe_string(value) -> str:
-    """
-    Converte valores opcionais em texto seguro.
-    """
-
     if value is None:
         return ""
 
     return str(value).strip()
+
+
+def _empty_dataframe(
+    columns: list[str],
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        columns=columns
+    )
 
 
 def _build_operadora_summary(
@@ -49,20 +51,16 @@ def _build_operadora_summary(
     plans_count: int = 0,
     consultant: str = "",
 ) -> OperadoraSummary:
-    """
-    Converte um registro do Supabase no formato
-    esperado pelos componentes atuais do Portal.
-    """
 
-    nome = _safe_string(
+    name = _safe_string(
         row.get("nome")
     )
 
-    nome_curto = (
+    short_name = (
         _safe_string(
             row.get("nome_curto")
         )
-        or nome
+        or name
     )
 
     return OperadoraSummary(
@@ -72,8 +70,8 @@ def _build_operadora_summary(
         code=_safe_string(
             row.get("codigo")
         ),
-        name=nome,
-        short_name=nome_curto,
+        name=name,
+        short_name=short_name,
         status=_safe_string(
             row.get("status")
         ),
@@ -103,19 +101,9 @@ def _build_operadora_summary(
 def search_operadoras(
     query: str = "",
 ) -> list[OperadoraSummary]:
-    """
-    Retorna as operadoras cadastradas no Supabase.
-
-    A busca considera:
-    - nome;
-    - nome curto;
-    - código.
-    """
-
-    client = get_supabase_client()
 
     response = (
-        client
+        get_supabase_client()
         .table("operadoras")
         .select(
             "id,"
@@ -144,63 +132,52 @@ def search_operadoras(
         filtered_rows = []
 
         for row in rows:
-            searchable_values = [
-                row.get("nome"),
-                row.get("nome_curto"),
-                row.get("codigo"),
-            ]
+            searchable = " ".join(
+                [
+                    _safe_string(
+                        row.get("codigo")
+                    ),
+                    _safe_string(
+                        row.get("nome")
+                    ),
+                    _safe_string(
+                        row.get("nome_curto")
+                    ),
+                ]
+            ).lower()
 
-            searchable_text = " ".join(
-                _safe_string(value).lower()
-                for value
-                in searchable_values
-            )
-
-            if search_term in searchable_text:
+            if search_term in searchable:
                 filtered_rows.append(
                     row
                 )
 
         rows = filtered_rows
 
-    results: list[
-        OperadoraSummary
-    ] = []
+    operadoras = []
 
     for row in rows:
         operator_id = _safe_string(
             row.get("id")
         )
 
-        plans_count = (
-            _count_operadora_planos(
-                operator_id
-            )
-        )
-
-        consultant = (
-            _get_operadora_consultant(
-                operator_id
-            )
-        )
-
-        results.append(
+        operadoras.append(
             _build_operadora_summary(
                 row,
-                plans_count=plans_count,
-                consultant=consultant,
+                plans_count=_count_operadora_planos(
+                    operator_id
+                ),
+                consultant=_get_operadora_consultant(
+                    operator_id
+                ),
             )
         )
 
-    return results
+    return operadoras
 
 
 def get_operadora_by_id(
     operator_id: str,
 ) -> OperadoraSummary | None:
-    """
-    Retorna uma operadora pelo UUID.
-    """
 
     if not operator_id:
         return None
@@ -231,43 +208,39 @@ def get_operadora_by_id(
     if not rows:
         return None
 
-    plans_count = (
-        _count_operadora_planos(
-            operator_id
-        )
-    )
-
-    consultant = (
-        _get_operadora_consultant(
-            operator_id
-        )
-    )
-
     return _build_operadora_summary(
         rows[0],
-        plans_count=plans_count,
-        consultant=consultant,
+        plans_count=_count_operadora_planos(
+            operator_id
+        ),
+        consultant=_get_operadora_consultant(
+            operator_id
+        ),
     )
 
 
 # =========================================================
-# PLANOS DA OPERADORA
+# PLANOS
 # =========================================================
 
 
 def get_operadora_planos(
     operator_id: str,
 ) -> pd.DataFrame:
-    """
-    Retorna os planos vinculados à operadora.
-
-    Mantemos aqui os nomes das colunas usados
-    atualmente pela views/operadoras.py para
-    evitar alterar a interface nesta etapa.
-    """
 
     if not operator_id:
-        return pd.DataFrame()
+        return _empty_dataframe(
+            [
+                "ID Plano",
+                "Código",
+                "Plano",
+                "Nome padronizado",
+                "Tipo do plano",
+                "Unidade",
+                "Observação resumida",
+                "Status",
+            ]
+        )
 
     response = (
         get_supabase_client()
@@ -294,105 +267,323 @@ def get_operadora_planos(
 
     rows = response.data or []
 
-    if not rows:
-        return pd.DataFrame(
-            columns=[
-                "ID Plano",
-                "Código",
-                "Plano",
-                "Nome padronizado",
-                "Tipo do plano",
-                "Unidade",
-                "Observação resumida",
-                "Status",
-            ]
-        )
-
     data = []
 
     for row in rows:
         data.append(
             {
-                "ID Plano": (
-                    row.get("id")
+                "ID Plano": row.get(
+                    "id"
                 ),
-                "Código": (
-                    row.get("codigo")
+                "Código": row.get(
+                    "codigo"
                 ),
-                "Plano": (
-                    row.get("nome")
+                "Plano": row.get(
+                    "nome"
                 ),
-                "Nome padronizado": (
-                    row.get(
-                        "nome_padronizado"
-                    )
+                "Nome padronizado": row.get(
+                    "nome_padronizado"
                 ),
-                "Tipo do plano": (
-                    row.get(
-                        "tipo_plano"
-                    )
+                "Tipo do plano": row.get(
+                    "tipo_plano"
                 ),
                 "Unidade": "",
-                "Observação resumida": (
-                    row.get(
-                        "observacao_resumida"
-                    )
+                "Observação resumida": row.get(
+                    "observacao_resumida"
                 ),
-                "Status": (
-                    row.get("status")
+                "Status": row.get(
+                    "status"
                 ),
             }
         )
 
     return pd.DataFrame(
-        data
+        data,
+        columns=[
+            "ID Plano",
+            "Código",
+            "Plano",
+            "Nome padronizado",
+            "Tipo do plano",
+            "Unidade",
+            "Observação resumida",
+            "Status",
+        ],
     )
 
 
 # =========================================================
-# MÉTRICAS
+# PORTAIS
+# =========================================================
+
+
+def get_operadora_portais(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "ID Portal",
+        "Nome do portal",
+        "Tipo",
+        "URL",
+        "Unidade",
+        "Exige login",
+        "Instrução de acesso",
+        "Status",
+        "Observações",
+    ]
+
+    if not operator_id:
+        return _empty_dataframe(
+            columns
+        )
+
+    try:
+        response = (
+            get_supabase_client()
+            .table("portais")
+            .select(
+                "id,"
+                "nome,"
+                "tipo,"
+                "url,"
+                "exige_login,"
+                "instrucao_acesso,"
+                "status,"
+                "observacoes"
+            )
+            .eq(
+                "operadora_id",
+                operator_id,
+            )
+            .order(
+                "nome",
+                desc=False,
+            )
+            .execute()
+        )
+
+        data = []
+
+        for row in (
+            response.data or []
+        ):
+            data.append(
+                {
+                    "ID Portal": row.get(
+                        "id"
+                    ),
+                    "Nome do portal": row.get(
+                        "nome"
+                    ),
+                    "Tipo": row.get(
+                        "tipo"
+                    ),
+                    "URL": row.get(
+                        "url"
+                    ),
+                    "Unidade": "",
+                    "Exige login": row.get(
+                        "exige_login"
+                    ),
+                    "Instrução de acesso": row.get(
+                        "instrucao_acesso"
+                    ),
+                    "Status": row.get(
+                        "status"
+                    ),
+                    "Observações": row.get(
+                        "observacoes"
+                    ),
+                }
+            )
+
+        return pd.DataFrame(
+            data,
+            columns=columns,
+        )
+
+    except Exception:
+        return _empty_dataframe(
+            columns
+        )
+
+
+# =========================================================
+# ELEGIBILIDADE
+# =========================================================
+
+
+def get_operadora_elegibilidade(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Tipo atendimento",
+        "Unidade",
+        "Elegível",
+        "Documento necessário",
+        "Como verificar",
+        "Observações",
+    ]
+
+    # Migração deste módulo será feita
+    # em uma etapa posterior.
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# DOCUMENTOS
+# =========================================================
+
+
+def get_operadora_documentos(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Documento",
+        "Tipo atendimento",
+        "Obrigatório",
+        "Validade em dias",
+        "Original/Cópia",
+        "Observações",
+    ]
+
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# AUTORIZAÇÕES
+# =========================================================
+
+
+def get_operadora_autorizacoes(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Tipo atendimento",
+        "Necessita autorização",
+        "Pré/Pós",
+        "Quem solicita",
+        "Meio de solicitação",
+        "Prazo retorno horas",
+        "Observações",
+    ]
+
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# COBERTURAS
+# =========================================================
+
+
+def get_operadora_coberturas(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Tipo atendimento",
+        "Coberto",
+        "Unidade",
+        "Acomodação",
+        "Acompanhante",
+        "Restrição",
+        "Observações",
+    ]
+
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# CONTATOS
+# =========================================================
+
+
+def get_operadora_contatos(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Finalidade",
+        "Tipo",
+        "Contato",
+        "Responsável",
+        "Horário atendimento",
+        "Observações",
+    ]
+
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# CONTINGÊNCIAS
+# =========================================================
+
+
+def get_operadora_contingencias(
+    operator_id: str,
+) -> pd.DataFrame:
+
+    columns = [
+        "Evento",
+        "Prioridade",
+        "Orientação alternativa",
+        "Observações",
+    ]
+
+    return _empty_dataframe(
+        columns
+    )
+
+
+# =========================================================
+# MÉTRICAS AUXILIARES
 # =========================================================
 
 
 def _count_operadora_planos(
     operator_id: str,
 ) -> int:
-    """
-    Conta quantos planos estão ligados
-    à operadora.
-    """
 
     if not operator_id:
         return 0
 
-    response = (
-        get_supabase_client()
-        .table("planos")
-        .select(
-            "id"
+    try:
+        response = (
+            get_supabase_client()
+            .table("planos")
+            .select("id")
+            .eq(
+                "operadora_id",
+                operator_id,
+            )
+            .execute()
         )
-        .eq(
-            "operadora_id",
-            operator_id,
-        )
-        .execute()
-    )
 
-    return len(
-        response.data or []
-    )
+        return len(
+            response.data or []
+        )
+
+    except Exception:
+        return 0
 
 
 def _get_operadora_consultant(
     operator_id: str,
 ) -> str:
-    """
-    Retorna o consultor principal da operadora,
-    quando houver.
-
-    Nesta fase a ausência de consultor não impede
-    o funcionamento do módulo.
-    """
 
     if not operator_id:
         return ""
@@ -429,6 +620,4 @@ def _get_operadora_consultant(
         )
 
     except Exception:
-        # Consultor ainda não é obrigatório
-        # para esta etapa da migração.
         return ""
