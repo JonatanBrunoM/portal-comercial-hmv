@@ -47,53 +47,22 @@ apply_theme()
 # AUTENTICAÇÃO GOOGLE
 # =========================================================
 
-google_user = get_google_user()
-
-
 if not google_user:
     st.markdown(
         f"""
-        <div style="
-            max-width: 620px;
-            margin: 10vh auto 0 auto;
-            text-align: center;
-            padding: 0 24px;
-        ">
-            <div style="
-                font-size: 0.82rem;
-                font-weight: 700;
-                letter-spacing: .09em;
-                text-transform: uppercase;
-                opacity: .62;
-                margin-bottom: 12px;
-            ">
-                {APP_CONFIG.ORGANIZATION_NAME}
-            </div>
+        ### {APP_CONFIG.ORGANIZATION_NAME}
 
-            <h1 style="
-                margin: 0 0 14px 0;
-                font-size: 2.35rem;
-            ">
-                {APP_CONFIG.APP_NAME}
-            </h1>
+        # {APP_CONFIG.APP_NAME}
 
-            <p style="
-                font-size: 1.05rem;
-                line-height: 1.6;
-                opacity: .72;
-                margin: 0 auto 32px auto;
-                max-width: 520px;
-            ">
-                Base integrada de informações comerciais,
-                operacionais e de relacionamento com operadoras.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+        Base integrada de informações comerciais, operacionais
+        e de relacionamento com operadoras.
+        """
     )
 
+    st.write("")
+
     col_left, col_login, col_right = st.columns(
-        [1, 1.25, 1]
+        [1, 1.3, 1]
     )
 
     with col_login:
@@ -117,35 +86,11 @@ email = google_user.get(
 
 
 if not is_hmv_email(email):
-    st.markdown(
-        f"""
-        <div style="
-            max-width: 620px;
-            margin: 10vh auto 20px auto;
-            text-align:center;
-        ">
-            <div style="
-                font-size:2.5rem;
-                margin-bottom:12px;
-            ">
-                🔒
-            </div>
+    st.title("🔒 Acesso restrito")
 
-            <h2>
-                Acesso restrito
-            </h2>
-
-            <p style="
-                opacity:.75;
-                line-height:1.6;
-            ">
-                O Portal Comercial é destinado
-                exclusivamente a usuários autorizados
-                do Hospital Moinhos de Vento.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.write(
+        "O Portal Comercial é destinado exclusivamente "
+        "a usuários autorizados do Hospital Moinhos de Vento."
     )
 
     st.error(
@@ -159,7 +104,7 @@ if not is_hmv_email(email):
     )
 
     col_left, col_logout, col_right = st.columns(
-        [1, 1.25, 1]
+        [1, 1.3, 1]
     )
 
     with col_logout:
@@ -179,7 +124,7 @@ if not is_hmv_email(email):
 try:
     sync_supabase_session()
 
-except Exception:
+except Exception as exc:
     st.error(
         "Não foi possível concluir a autenticação "
         "do Portal Comercial."
@@ -191,13 +136,20 @@ except Exception:
         "com o banco de dados."
     )
 
+    st.warning(
+        "Diagnóstico temporário da autenticação:"
+    )
+
+    st.code(
+        f"{type(exc).__name__}: {exc}"
+    )
+
     if st.button(
         "Sair da conta",
     ):
         logout()
 
     st.stop()
-
 
 # =========================================================
 # PERFIL DO PORTAL
