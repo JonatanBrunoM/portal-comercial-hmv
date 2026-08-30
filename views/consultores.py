@@ -6,14 +6,14 @@ import pandas as pd
 import streamlit as st
 
 from components.hero import render_hero
-from core.sheets_service import (
-    read_worksheet,
+from core.data_service import (
+    read_dataset,
 )
 from utils.formatting import normalize_text
 
 
-CONSULTORES_SHEET = "12_CONSULTORES"
-CARTEIRAS_SHEET = "13_CARTEIRAS"
+CONSULTORES_DATASET = "consultores"
+CARTEIRAS_DATASET = "carteiras"
 
 
 def _safe_value(
@@ -63,13 +63,13 @@ def _build_consultores_dataset() -> pd.DataFrame:
     Une consultores e carteiras em uma única base.
     """
 
-    consultores = read_worksheet(
-        worksheet=CONSULTORES_SHEET,
+    consultores = read_dataset(
+        dataset=CONSULTORES_DATASET,
         ttl=1800,
     )
 
-    carteiras = read_worksheet(
-        worksheet=CARTEIRAS_SHEET,
+    carteiras = read_dataset(
+        dataset=CARTEIRAS_DATASET,
         ttl=1800,
     )
 

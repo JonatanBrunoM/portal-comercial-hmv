@@ -6,11 +6,11 @@ import re
 import pandas as pd
 import streamlit as st
 
-from config.settings import SHEETS
-from core.sheets_service import (
+from config.settings import DATASETS
+from core.data_service import (
     get_operadoras,
     get_planos,
-    read_worksheet,
+    read_dataset,
 )
 from utils.formatting import normalize_text
 
@@ -29,10 +29,10 @@ class QualityIssue:
 
 @dataclass(frozen=True)
 class QualityReport:
-    """Resultado da análise de qualidade de uma aba."""
+    """Resultado da análise de qualidade de uma conjunto de dados."""
 
-    sheet_key: str
-    worksheet: str
+    dataset_key: str
+    dataset_name: str
     total_rows: int
     total_columns: int
     score: int
@@ -159,7 +159,7 @@ URL_COLUMNS = {
         "URL",
     ],
     "documentos": [
-        "Link Drive",
+        "Link Documento",
     ],
     "comunicados": [
         "Link",
@@ -255,13 +255,13 @@ def _is_valid_url(
 def _add_missing_required_issues(
     issues: list[QualityIssue],
     dataframe: pd.DataFrame,
-    sheet_key: str,
+    dataset_key: str,
     id_column: str | None,
 ) -> None:
     """Analisa campos obrigatórios ausentes ou vazios."""
 
     for column in REQUIRED_COLUMNS.get(
-        sheet_key,
+        dataset_key,
         [],
     ):
         if column not in dataframe.columns:
@@ -272,7 +272,7 @@ def _add_missing_required_issues(
                     column=column,
                     message=(
                         f"A coluna obrigatória "
-                        f"'{column}' não existe na aba."
+                        f"'{column}' não existe na conjunto de dados."
                     ),
                     affected_rows=len(dataframe),
                     examples=(),
@@ -406,13 +406,13 @@ def _add_duplicate_rows_issue(
 def _add_url_issues(
     issues: list[QualityIssue],
     dataframe: pd.DataFrame,
-    sheet_key: str,
+    dataset_key: str,
     id_column: str | None,
 ) -> None:
     """Identifica links preenchidos em formato inválido."""
 
     for column in URL_COLUMNS.get(
-        sheet_key,
+        dataset_key,
         [],
     ):
         if column not in dataframe.columns:
@@ -716,27 +716,27 @@ def _calculate_score(
     ttl=600,
     show_spinner=False,
 )
-def analyze_sheet_quality(
-    sheet_key: str,
+def analyze_dataset_quality(
+    dataset_key: str,
 ) -> QualityReport:
-    """Executa o diagnóstico de qualidade de uma aba."""
+    """Executa o diagnóstico de qualidade de uma conjunto de dados."""
 
-    if sheet_key not in SHEETS:
+    if dataset_key not in DATASETS:
         raise ValueError(
-            f"Módulo desconhecido: {sheet_key}"
+            f"Módulo desconhecido: {dataset_key}"
         )
 
-    worksheet = SHEETS[
-        sheet_key
+    dataset_name = DATASETS[
+        dataset_key
     ]
 
-    dataframe = read_worksheet(
-        worksheet=worksheet,
+    dataframe = read_dataset(
+        dataset=dataset_name,
         ttl=600,
     )
 
     id_column = ID_COLUMNS.get(
-        sheet_key
+        dataset_key
     )
 
     issues: list[QualityIssue] = []
@@ -744,7 +744,7 @@ def analyze_sheet_quality(
     _add_missing_required_issues(
         issues=issues,
         dataframe=dataframe,
-        sheet_key=sheet_key,
+        dataset_key=dataset_key,
         id_column=id_column,
     )
 
@@ -762,7 +762,7 @@ def analyze_sheet_quality(
     _add_url_issues(
         issues=issues,
         dataframe=dataframe,
-        sheet_key=sheet_key,
+        dataset_key=dataset_key,
         id_column=id_column,
     )
 
@@ -772,7 +772,7 @@ def analyze_sheet_quality(
         id_column=id_column,
     )
 
-    if sheet_key not in {
+    if dataset_key not in {
         "operadoras",
         "consultores",
         "comunicados",
@@ -787,7 +787,7 @@ def analyze_sheet_quality(
             id_column=id_column,
         )
 
-    if sheet_key not in {
+    if dataset_key not in {
         "operadoras",
         "planos",
         "consultores",
@@ -825,8 +825,8 @@ def analyze_sheet_quality(
     )
 
     return QualityReport(
-        sheet_key=sheet_key,
-        worksheet=worksheet,
+        dataset_key=dataset_key,
+        dataset=dataset_name,
         total_rows=len(dataframe),
         total_columns=len(dataframe.columns),
         score=score,

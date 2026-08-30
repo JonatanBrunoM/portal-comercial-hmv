@@ -21,7 +21,6 @@ NAVIGATION_ITEMS = {
     "Documentos": "📄",
     "Contatos": "📞",
     "Consultores": "👥",
-    "Particular": "💳",
     "Comunicados": "📢",
     "Contingências": "⚠️",
     "Fórum": "💬",

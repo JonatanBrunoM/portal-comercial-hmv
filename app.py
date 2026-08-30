@@ -69,10 +69,6 @@ from views.assistente import (
     render_assistente,
 )
 
-from views.particular import (
-    render_particular,
-)
-
 from views.admin import (
     render_admin,
 )
@@ -315,9 +311,6 @@ PAGE_RENDERERS = {
     ),
     "Consultores": (
         render_consultores
-    ),
-    "Particular": (
-        render_particular
     ),
     "Fórum": render_forum,
     "Assistente": (

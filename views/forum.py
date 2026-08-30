@@ -6,15 +6,15 @@ import pandas as pd
 import streamlit as st
 
 from components.hero import render_hero
-from core.sheets_service import (
+from core.data_service import (
     get_operadoras,
-    read_worksheet,
+    read_dataset,
 )
 from utils.formatting import normalize_text
 
 
-FORUM_POSTS_SHEET = "15_FORUM_POSTS"
-FORUM_COMMENTS_SHEET = "16_FORUM_COMENTARIOS"
+FORUM_POSTS_DATASET = "forum_posts"
+FORUM_COMMENTS_DATASET = "forum_comentarios"
 
 ITEMS_PER_PAGE = 8
 
@@ -134,13 +134,13 @@ def _build_forum_dataset() -> tuple[
     Carrega tópicos e comentários do fórum.
     """
 
-    posts = read_worksheet(
-        worksheet=FORUM_POSTS_SHEET,
+    posts = read_dataset(
+        dataset=FORUM_POSTS_DATASET,
         ttl=600,
     )
 
-    comments = read_worksheet(
-        worksheet=FORUM_COMMENTS_SHEET,
+    comments = read_dataset(
+        dataset=FORUM_COMMENTS_DATASET,
         ttl=600,
     )
 

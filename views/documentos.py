@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from components.hero import render_hero
-from core.sheets_service import (
+from core.data_service import (
     get_documentos,
     get_operadoras,
     get_planos,
@@ -429,9 +429,9 @@ def _render_documento(
         or "Não identificado"
     )
 
-    drive_link = _safe_value(
+    document_link = _safe_value(
         document,
-        "Link Drive",
+        "Link Documento",
     )
 
     observations = _safe_value(
@@ -514,12 +514,12 @@ def _render_documento(
                 )
 
         if (
-            drive_link.startswith("https://")
-            or drive_link.startswith("http://")
+            document_link.startswith("https://")
+            or document_link.startswith("http://")
         ):
             st.link_button(
                 "Abrir documento",
-                drive_link,
+                document_link,
                 use_container_width=True,
             )
 

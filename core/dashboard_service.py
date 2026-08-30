@@ -6,7 +6,7 @@ from datetime import date, datetime
 import pandas as pd
 import streamlit as st
 
-from core.sheets_service import (
+from core.data_service import (
     get_comunicados,
     get_contingencias,
     get_operadoras,

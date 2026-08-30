@@ -10,9 +10,9 @@ from core.search_service import (
     SearchResult,
     search_global,
 )
-from core.sheets_service import (
+from core.data_service import (
     get_operadoras,
-    read_worksheet,
+    read_dataset,
 )
 from utils.formatting import (
     normalize_text,
@@ -20,7 +20,7 @@ from utils.formatting import (
 )
 
 
-KNOWLEDGE_SHEET = "18_CONHECIMENTO_IA"
+KNOWLEDGE_DATASET = "conhecimento"
 MAX_RELATED_RESULTS = 5
 
 
@@ -159,8 +159,8 @@ def _build_knowledge_dataset() -> pd.DataFrame:
     o nome das operadoras.
     """
 
-    knowledge = read_worksheet(
-        worksheet=KNOWLEDGE_SHEET,
+    knowledge = read_dataset(
+        dataset=KNOWLEDGE_DATASET,
         ttl=1800,
     )
 
@@ -680,7 +680,7 @@ def _render_related_result(
             )
 
         st.caption(
-            f"Fonte: {result.source_sheet}"
+            f"Fonte: {result.source_dataset}"
         )
 
 

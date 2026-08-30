@@ -5,17 +5,17 @@ from dataclasses import dataclass
 import pandas as pd
 import streamlit as st
 
-from config.settings import SHEETS
-from core.sheets_service import read_worksheet
+from config.settings import DATASETS
+from core.data_service import read_dataset
 from utils.formatting import normalize_text
 
 
 @dataclass(frozen=True)
 class PublicationSummary:
-    """Resumo da situação de publicação de uma aba."""
+    """Resumo da situação de publicação de uma conjunto de dados."""
 
-    sheet_key: str
-    worksheet: str
+    dataset_key: str
+    dataset_name: str
     total: int
     ready: int
     pending: int
@@ -407,40 +407,40 @@ def _classify_status(
     show_spinner=False,
 )
 def analyze_publication_status(
-    sheet_key: str,
+    dataset_key: str,
 ) -> PublicationSummary:
-    """Analisa a prontidão de publicação de uma aba."""
+    """Analisa a prontidão de publicação de uma conjunto de dados."""
 
-    if sheet_key not in SHEETS:
+    if dataset_key not in DATASETS:
         raise ValueError(
-            f"Módulo desconhecido: {sheet_key}"
+            f"Módulo desconhecido: {dataset_key}"
         )
 
-    if sheet_key not in PUBLICATION_RULES:
+    if dataset_key not in PUBLICATION_RULES:
         raise ValueError(
             "O módulo ainda não possui regras "
             "de publicação configuradas."
         )
 
-    worksheet = SHEETS[
-        sheet_key
+    dataset_name = DATASETS[
+        dataset_key
     ]
 
-    dataframe = read_worksheet(
-        worksheet=worksheet,
+    dataframe = read_dataset(
+        dataset=dataset_name,
         ttl=600,
     )
 
     rules = PUBLICATION_RULES[
-        sheet_key
+        dataset_key
     ]
 
     result = dataframe.copy()
 
     if result.empty:
         return PublicationSummary(
-            sheet_key=sheet_key,
-            worksheet=worksheet,
+            dataset_key=dataset_key,
+            dataset=dataset_name,
             total=0,
             ready=0,
             pending=0,
@@ -563,8 +563,8 @@ def analyze_publication_status(
     )
 
     return PublicationSummary(
-        sheet_key=sheet_key,
-        worksheet=worksheet,
+        dataset_key=dataset_key,
+        dataset=dataset_name,
         total=len(result),
         ready=ready,
         pending=pending,

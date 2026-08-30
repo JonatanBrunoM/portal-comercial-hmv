@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from components.hero import render_hero
-from core.sheets_service import (
+from core.data_service import (
     get_contatos,
     get_operadoras,
     get_planos,

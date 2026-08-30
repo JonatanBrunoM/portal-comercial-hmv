@@ -7,7 +7,7 @@ import streamlit as st
 import logging
 
 from config.settings import CACHE_SETTINGS
-from core.sheets_service import (
+from core.data_service import (
     get_autorizacoes,
     get_coberturas,
     get_contatos,
@@ -36,7 +36,7 @@ class SearchResult:
     operator_id: str
     plan_id: str
     relevance: int
-    source_sheet: str
+    source_dataset: str
 
 
 SEARCH_SYNONYMS = {
@@ -201,7 +201,7 @@ def _create_result(
     description: str,
     operator_id: str,
     plan_id: str,
-    source_sheet: str,
+    source_dataset: str,
 ) -> SearchResult | None:
     """Cria um resultado apenas quando houver correspondência."""
 
@@ -225,7 +225,7 @@ def _create_result(
         operator_id=operator_id,
         plan_id=plan_id,
         relevance=relevance,
-        source_sheet=source_sheet,
+        source_dataset=source_dataset,
     )
 
 
@@ -234,9 +234,9 @@ def _safe_load_dataset(
     dataset_name: str,
 ) -> pd.DataFrame:
     """
-    Carrega uma aba sem derrubar toda a pesquisa.
+    Carrega uma conjunto sem derrubar toda a pesquisa.
 
-    Se uma aba falhar, registra o erro e retorna
+    Se uma conjunto falhar, registra o erro e retorna
     um DataFrame vazio.
     """
 
@@ -433,7 +433,7 @@ def build_search_index() -> list[dict]:
 
     for (
         category,
-        source_sheet,
+        source_dataset,
         dataframe,
         id_column,
         title_columns,
@@ -495,7 +495,7 @@ def build_search_index() -> list[dict]:
                         if plan_column
                         else ""
                     ),
-                    "source_sheet": source_sheet,
+                    "source_dataset": source_dataset,
                 }
             )
 
@@ -530,7 +530,7 @@ def search_global(
             description=item["description"],
             operator_id=item["operator_id"],
             plan_id=item["plan_id"],
-            source_sheet=item["source_sheet"],
+            source_dataset=item["source_dataset"],
         )
 
         if result is not None:
