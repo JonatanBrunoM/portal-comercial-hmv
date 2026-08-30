@@ -1,42 +1,25 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import streamlit as st
 
 from core.supabase_repository import get_supabase_client
 
 
-DEFAULT_ALLOWED_DOMAIN = "@hmv.org.br"
+ALLOWED_DOMAIN = "@hmv.org.br"
 
 
-def _get_authorization_setting(
-    name: str,
-    default=None,
-):
-    """
-    Lê uma configuração opcional da seção
-    [AUTHORIZATION] dos Secrets.
-    """
-
-    try:
-        section = st.secrets.get(
-            "AUTHORIZATION",
-            {},
-        )
-
-        return section.get(
-            name,
-            default,
-        )
-
-    except Exception:
-        return default
+# =========================================================
+# UTILITÁRIOS
+# =========================================================
 
 
 def _normalize_email(
     email: str | None,
 ) -> str:
     """
-    Normaliza endereços de e-mail.
+    Normaliza um endereço de e-mail.
     """
 
     return (
@@ -44,34 +27,26 @@ def _normalize_email(
     ).strip().lower()
 
 
-def _normalize_email_list(
-    values,
-) -> set[str]:
+def _utc_now_iso() -> str:
     """
-    Converte uma configuração de e-mails
-    em um conjunto normalizado.
+    Retorna o horário atual em UTC
+    no formato ISO.
     """
 
-    if not values:
-        return set()
+    return datetime.now(
+        timezone.utc
+    ).isoformat()
 
-    if isinstance(
-        values,
-        str,
-    ):
-        values = [values]
 
-    return {
-        _normalize_email(value)
-        for value in values
-        if _normalize_email(value)
-    }
+# =========================================================
+# AUTENTICAÇÃO STREAMLIT / GOOGLE
+# =========================================================
 
 
 def is_streamlit_authenticated() -> bool:
     """
-    Verifica se existe uma sessão OIDC
-    válida mantida pelo Streamlit.
+    Verifica se existe uma sessão
+    Google/OIDC válida no Streamlit.
     """
 
     try:
@@ -85,8 +60,8 @@ def is_streamlit_authenticated() -> bool:
 
 def get_google_user() -> dict | None:
     """
-    Retorna os principais dados do usuário
-    autenticado pelo Google.
+    Retorna os principais dados
+    disponibilizados pelo Google.
     """
 
     if not is_streamlit_authenticated():
@@ -116,32 +91,12 @@ def get_google_user() -> dict | None:
     }
 
 
-def get_allowed_domain() -> str:
-    """
-    Retorna o domínio institucional autorizado.
-    """
-
-    domain = _get_authorization_setting(
-        "ALLOWED_DOMAIN",
-        DEFAULT_ALLOWED_DOMAIN,
-    )
-
-    domain = str(
-        domain or DEFAULT_ALLOWED_DOMAIN
-    ).strip().lower()
-
-    if not domain.startswith("@"):
-        domain = f"@{domain}"
-
-    return domain
-
-
 def is_hmv_email(
     email: str | None,
 ) -> bool:
     """
-    Verifica se o e-mail pertence
-    ao domínio institucional.
+    Permite somente contas institucionais
+    do Hospital Moinhos de Vento.
     """
 
     normalized = _normalize_email(
@@ -151,7 +106,7 @@ def is_hmv_email(
     return (
         bool(normalized)
         and normalized.endswith(
-            get_allowed_domain()
+            ALLOWED_DOMAIN
         )
     )
 
@@ -160,82 +115,228 @@ def is_email_allowed(
     email: str | None,
 ) -> bool:
     """
-    Autoriza:
+    Mantido para compatibilidade
+    com o app.py.
 
-    1. contas do domínio institucional;
-    2. e-mails explicitamente cadastrados
-       em TEST_EMAILS nos Secrets.
-
-    TEST_EMAILS existe somente para
-    desenvolvimento/apresentação.
+    Não há mais exceções.
     """
 
-    normalized = _normalize_email(
+    return is_hmv_email(
         email
     )
 
-    if not normalized:
-        return False
 
-    if is_hmv_email(
-        normalized
-    ):
-        return True
-
-    test_emails = _normalize_email_list(
-        _get_authorization_setting(
-            "TEST_EMAILS",
-            [],
-        )
-    )
-
-    return normalized in test_emails
-
-
-def _is_configured_admin(
-    email: str | None,
-) -> bool:
+def get_allowed_domain() -> str:
     """
-    Verifica administradores definidos
-    temporariamente nos Secrets.
+    Retorna o domínio institucional.
     """
 
-    normalized = _normalize_email(
-        email
-    )
-
-    admin_emails = _normalize_email_list(
-        _get_authorization_setting(
-            "ADMIN_EMAILS",
-            [],
-        )
-    )
-
-    return normalized in admin_emails
+    return ALLOWED_DOMAIN
 
 
 def login() -> None:
     """
-    Inicia o login Google configurado
+    Inicia a autenticação Google
     pelo OIDC nativo do Streamlit.
     """
 
     st.login()
 
 
+# =========================================================
+# PERFIL DO PORTAL
+# =========================================================
+
+
+def _find_profile_by_email(
+    email: str,
+) -> dict | None:
+    """
+    Procura um perfil pelo e-mail.
+    """
+
+    response = (
+        get_supabase_client()
+        .table("profiles")
+        .select("*")
+        .ilike(
+            "email",
+            email,
+        )
+        .limit(1)
+        .execute()
+    )
+
+    data = response.data or []
+
+    return (
+        data[0]
+        if data
+        else None
+    )
+
+
+def _create_profile(
+    google_user: dict,
+) -> dict:
+    """
+    Cria automaticamente o perfil
+    do colaborador no primeiro acesso.
+    """
+
+    email = _normalize_email(
+        google_user.get(
+            "email"
+        )
+    )
+
+    nome = (
+        google_user.get(
+            "name"
+        )
+        or email.split(
+            "@",
+            1,
+        )[0]
+    )
+
+    now = _utc_now_iso()
+
+    payload = {
+        "nome": nome,
+        "email": email,
+        "foto_url": google_user.get(
+            "picture"
+        ),
+        "google_sub": google_user.get(
+            "sub"
+        ),
+        "auth_provider": "google",
+        "role": "usuario",
+        "status": "Ativo",
+        "primeiro_acesso_em": now,
+        "ultimo_acesso_em": now,
+        "ultimo_login_em": now,
+    }
+
+    response = (
+        get_supabase_client()
+        .table("profiles")
+        .insert(
+            payload
+        )
+        .execute()
+    )
+
+    data = response.data or []
+
+    if not data:
+        raise RuntimeError(
+            "O perfil institucional não pôde ser criado."
+        )
+
+    return data[0]
+
+
+def _update_profile_from_google(
+    profile: dict,
+    google_user: dict,
+) -> dict:
+    """
+    Atualiza informações básicas do perfil
+    com os dados mais recentes do Google.
+
+    Role e status não são alterados aqui.
+    """
+
+    profile_id = profile.get(
+        "id"
+    )
+
+    if not profile_id:
+        return profile
+
+    nome_google = (
+        google_user.get(
+            "name"
+        )
+        or profile.get(
+            "nome"
+        )
+    )
+
+    foto_google = (
+        google_user.get(
+            "picture"
+        )
+        or profile.get(
+            "foto_url"
+        )
+    )
+
+    google_sub = (
+        google_user.get(
+            "sub"
+        )
+        or profile.get(
+            "google_sub"
+        )
+    )
+
+    now = _utc_now_iso()
+
+    payload = {
+        "nome": nome_google,
+        "foto_url": foto_google,
+        "google_sub": google_sub,
+        "ultimo_acesso_em": now,
+        "ultimo_login_em": now,
+    }
+
+    response = (
+        get_supabase_client()
+        .table("profiles")
+        .update(
+            payload
+        )
+        .eq(
+            "id",
+            profile_id,
+        )
+        .execute()
+    )
+
+    data = response.data or []
+
+    if data:
+        return data[0]
+
+    updated_profile = (
+        profile.copy()
+    )
+
+    updated_profile.update(
+        payload
+    )
+
+    return updated_profile
+
+
 def get_current_profile(
     force_refresh: bool = False,
 ) -> dict | None:
     """
-    Retorna o perfil atual da aplicação.
+    Retorna o perfil do usuário atual.
 
-    A autenticação é realizada pelo Google/Streamlit.
+    Primeiro acesso:
+        cria o perfil automaticamente.
 
-    Caso exista um registro correspondente
-    em public.profiles, seus dados são utilizados.
+    Próximos acessos:
+        recupera e sincroniza nome,
+        foto e último acesso.
 
-    Caso ainda não exista, um usuário autorizado
-    recebe um perfil operacional padrão.
+    Role e status permanecem controlados
+    pelo próprio Portal.
     """
 
     if (
@@ -247,7 +348,9 @@ def get_current_profile(
             "auth_profile"
         ]
 
-    google_user = get_google_user()
+    google_user = (
+        get_google_user()
+    )
 
     if not google_user:
         return None
@@ -258,108 +361,55 @@ def get_current_profile(
         )
     )
 
-    if not is_email_allowed(
+    if not is_hmv_email(
         email
     ):
         return None
 
-    profile = {
-        "id": None,
-        "nome": (
-            google_user.get("name")
-            or email.split(
-                "@",
-                1,
-            )[0]
-        ),
-        "email": email,
-        "foto_url": google_user.get(
-            "picture"
-        ),
-        "role": "usuario",
-        "status": "Ativo",
-        "source": "streamlit_oidc",
-    }
-
-    # -----------------------------------------------------
-    # PERFIL EXISTENTE NO SUPABASE
-    # -----------------------------------------------------
-
     try:
-        response = (
-            get_supabase_client()
-            .table("profiles")
-            .select(
-                "id,nome,email,"
-                "foto_url,role,status"
+        profile = (
+            _find_profile_by_email(
+                email
             )
-            .eq(
-                "email",
-                email,
-            )
-            .limit(1)
-            .execute()
         )
 
-        data = response.data or []
-
-        if data:
-            database_profile = (
-                data[0]
+        if not profile:
+            profile = (
+                _create_profile(
+                    google_user
+                )
             )
 
-            for key in (
-                "id",
-                "nome",
-                "email",
-                "foto_url",
-                "role",
-                "status",
-            ):
-                if (
-                    database_profile.get(
-                        key
-                    )
-                    is not None
-                ):
-                    profile[key] = (
-                        database_profile[
-                            key
-                        ]
-                    )
+        else:
+            profile = (
+                _update_profile_from_google(
+                    profile,
+                    google_user,
+                )
+            )
 
-            profile[
-                "source"
-            ] = "supabase_profiles"
+        st.session_state[
+            "auth_profile"
+        ] = profile
 
-    except Exception:
-        # Usuários autorizados continuam
-        # podendo acessar mesmo que ainda
-        # não exista profile pré-cadastrado.
-        pass
+        return profile
 
-    # -----------------------------------------------------
-    # ADMIN TEMPORÁRIO VIA SECRETS
-    # -----------------------------------------------------
+    except Exception as exc:
+        raise RuntimeError(
+            "Não foi possível carregar ou criar "
+            "o perfil institucional do usuário."
+        ) from exc
 
-    if _is_configured_admin(
-        email
-    ):
-        profile[
-            "role"
-        ] = "admin"
 
-    st.session_state[
-        "auth_profile"
-    ] = profile
-
-    return profile
+# =========================================================
+# PERMISSÕES
+# =========================================================
 
 
 def is_admin() -> bool:
     """
-    Verifica se o usuário atual é
-    administrador ativo.
+    Retorna True somente para
+    administradores ativos.
     """
 
     profile = (
@@ -377,10 +427,48 @@ def is_admin() -> bool:
     )
 
 
+def require_admin() -> dict:
+    """
+    Garante que o usuário seja
+    administrador.
+    """
+
+    profile = (
+        get_current_profile()
+    )
+
+    if not profile:
+        raise PermissionError(
+            "Usuário não autenticado."
+        )
+
+    if profile.get(
+        "status"
+    ) != "Ativo":
+        raise PermissionError(
+            "Usuário inativo."
+        )
+
+    if profile.get(
+        "role"
+    ) != "admin":
+        raise PermissionError(
+            "Esta operação é restrita "
+            "a administradores."
+        )
+
+    return profile
+
+
+# =========================================================
+# LOGOUT
+# =========================================================
+
+
 def logout() -> None:
     """
-    Limpa o estado da aplicação
-    e encerra a sessão OIDC.
+    Limpa os dados internos da sessão
+    antes de encerrar o login Google.
     """
 
     keys_to_remove = [
