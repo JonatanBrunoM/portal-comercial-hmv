@@ -3,39 +3,83 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from supabase import Client, create_client
+from supabase import (
+    Client,
+    create_client,
+)
 
 
+@st.cache_resource
 def get_supabase_client() -> Client:
     """
-    Retorna um cliente Supabase isolado para
-    a sessão atual do usuário no Streamlit.
+    Retorna o cliente server-side do Supabase.
 
-    O cliente não utiliza @st.cache_resource,
-    pois mantém estado individual de autenticação.
+    O cliente utiliza SERVICE_ROLE_KEY.
+
+    IMPORTANTE:
+    Essa chave existe somente no servidor Streamlit
+    e nunca deve ser enviada ao navegador,
+    exibida em logs ou adicionada ao GitHub.
     """
 
-    if "supabase_client" not in st.session_state:
-        url = st.secrets["SUPABASE"]["URL"]
-        key = st.secrets["SUPABASE"]["ANON_KEY"]
+    url = st.secrets[
+        "SUPABASE"
+    ]["URL"]
 
-        st.session_state["supabase_client"] = create_client(
-            url,
-            key,
+    service_role_key = st.secrets[
+        "SUPABASE"
+    ]["SERVICE_ROLE_KEY"]
+
+    return create_client(
+        url,
+        service_role_key,
+    )
+
+
+def _require_authenticated() -> dict:
+    """
+    Bloqueia consultas realizadas
+    sem perfil autenticado e ativo.
+    """
+
+    profile = st.session_state.get(
+        "auth_profile"
+    )
+
+    if (
+        not profile
+        or profile.get(
+            "status"
+        ) != "Ativo"
+    ):
+        raise PermissionError(
+            "É necessário estar autenticado "
+            "para acessar o Portal Comercial."
         )
 
-    return st.session_state["supabase_client"]
+    return profile
 
 
-def reset_supabase_client() -> None:
+def _require_admin() -> dict:
     """
-    Remove o cliente Supabase da sessão atual.
+    Bloqueia alterações no banco para
+    usuários que não sejam administradores.
     """
 
-    st.session_state.pop(
-        "supabase_client",
-        None,
+    profile = (
+        _require_authenticated()
     )
+
+    if profile.get(
+        "role"
+    ) != "admin":
+        raise PermissionError(
+            "Esta operação é restrita "
+            "aos administradores "
+            "do Portal Comercial."
+        )
+
+    return profile
 
 
 def fetch_table(
@@ -45,19 +89,17 @@ def fetch_table(
     ascending: bool = True,
 ) -> pd.DataFrame:
     """
-    Busca todos os registros de uma tabela
-    e retorna um DataFrame.
-
-    O retorno em DataFrame é mantido para
-    preservar compatibilidade com os services
-    e views existentes durante a migração.
+    Busca todos os registros
+    de uma tabela.
     """
 
-    client = get_supabase_client()
+    _require_authenticated()
 
     query = (
-        client
-        .table(table_name)
+        get_supabase_client()
+        .table(
+            table_name
+        )
         .select("*")
     )
 
@@ -67,11 +109,13 @@ def fetch_table(
             desc=not ascending,
         )
 
-    response = query.execute()
+    response = (
+        query.execute()
+    )
 
-    data = response.data or []
-
-    return pd.DataFrame(data)
+    return pd.DataFrame(
+        response.data or []
+    )
 
 
 def fetch_by_id(
@@ -82,20 +126,31 @@ def fetch_by_id(
     Busca um registro pelo UUID.
     """
 
-    client = get_supabase_client()
+    _require_authenticated()
 
     response = (
-        client
-        .table(table_name)
+        get_supabase_client()
+        .table(
+            table_name
+        )
         .select("*")
-        .eq("id", record_id)
+        .eq(
+            "id",
+            record_id,
+        )
         .limit(1)
         .execute()
     )
 
-    data = response.data or []
+    data = (
+        response.data or []
+    )
 
-    return data[0] if data else None
+    return (
+        data[0]
+        if data
+        else None
+    )
 
 
 def insert_record(
@@ -104,20 +159,32 @@ def insert_record(
 ) -> dict | None:
     """
     Insere um novo registro.
+
+    Restrito a administradores.
     """
 
-    client = get_supabase_client()
+    _require_admin()
 
     response = (
-        client
-        .table(table_name)
-        .insert(payload)
+        get_supabase_client()
+        .table(
+            table_name
+        )
+        .insert(
+            payload
+        )
         .execute()
     )
 
-    data = response.data or []
+    data = (
+        response.data or []
+    )
 
-    return data[0] if data else None
+    return (
+        data[0]
+        if data
+        else None
+    )
 
 
 def update_record(
@@ -126,22 +193,37 @@ def update_record(
     payload: dict,
 ) -> dict | None:
     """
-    Atualiza um registro pelo UUID.
+    Atualiza um registro.
+
+    Restrito a administradores.
     """
 
-    client = get_supabase_client()
+    _require_admin()
 
     response = (
-        client
-        .table(table_name)
-        .update(payload)
-        .eq("id", record_id)
+        get_supabase_client()
+        .table(
+            table_name
+        )
+        .update(
+            payload
+        )
+        .eq(
+            "id",
+            record_id,
+        )
         .execute()
     )
 
-    data = response.data or []
+    data = (
+        response.data or []
+    )
 
-    return data[0] if data else None
+    return (
+        data[0]
+        if data
+        else None
+    )
 
 
 def delete_record(
@@ -149,18 +231,22 @@ def delete_record(
     record_id: str,
 ) -> None:
     """
-    Remove um registro pelo UUID.
+    Remove um registro.
 
-    Para os principais cadastros do Portal
-    será priorizada a inativação lógica.
+    Restrito a administradores.
     """
 
-    client = get_supabase_client()
+    _require_admin()
 
     (
-        client
-        .table(table_name)
+        get_supabase_client()
+        .table(
+            table_name
+        )
         .delete()
-        .eq("id", record_id)
+        .eq(
+            "id",
+            record_id,
+        )
         .execute()
     )
