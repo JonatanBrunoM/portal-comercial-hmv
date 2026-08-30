@@ -4,6 +4,16 @@ from components.hero import render_hero
 from components.sidebar import render_sidebar
 from config.constants import APP_CONFIG
 from config.theme import apply_theme
+
+from core.auth_service import (
+    get_current_profile,
+    get_google_user,
+    is_hmv_email,
+    login,
+    logout,
+    sync_supabase_session,
+)
+
 from views.home import render_home
 from views.pesquisa import render_pesquisa
 from views.operadoras import render_operadoras
@@ -18,14 +28,10 @@ from views.assistente import render_assistente
 from views.particular import render_particular
 from views.admin import render_admin
 
-from core.auth_service import (
-    get_current_profile,
-    get_google_user,
-    is_hmv_email,
-    login,
-    logout,
-    sync_supabase_session,
-)
+
+# =========================================================
+# CONFIGURAÇÃO DA PÁGINA
+# =========================================================
 
 st.set_page_config(
     page_title=APP_CONFIG.APP_NAME,
@@ -36,37 +42,47 @@ st.set_page_config(
 
 apply_theme()
 
+
+# =========================================================
+# AUTENTICAÇÃO GOOGLE
+# =========================================================
+
 google_user = get_google_user()
 
 
 if not google_user:
-
     st.markdown(
-        """
+        f"""
         <div style="
-            max-width: 540px;
-            margin: 8vh auto 0 auto;
+            max-width: 620px;
+            margin: 10vh auto 0 auto;
             text-align: center;
+            padding: 0 24px;
         ">
             <div style="
-                font-size: 0.85rem;
+                font-size: 0.82rem;
                 font-weight: 700;
-                letter-spacing: .08em;
+                letter-spacing: .09em;
                 text-transform: uppercase;
-                opacity: .65;
-                margin-bottom: 10px;
+                opacity: .62;
+                margin-bottom: 12px;
             ">
-                Hospital Moinhos de Vento
+                {APP_CONFIG.ORGANIZATION_NAME}
             </div>
 
-            <h1 style="margin-bottom: 12px;">
-                Portal Comercial
+            <h1 style="
+                margin: 0 0 14px 0;
+                font-size: 2.35rem;
+            ">
+                {APP_CONFIG.APP_NAME}
             </h1>
 
             <p style="
                 font-size: 1.05rem;
-                opacity: .75;
-                margin-bottom: 32px;
+                line-height: 1.6;
+                opacity: .72;
+                margin: 0 auto 32px auto;
+                max-width: 520px;
             ">
                 Base integrada de informações comerciais,
                 operacionais e de relacionamento com operadoras.
@@ -76,9 +92,11 @@ if not google_user:
         unsafe_allow_html=True,
     )
 
-    _, login_col, _ = st.columns([1, 1.3, 1])
+    col_left, col_login, col_right = st.columns(
+        [1, 1.25, 1]
+    )
 
-    with login_col:
+    with col_login:
         if st.button(
             "Entrar com Google",
             type="primary",
@@ -88,77 +106,165 @@ if not google_user:
 
     st.stop()
 
-email = google_user.get("email")
+
+# =========================================================
+# VALIDAÇÃO DO E-MAIL INSTITUCIONAL
+# =========================================================
+
+email = google_user.get(
+    "email"
+)
 
 
 if not is_hmv_email(email):
+    st.markdown(
+        f"""
+        <div style="
+            max-width: 620px;
+            margin: 10vh auto 20px auto;
+            text-align:center;
+        ">
+            <div style="
+                font-size:2.5rem;
+                margin-bottom:12px;
+            ">
+                🔒
+            </div>
+
+            <h2>
+                Acesso restrito
+            </h2>
+
+            <p style="
+                opacity:.75;
+                line-height:1.6;
+            ">
+                O Portal Comercial é destinado
+                exclusivamente a usuários autorizados
+                do Hospital Moinhos de Vento.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.error(
-        "Este Portal Comercial é restrito a contas "
-        "institucionais @hmv.org.br."
+        "Neste momento o acesso está restrito "
+        "a contas institucionais @hmv.org.br."
     )
 
-    st.write(
-        f"Conta autenticada: **{email or 'não identificada'}**"
+    st.info(
+        f"Conta autenticada no Google: "
+        f"{email or 'não identificada'}"
     )
 
-    if st.button("Entrar com outra conta"):
-        logout()
+    col_left, col_logout, col_right = st.columns(
+        [1, 1.25, 1]
+    )
+
+    with col_logout:
+        if st.button(
+            "Entrar com outra conta",
+            use_container_width=True,
+        ):
+            logout()
 
     st.stop()
+
+
+# =========================================================
+# AUTENTICAÇÃO NO SUPABASE
+# =========================================================
 
 try:
     sync_supabase_session()
 
-except Exception as exc:
+except Exception:
     st.error(
         "Não foi possível concluir a autenticação "
+        "do Portal Comercial."
+    )
+
+    st.caption(
+        "O login no Google foi realizado, mas houve "
+        "uma falha ao estabelecer a sessão segura "
         "com o banco de dados."
     )
 
-    st.exception(exc)
-
-    if st.button("Sair"):
+    if st.button(
+        "Sair da conta",
+    ):
         logout()
 
     st.stop()
+
+
+# =========================================================
+# PERFIL DO PORTAL
+# =========================================================
 
 profile = get_current_profile()
 
 
 if not profile:
-
     st.error(
-        "Seu usuário foi autenticado, mas o perfil "
-        "do Portal Comercial não foi localizado."
+        "O usuário foi autenticado, mas ainda não possui "
+        "um perfil válido no Portal Comercial."
     )
 
-    if st.button("Sair"):
+    st.caption(
+        "Entre em contato com a administração "
+        "do Portal Comercial."
+    )
+
+    if st.button(
+        "Sair da conta",
+    ):
         logout()
 
     st.stop()
 
 
 if profile.get("status") != "Ativo":
-
     st.warning(
         "Seu acesso ao Portal Comercial está inativo."
     )
 
-    if st.button("Sair"):
+    st.caption(
+        "Entre em contato com a administração "
+        "para solicitar a reativação do acesso."
+    )
+
+    if st.button(
+        "Sair da conta",
+    ):
         logout()
 
     st.stop()
 
-if "current_page" not in st.session_state:
-    st.session_state.current_page = APP_CONFIG.DEFAULT_PAGE
 
+# =========================================================
+# ESTADO DE NAVEGAÇÃO
+# =========================================================
+
+if "current_page" not in st.session_state:
+    st.session_state.current_page = (
+        APP_CONFIG.DEFAULT_PAGE
+    )
+
+
+# =========================================================
+# PÁGINAS TEMPORÁRIAS
+# =========================================================
 
 def render_placeholder_page(
     title: str,
     description: str,
 ) -> None:
-    """Renderiza temporariamente páginas ainda não implementadas."""
+    """
+    Renderiza temporariamente páginas
+    ainda não implementadas.
+    """
 
     render_hero(
         eyebrow=APP_CONFIG.ORGANIZATION_NAME,
@@ -172,8 +278,16 @@ def render_placeholder_page(
     )
 
 
+# =========================================================
+# SIDEBAR
+# =========================================================
+
 selected_page = render_sidebar()
 
+
+# =========================================================
+# ROTAS
+# =========================================================
 
 PAGE_RENDERERS = {
     "Início": render_home,
@@ -191,6 +305,30 @@ PAGE_RENDERERS = {
     "Administração": render_admin,
 }
 
+
+# =========================================================
+# PROTEÇÃO DA ÁREA ADMINISTRATIVA
+# =========================================================
+
+if (
+    selected_page == "Administração"
+    and profile.get("role") != "admin"
+):
+    st.session_state.current_page = (
+        APP_CONFIG.DEFAULT_PAGE
+    )
+
+    st.warning(
+        "Você não possui permissão "
+        "para acessar a Administração."
+    )
+
+    st.stop()
+
+
+# =========================================================
+# RENDERIZAÇÃO
+# =========================================================
 
 page_renderer = PAGE_RENDERERS.get(
     selected_page,
