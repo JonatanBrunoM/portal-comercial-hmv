@@ -2,19 +2,76 @@ from __future__ import annotations
 
 import streamlit as st
 
-from core.supabase_repository import (
-    get_supabase_client,
-    reset_supabase_client,
-)
+from core.supabase_repository import get_supabase_client
 
 
-ALLOWED_DOMAIN = "@hmv.org.br"
+DEFAULT_ALLOWED_DOMAIN = "@hmv.org.br"
+
+
+def _get_authorization_setting(
+    name: str,
+    default=None,
+):
+    """
+    Lê uma configuração opcional da seção
+    [AUTHORIZATION] dos Secrets.
+    """
+
+    try:
+        section = st.secrets.get(
+            "AUTHORIZATION",
+            {},
+        )
+
+        return section.get(
+            name,
+            default,
+        )
+
+    except Exception:
+        return default
+
+
+def _normalize_email(
+    email: str | None,
+) -> str:
+    """
+    Normaliza endereços de e-mail.
+    """
+
+    return (
+        email or ""
+    ).strip().lower()
+
+
+def _normalize_email_list(
+    values,
+) -> set[str]:
+    """
+    Converte uma configuração de e-mails
+    em um conjunto normalizado.
+    """
+
+    if not values:
+        return set()
+
+    if isinstance(
+        values,
+        str,
+    ):
+        values = [values]
+
+    return {
+        _normalize_email(value)
+        for value in values
+        if _normalize_email(value)
+    }
 
 
 def is_streamlit_authenticated() -> bool:
     """
-    Verifica se existe uma sessão OIDC válida
-    mantida pelo Streamlit.
+    Verifica se existe uma sessão OIDC
+    válida mantida pelo Streamlit.
     """
 
     try:
@@ -28,7 +85,7 @@ def is_streamlit_authenticated() -> bool:
 
 def get_google_user() -> dict | None:
     """
-    Retorna as principais informações do usuário
+    Retorna os principais dados do usuário
     autenticado pelo Google.
     """
 
@@ -59,181 +116,186 @@ def get_google_user() -> dict | None:
     }
 
 
-def get_google_id_token() -> str | None:
+def get_allowed_domain() -> str:
     """
-    Obtém o ID Token disponibilizado pelo Streamlit.
-
-    O token é usado somente no servidor para criar
-    a sessão correspondente no Supabase.
+    Retorna o domínio institucional autorizado.
     """
 
-    if not is_streamlit_authenticated():
-        return None
+    domain = _get_authorization_setting(
+        "ALLOWED_DOMAIN",
+        DEFAULT_ALLOWED_DOMAIN,
+    )
 
-    try:
-        tokens = st.user.tokens
+    domain = str(
+        domain or DEFAULT_ALLOWED_DOMAIN
+    ).strip().lower()
 
-        if not tokens:
-            return None
+    if not domain.startswith("@"):
+        domain = f"@{domain}"
 
-        return tokens.get("id")
-
-    except Exception:
-        return None
+    return domain
 
 
 def is_hmv_email(
     email: str | None,
 ) -> bool:
     """
-    Valida se o e-mail pertence ao domínio
-    institucional permitido.
+    Verifica se o e-mail pertence
+    ao domínio institucional.
     """
 
-    if not email:
+    normalized = _normalize_email(
+        email
+    )
+
+    return (
+        bool(normalized)
+        and normalized.endswith(
+            get_allowed_domain()
+        )
+    )
+
+
+def is_email_allowed(
+    email: str | None,
+) -> bool:
+    """
+    Autoriza:
+
+    1. contas do domínio institucional;
+    2. e-mails explicitamente cadastrados
+       em TEST_EMAILS nos Secrets.
+
+    TEST_EMAILS existe somente para
+    desenvolvimento/apresentação.
+    """
+
+    normalized = _normalize_email(
+        email
+    )
+
+    if not normalized:
         return False
 
-    email_normalizado = (
-        email
-        .strip()
-        .lower()
+    if is_hmv_email(
+        normalized
+    ):
+        return True
+
+    test_emails = _normalize_email_list(
+        _get_authorization_setting(
+            "TEST_EMAILS",
+            [],
+        )
     )
 
-    return email_normalizado.endswith(
-        ALLOWED_DOMAIN
+    return normalized in test_emails
+
+
+def _is_configured_admin(
+    email: str | None,
+) -> bool:
+    """
+    Verifica administradores definidos
+    temporariamente nos Secrets.
+    """
+
+    normalized = _normalize_email(
+        email
     )
+
+    admin_emails = _normalize_email_list(
+        _get_authorization_setting(
+            "ADMIN_EMAILS",
+            [],
+        )
+    )
+
+    return normalized in admin_emails
 
 
 def login() -> None:
     """
-    Inicia o fluxo de autenticação Google.
+    Inicia o login Google configurado
+    pelo OIDC nativo do Streamlit.
     """
 
-    st.login("google")
-
-
-def sync_supabase_session():
-    """
-    Cria a sessão autenticada no Supabase
-    utilizando o ID Token recebido do Google.
-
-    Essa autenticação fornece ao cliente Supabase
-    o JWT necessário para aplicação das políticas RLS.
-    """
-
-    if not is_streamlit_authenticated():
-        return None
-
-    supabase = get_supabase_client()
-
-    if st.session_state.get(
-        "supabase_auth_ready"
-    ):
-        try:
-            session = (
-                supabase
-                .auth
-                .get_session()
-            )
-
-            if session:
-                return session
-
-        except Exception:
-            st.session_state.pop(
-                "supabase_auth_ready",
-                None,
-            )
-
-    id_token = get_google_id_token()
-
-    if not id_token:
-        raise RuntimeError(
-            "O usuário foi autenticado pelo Google, "
-            "mas o ID Token não foi disponibilizado."
-        )
-
-    response = (
-        supabase
-        .auth
-        .sign_in_with_id_token(
-            {
-                "provider": "google",
-                "token": id_token,
-            }
-        )
-    )
-
-    if not response.session:
-        raise RuntimeError(
-            "O Supabase não conseguiu criar "
-            "uma sessão autenticada."
-        )
-
-    st.session_state[
-        "supabase_auth_ready"
-    ] = True
-
-    return response.session
-
-
-def get_current_user():
-    """
-    Retorna o usuário autenticado no Supabase.
-    """
-
-    if not st.session_state.get(
-        "supabase_auth_ready"
-    ):
-        return None
-
-    try:
-        response = (
-            get_supabase_client()
-            .auth
-            .get_user()
-        )
-
-        if response:
-            return response.user
-
-    except Exception:
-        return None
-
-    return None
+    st.login()
 
 
 def get_current_profile(
     force_refresh: bool = False,
 ) -> dict | None:
     """
-    Consulta o perfil do usuário autenticado.
+    Retorna o perfil atual da aplicação.
 
-    Mantém o perfil em session_state para evitar
-    consultas repetidas ao Supabase a cada componente.
+    A autenticação é realizada pelo Google/Streamlit.
+
+    Caso exista um registro correspondente
+    em public.profiles, seus dados são utilizados.
+
+    Caso ainda não exista, um usuário autorizado
+    recebe um perfil operacional padrão.
     """
 
     if (
         not force_refresh
-        and "auth_profile" in st.session_state
+        and "auth_profile"
+        in st.session_state
     ):
         return st.session_state[
             "auth_profile"
         ]
 
-    user = get_current_user()
+    google_user = get_google_user()
 
-    if not user:
+    if not google_user:
         return None
+
+    email = _normalize_email(
+        google_user.get(
+            "email"
+        )
+    )
+
+    if not is_email_allowed(
+        email
+    ):
+        return None
+
+    profile = {
+        "id": None,
+        "nome": (
+            google_user.get("name")
+            or email.split(
+                "@",
+                1,
+            )[0]
+        ),
+        "email": email,
+        "foto_url": google_user.get(
+            "picture"
+        ),
+        "role": "usuario",
+        "status": "Ativo",
+        "source": "streamlit_oidc",
+    }
+
+    # -----------------------------------------------------
+    # PERFIL EXISTENTE NO SUPABASE
+    # -----------------------------------------------------
 
     try:
         response = (
             get_supabase_client()
             .table("profiles")
-            .select("*")
+            .select(
+                "id,nome,email,"
+                "foto_url,role,status"
+            )
             .eq(
-                "id",
-                user.id,
+                "email",
+                email,
             )
             .limit(1)
             .execute()
@@ -241,75 +303,97 @@ def get_current_profile(
 
         data = response.data or []
 
-        profile = (
-            data[0]
-            if data
-            else None
-        )
+        if data:
+            database_profile = (
+                data[0]
+            )
 
-        if profile:
-            st.session_state[
-                "auth_profile"
-            ] = profile
+            for key in (
+                "id",
+                "nome",
+                "email",
+                "foto_url",
+                "role",
+                "status",
+            ):
+                if (
+                    database_profile.get(
+                        key
+                    )
+                    is not None
+                ):
+                    profile[key] = (
+                        database_profile[
+                            key
+                        ]
+                    )
 
-        return profile
+            profile[
+                "source"
+            ] = "supabase_profiles"
 
     except Exception:
-        return None
+        # Usuários autorizados continuam
+        # podendo acessar mesmo que ainda
+        # não exista profile pré-cadastrado.
+        pass
+
+    # -----------------------------------------------------
+    # ADMIN TEMPORÁRIO VIA SECRETS
+    # -----------------------------------------------------
+
+    if _is_configured_admin(
+        email
+    ):
+        profile[
+            "role"
+        ] = "admin"
+
+    st.session_state[
+        "auth_profile"
+    ] = profile
+
+    return profile
 
 
 def is_admin() -> bool:
     """
-    Verifica se o usuário atual possui perfil admin.
+    Verifica se o usuário atual é
+    administrador ativo.
     """
 
-    profile = get_current_profile()
+    profile = (
+        get_current_profile()
+    )
 
-    if not profile:
-        return False
-
-    return (
-        profile.get("role") == "admin"
-        and profile.get("status") == "Ativo"
+    return bool(
+        profile
+        and profile.get(
+            "status"
+        ) == "Ativo"
+        and profile.get(
+            "role"
+        ) == "admin"
     )
 
 
 def logout() -> None:
     """
-    Encerra a sessão Supabase e a sessão OIDC
-    mantida pelo Streamlit.
+    Limpa o estado da aplicação
+    e encerra a sessão OIDC.
     """
 
-    try:
-        if st.session_state.get(
-            "supabase_client"
-        ):
-            try:
-                (
-                    get_supabase_client()
-                    .auth
-                    .sign_out()
-                )
+    keys_to_remove = [
+        "auth_profile",
+        "current_page",
+        "pending_page",
+        "main_navigation",
+    ]
 
-            except Exception:
-                pass
+    for key in keys_to_remove:
+        st.session_state.pop(
+            key,
+            None,
+        )
 
-    finally:
-        keys_to_remove = [
-            "supabase_auth_ready",
-            "auth_profile",
-            "auth_user",
-            "current_page",
-            "pending_page",
-            "main_navigation",
-        ]
-
-        for key in keys_to_remove:
-            st.session_state.pop(
-                key,
-                None,
-            )
-
-        reset_supabase_client()
-
-        st.logout()
+    st.logout()
