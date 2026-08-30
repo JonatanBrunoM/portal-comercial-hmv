@@ -5,16 +5,36 @@ import streamlit as st
 from supabase import Client, create_client
 
 
-@st.cache_resource
+from supabase import Client, create_client
+from supabase.lib.client_options import ClientOptions
+
+
 def get_supabase_client() -> Client:
     """
-    Retorna uma instância reutilizável do cliente Supabase.
+    Retorna um cliente Supabase isolado por sessão Streamlit.
+
+    Não usamos @st.cache_resource porque o cliente mantém
+    estado de autenticação.
     """
 
-    url = st.secrets["SUPABASE"]["URL"]
-    key = st.secrets["SUPABASE"]["ANON_KEY"]
+    if "supabase_client" not in st.session_state:
 
-    return create_client(url, key)
+        url = st.secrets["SUPABASE"]["URL"]
+        key = st.secrets["SUPABASE"]["ANON_KEY"]
+
+        options = ClientOptions(
+            flow_type="pkce",
+            auto_refresh_token=True,
+            persist_session=True,
+        )
+
+        st.session_state["supabase_client"] = create_client(
+            url,
+            key,
+            options=options,
+        )
+
+    return st.session_state["supabase_client"]
 
 
 def fetch_table(
