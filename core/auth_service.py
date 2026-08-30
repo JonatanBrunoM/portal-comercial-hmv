@@ -5,114 +5,191 @@ import streamlit as st
 from core.supabase_repository import get_supabase_client
 
 
-PORTAL_URL = "https://comercial-hmv.streamlit.app/"
+ALLOWED_DOMAIN = "@hmv.org.br"
 
 
-def get_auth_client():
-    return get_supabase_client()
-
-
-def get_current_session():
+def is_streamlit_authenticated() -> bool:
     """
-    Retorna a sessão Supabase atual, quando existir.
+    Verifica se o usuário possui sessão OIDC válida
+    mantida pelo próprio Streamlit.
     """
 
     try:
-        supabase = get_auth_client()
-        response = supabase.auth.get_session()
+        return bool(st.user.is_logged_in)
+    except Exception:
+        return False
 
-        return response
+
+def get_google_user() -> dict | None:
+    """
+    Retorna os dados do usuário autenticado pelo Google.
+    """
+
+    if not is_streamlit_authenticated():
+        return None
+
+    return {
+        "email": getattr(st.user, "email", None),
+        "name": getattr(st.user, "name", None),
+        "picture": getattr(st.user, "picture", None),
+        "sub": getattr(st.user, "sub", None),
+    }
+
+
+def get_google_id_token() -> str | None:
+    """
+    Obtém o ID Token disponibilizado pelo Streamlit.
+    """
+
+    if not is_streamlit_authenticated():
+        return None
+
+    try:
+        tokens = st.user.tokens
+
+        if not tokens:
+            return None
+
+        return tokens.get("id")
 
     except Exception:
         return None
 
 
-def get_current_user():
+def is_hmv_email(email: str | None) -> bool:
     """
-    Retorna o usuário autenticado no Supabase.
-    """
-
-    try:
-        supabase = get_auth_client()
-        response = supabase.auth.get_user()
-
-        if response and response.user:
-            return response.user
-
-    except Exception:
-        pass
-
-    return None
-
-
-def start_google_login():
-    """
-    Gera a URL de autenticação Google via Supabase.
+    Valida o domínio institucional.
     """
 
-    supabase = get_auth_client()
+    if not email:
+        return False
 
-    response = supabase.auth.sign_in_with_oauth(
+    return email.strip().lower().endswith(ALLOWED_DOMAIN)
+
+
+def sync_supabase_session():
+    """
+    Usa o ID Token do Google para criar uma sessão
+    autenticada no Supabase.
+
+    Essa sessão é usada pelo PostgreSQL/RLS.
+    """
+
+    if not is_streamlit_authenticated():
+        return None
+
+    if st.session_state.get("supabase_auth_ready"):
+        return get_supabase_client().auth.get_session()
+
+    id_token = get_google_id_token()
+
+    if not id_token:
+        raise RuntimeError(
+            "O Google autenticou o usuário, mas o ID Token "
+            "não foi disponibilizado pelo Streamlit."
+        )
+
+    supabase = get_supabase_client()
+
+    response = supabase.auth.sign_in_with_id_token(
         {
             "provider": "google",
-            "options": {
-                "redirect_to": PORTAL_URL,
-            },
+            "token": id_token,
         }
     )
 
-    return response.url
+    if not response.session:
+        raise RuntimeError(
+            "O Supabase não conseguiu criar a sessão autenticada."
+        )
+
+    st.session_state["supabase_auth_ready"] = True
+
+    return response.session
 
 
-def process_oauth_callback():
+def get_current_user():
     """
-    Processa o ?code= retornado pelo Supabase no fluxo PKCE.
+    Obtém o usuário validado diretamente pelo Supabase.
     """
 
-    code = st.query_params.get("code")
+    if not st.session_state.get("supabase_auth_ready"):
+        return None
 
-    if not code:
-        return False
+    try:
+        response = get_supabase_client().auth.get_user()
 
-    # Evita tentar trocar o mesmo código novamente.
-    if st.session_state.get("oauth_code_processed") == code:
-        return False
+        return response.user if response else None
 
-    supabase = get_auth_client()
+    except Exception:
+        return None
 
-    response = supabase.auth.exchange_code_for_session(
-        {
-            "auth_code": code,
-        }
+
+def get_current_profile() -> dict | None:
+    """
+    Consulta o profile do usuário autenticado.
+    """
+
+    user = get_current_user()
+
+    if not user:
+        return None
+
+    response = (
+        get_supabase_client()
+        .table("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .limit(1)
+        .execute()
     )
 
-    if response.session:
-        st.session_state["oauth_code_processed"] = code
+    data = response.data or []
 
-        # Remove o código da URL depois da troca.
-        st.query_params.clear()
+    return data[0] if data else None
 
-        return True
 
-    return False
+def is_admin() -> bool:
+    profile = get_current_profile()
+
+    if not profile:
+        return False
+
+    return (
+        profile.get("role") == "admin"
+        and profile.get("status") == "Ativo"
+    )
+
+
+def login():
+    """
+    Inicia autenticação Google através do Streamlit.
+    """
+
+    st.login("google")
 
 
 def logout():
     """
-    Encerra a sessão Supabase e limpa o estado local.
+    Encerra Supabase e Google/Streamlit.
     """
 
     try:
-        supabase = get_auth_client()
-        supabase.auth.sign_out()
+        if st.session_state.get("supabase_client"):
+            try:
+                get_supabase_client().auth.sign_out()
+            except Exception:
+                pass
 
     finally:
-        keys_to_remove = [
+        for key in [
             "supabase_client",
-            "oauth_code_processed",
-            "auth_user",
+            "supabase_auth_ready",
             "auth_profile",
-        ]
-
-        for key in keys_to_remove:
+            "auth_user",
+            "current_page",
+            "main_navigation",
+        ]:
             st.session_state.pop(key, None)
+
+        st.logout()
