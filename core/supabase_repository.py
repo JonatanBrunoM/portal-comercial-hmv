@@ -4,35 +4,38 @@ import pandas as pd
 import streamlit as st
 
 from supabase import Client, create_client
-from supabase.lib.client_options import ClientOptions
 
 
 def get_supabase_client() -> Client:
     """
-    Retorna um cliente Supabase isolado por sessão Streamlit.
+    Retorna um cliente Supabase isolado para
+    a sessão atual do usuário no Streamlit.
 
-    Não usamos @st.cache_resource porque o cliente mantém
-    estado de autenticação.
+    O cliente não utiliza @st.cache_resource,
+    pois mantém estado individual de autenticação.
     """
 
     if "supabase_client" not in st.session_state:
-
         url = st.secrets["SUPABASE"]["URL"]
         key = st.secrets["SUPABASE"]["ANON_KEY"]
-
-        options = ClientOptions(
-            flow_type="pkce",
-            auto_refresh_token=True,
-            persist_session=True,
-        )
 
         st.session_state["supabase_client"] = create_client(
             url,
             key,
-            options=options,
         )
 
     return st.session_state["supabase_client"]
+
+
+def reset_supabase_client() -> None:
+    """
+    Remove o cliente Supabase da sessão atual.
+    """
+
+    st.session_state.pop(
+        "supabase_client",
+        None,
+    )
 
 
 def fetch_table(
@@ -42,15 +45,21 @@ def fetch_table(
     ascending: bool = True,
 ) -> pd.DataFrame:
     """
-    Busca todos os registros de uma tabela e retorna DataFrame.
+    Busca todos os registros de uma tabela
+    e retorna um DataFrame.
 
-    Mantemos DataFrame nesta primeira fase para preservar
-    compatibilidade com os services e views existentes.
+    O retorno em DataFrame é mantido para
+    preservar compatibilidade com os services
+    e views existentes durante a migração.
     """
 
     client = get_supabase_client()
 
-    query = client.table(table_name).select("*")
+    query = (
+        client
+        .table(table_name)
+        .select("*")
+    )
 
     if order_by:
         query = query.order(
@@ -94,7 +103,7 @@ def insert_record(
     payload: dict,
 ) -> dict | None:
     """
-    Insere um registro.
+    Insere um novo registro.
     """
 
     client = get_supabase_client()
@@ -142,9 +151,8 @@ def delete_record(
     """
     Remove um registro pelo UUID.
 
-    Para cadastros principais vamos preferir inativação.
-    Este método ficará disponível para relacionamentos
-    e casos administrativos específicos.
+    Para os principais cadastros do Portal
+    será priorizada a inativação lógica.
     """
 
     client = get_supabase_client()
