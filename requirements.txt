@@ -7,3 +7,4 @@ google-auth>=2.40,<3.0
 google-auth-oauthlib>=1.2,<2.0
 supabase>=2.15,<3.0
 cryptography>=44,<46
+Authlib>=1.3.2,<2.0
