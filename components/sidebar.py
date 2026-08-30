@@ -2,7 +2,10 @@ from collections.abc import Callable
 
 import streamlit as st
 
-from config.constants import APP_CONFIG
+from config.constants import (
+    APP_CONFIG,
+)
+
 from core.auth_service import (
     get_current_profile,
     get_google_user,
@@ -27,82 +30,115 @@ NAVIGATION_ITEMS = {
 }
 
 
-def get_available_navigation_items() -> dict[str, str]:
+def get_available_navigation_items(
+) -> dict[str, str]:
     """
-    Retorna apenas as opções de navegação permitidas
-    para o usuário autenticado.
+    Retorna apenas os módulos permitidos
+    para o usuário atual.
     """
 
-    navigation_items = NAVIGATION_ITEMS.copy()
+    navigation_items = (
+        NAVIGATION_ITEMS.copy()
+    )
 
-    profile = get_current_profile()
+    profile = (
+        get_current_profile()
+    )
 
-    if not profile or profile.get("role") != "admin":
-        navigation_items.pop("Administração", None)
+    if (
+        not profile
+        or profile.get(
+            "role"
+        ) != "admin"
+    ):
+        navigation_items.pop(
+            "Administração",
+            None,
+        )
 
     return navigation_items
 
 
-def navigate_to(page: str) -> None:
+def navigate_to(
+    page: str,
+) -> None:
     """
-    Agenda a navegação para a próxima execução do Streamlit.
-
-    Não altera diretamente a chave do widget da sidebar,
-    pois isso gera StreamlitAPIException após o st.radio()
-    já ter sido criado.
+    Agenda uma mudança de página
+    para a próxima execução.
     """
 
-    navigation_items = get_available_navigation_items()
+    navigation_items = (
+        get_available_navigation_items()
+    )
 
     if page not in navigation_items:
-        page = APP_CONFIG.DEFAULT_PAGE
+        page = (
+            APP_CONFIG.DEFAULT_PAGE
+        )
 
-    st.session_state.pending_page = page
+    st.session_state[
+        "pending_page"
+    ] = page
 
 
 def render_user_area() -> None:
     """
-    Renderiza os dados do usuário autenticado
-    na parte inferior da sidebar.
+    Renderiza os dados do usuário
+    no rodapé da sidebar.
     """
 
-    profile = get_current_profile()
-    google_user = get_google_user()
+    profile = (
+        get_current_profile()
+    )
+
+    google_user = (
+        get_google_user()
+    )
 
     if not google_user:
         return
 
     nome = (
-        (profile or {}).get("nome")
-        or google_user.get("name")
+        (profile or {}).get(
+            "nome"
+        )
+        or google_user.get(
+            "name"
+        )
         or "Usuário"
     )
 
     email = (
-        (profile or {}).get("email")
-        or google_user.get("email")
+        (profile or {}).get(
+            "email"
+        )
+        or google_user.get(
+            "email"
+        )
         or ""
     )
 
-    role = (profile or {}).get("role", "usuario")
+    role = (
+        (profile or {}).get(
+            "role",
+            "usuario",
+        )
+    )
 
     foto_url = (
-        (profile or {}).get("foto_url")
-        or google_user.get("picture")
+        (profile or {}).get(
+            "foto_url"
+        )
+        or google_user.get(
+            "picture"
+        )
     )
 
-    st.markdown(
-        """
-        <div class="portal-sidebar-user-label">
-            Usuário conectado
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    col_avatar, col_user = st.columns(
-        [0.22, 0.78],
-        vertical_alignment="center",
+    col_avatar, col_user = (
+        st.columns(
+            [0.22, 0.78],
+            vertical_alignment="center",
+        )
     )
 
     with col_avatar:
@@ -111,64 +147,36 @@ def render_user_area() -> None:
                 foto_url,
                 width=42,
             )
+
         else:
-            inicial = nome[:1].upper() if nome else "U"
+            inicial = (
+                nome[:1].upper()
+                if nome
+                else "U"
+            )
 
             st.markdown(
-                f"""
-                <div style="
-                    width:42px;
-                    height:42px;
-                    border-radius:50%;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    background:#EEF4F8;
-                    font-weight:700;
-                    font-size:1rem;
-                ">
-                    {inicial}
-                </div>
-                """,
-                unsafe_allow_html=True,
+                f"### {inicial}"
             )
 
     with col_user:
         st.markdown(
-            f"""
-            <div style="
-                line-height:1.2;
-                overflow:hidden;
-            ">
-                <div style="
-                    font-size:0.88rem;
-                    font-weight:700;
-                    white-space:nowrap;
-                    overflow:hidden;
-                    text-overflow:ellipsis;
-                ">
-                    {nome}
-                </div>
+            f"**{nome}**"
+        )
 
-                <div style="
-                    margin-top:3px;
-                    font-size:0.72rem;
-                    opacity:0.68;
-                    white-space:nowrap;
-                    overflow:hidden;
-                    text-overflow:ellipsis;
-                ">
-                    {email}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.caption(
+            email
         )
 
     if role == "admin":
-        st.caption("⚙️ Administrador")
+        st.caption(
+            "⚙️ Administrador"
+        )
+
     else:
-        st.caption("👤 Usuário")
+        st.caption(
+            "👤 Usuário"
+        )
 
     if st.button(
         "Sair da conta",
@@ -179,21 +187,34 @@ def render_user_area() -> None:
 
 
 def render_sidebar(
-    on_change: Callable[[], None] | None = None,
+    on_change: Callable[
+        [],
+        None,
+    ]
+    | None = None,
 ) -> str:
     """
-    Renderiza a navegação lateral do Portal Comercial.
+    Renderiza a navegação lateral.
     """
 
-    navigation_items = get_available_navigation_items()
-
-    pending_page = st.session_state.pop(
-        "pending_page",
-        None,
+    navigation_items = (
+        get_available_navigation_items()
     )
 
-    if pending_page in navigation_items:
-        st.session_state.current_page = pending_page
+    pending_page = (
+        st.session_state.pop(
+            "pending_page",
+            None,
+        )
+    )
+
+    if (
+        pending_page
+        in navigation_items
+    ):
+        st.session_state[
+            "current_page"
+        ] = pending_page
 
         st.session_state.pop(
             "main_navigation",
@@ -213,20 +234,32 @@ def render_sidebar(
         </div>
         """
 
-        st.html(sidebar_header)
+        st.html(
+            sidebar_header
+        )
 
-        current_page = st.session_state.get(
-            "current_page",
-            APP_CONFIG.DEFAULT_PAGE,
+        current_page = (
+            st.session_state.get(
+                "current_page",
+                APP_CONFIG.DEFAULT_PAGE,
+            )
         )
 
         page_names = list(
             navigation_items.keys()
         )
 
-        if current_page not in page_names:
-            current_page = APP_CONFIG.DEFAULT_PAGE
-            st.session_state.current_page = current_page
+        if (
+            current_page
+            not in page_names
+        ):
+            current_page = (
+                APP_CONFIG.DEFAULT_PAGE
+            )
+
+            st.session_state[
+                "current_page"
+            ] = current_page
 
             st.session_state.pop(
                 "main_navigation",
@@ -235,24 +268,35 @@ def render_sidebar(
 
         labels = [
             f"{icon}  {page}"
-            for page, icon in navigation_items.items()
+            for page, icon
+            in navigation_items.items()
         ]
 
-        selected_label = st.radio(
-            label="Navegação",
-            options=labels,
-            index=page_names.index(current_page),
-            label_visibility="collapsed",
-            key="main_navigation",
-            on_change=on_change,
+        selected_label = (
+            st.radio(
+                label="Navegação",
+                options=labels,
+                index=page_names.index(
+                    current_page
+                ),
+                label_visibility=(
+                    "collapsed"
+                ),
+                key="main_navigation",
+                on_change=on_change,
+            )
         )
 
-        selected_page = selected_label.split(
-            "  ",
-            maxsplit=1,
-        )[1]
+        selected_page = (
+            selected_label.split(
+                "  ",
+                maxsplit=1,
+            )[1]
+        )
 
-        st.session_state.current_page = selected_page
+        st.session_state[
+            "current_page"
+        ] = selected_page
 
         st.divider()
 
@@ -261,7 +305,8 @@ def render_sidebar(
         st.divider()
 
         st.caption(
-            "Base de conhecimento da área Comercial."
+            "Base de conhecimento "
+            "da área Comercial."
         )
 
     return selected_page
