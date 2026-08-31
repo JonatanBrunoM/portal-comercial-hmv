@@ -1304,6 +1304,115 @@ def apply_theme() -> None:
             }}
         }}
 
+
+        /* =============================================================
+           AJUSTES FINAIS HOME / SIDEBAR
+           ============================================================= */
+
+        /* Sidebar: força contraste dos ícones e textos em qualquer estado */
+        section[data-testid="stSidebar"] .stButton > button,
+        section[data-testid="stSidebar"] .stButton > button *,
+        section[data-testid="stSidebar"] .stButton > button p,
+        section[data-testid="stSidebar"] .stButton > button span {{
+            color: #334A59 !important;
+            -webkit-text-fill-color: #334A59 !important;
+        }}
+
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"],
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"] *,
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"] p,
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"] span {{
+            color: #003D66 !important;
+            -webkit-text-fill-color: #003D66 !important;
+        }}
+
+        section[data-testid="stSidebar"] .stButton > button svg {{
+            fill: currentColor !important;
+            stroke: currentColor !important;
+        }}
+
+        /* deixa o primeiro símbolo sempre visível quando a rail está recolhida */
+        section[data-testid="stSidebar"] .stButton > button {{
+            padding-left: .82rem !important;
+            letter-spacing: 0 !important;
+        }}
+
+        /* Pesquisa: centralização vertical e melhor leitura */
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) div[data-baseweb="input"] > div {{
+            display: flex !important;
+            align-items: center !important;
+            min-height: 68px !important;
+            height: 68px !important;
+            padding: 0 .75rem !important;
+        }}
+
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) input {{
+            height: 64px !important;
+            min-height: 64px !important;
+            padding: 0 .75rem !important;
+            margin: 0 !important;
+            line-height: 1.35 !important;
+            display: flex !important;
+            align-items: center !important;
+            color: #163044 !important;
+        }}
+
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) input::placeholder {{
+            color: #7B8B96 !important;
+            opacity: 1 !important;
+        }}
+
+        /* Atalhos da Home: tiles mais convidativos */
+        .st-key-home_quick_actions {{
+            max-width: 1040px;
+            margin: 0 auto 1.1rem;
+        }}
+
+        .st-key-home_quick_actions .portal-home-dock-label {{
+            margin: .72rem 0 .35rem;
+        }}
+
+        .st-key-home_quick_actions [data-testid="stButton"] > button {{
+            min-height: 72px !important;
+            border: 1px solid #D4E1E8 !important;
+            border-radius: 16px !important;
+            background:
+                linear-gradient(180deg, #FFFFFF 0%, #F7FBFD 100%) !important;
+            color: #173447 !important;
+            font-weight: 760 !important;
+            font-size: .88rem !important;
+            box-shadow: 0 6px 18px rgba(13, 38, 56, .055) !important;
+            transition:
+                transform .12s ease,
+                border-color .12s ease,
+                box-shadow .12s ease,
+                background-color .12s ease !important;
+        }}
+
+        .st-key-home_quick_actions [data-testid="stButton"] > button * {{
+            color: #173447 !important;
+            -webkit-text-fill-color: #173447 !important;
+        }}
+
+        .st-key-home_quick_actions [data-testid="stButton"] > button:hover {{
+            transform: translateY(-2px);
+            border-color: #9EC8DF !important;
+            background:
+                linear-gradient(180deg, #FFFFFF 0%, #EEF7FC 100%) !important;
+            box-shadow: 0 10px 24px rgba(0, 86, 145, .10) !important;
+        }}
+
+        .st-key-home_quick_actions [data-testid="stButton"] > button:focus-visible {{
+            outline: 3px solid rgba(0, 86, 145, .16) !important;
+            outline-offset: 2px;
+        }}
+
+        @media (max-width: 900px) {{
+            .st-key-home_quick_actions [data-testid="stButton"] > button {{
+                min-height: 60px !important;
+            }}
+        }}
+
     </style>
     """
 
