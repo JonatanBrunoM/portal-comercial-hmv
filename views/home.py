@@ -404,13 +404,13 @@ def render_home() -> None:
 
     with row_2[2]:
         if render_module_card(
-            title="Assistente Comercial",
+            title="Comunicados",
             description=(
-                "Faça perguntas utilizando a futura "
-                "base de conhecimento oficial."
+                "Acompanhe avisos, mudanças e orientações "
+                "relevantes das operadoras."
             ),
-            icon="✨",
-            button_key="home_assistente",
+            icon="📢",
+            button_key="home_comunicados",
         ):
-            navigate_to("Assistente")
+            navigate_to("Comunicados")
             st.rerun()
