@@ -12,16 +12,16 @@ from core.auth_service import (
 
 
 NAVIGATION_ITEMS = {
-    "Início": "🏠",
-    "Pesquisa": "🔎",
-    "Operadoras": "🏥",
-    "Portais": "🌐",
-    "Documentos": "📄",
-    "Contatos": "☎️",
-    "Consultores": "👥",
-    "Comunicados": "📢",
-    "Contingências": "⚠️",
-    "Administração": "⚙️",
+    "Início": ":material/home:",
+    "Pesquisa": ":material/search:",
+    "Operadoras": ":material/apartment:",
+    "Portais": ":material/language:",
+    "Documentos": ":material/description:",
+    "Contatos": ":material/contact_phone:",
+    "Consultores": ":material/groups:",
+    "Comunicados": ":material/campaign:",
+    "Contingências": ":material/warning:",
+    "Administração": ":material/settings:",
 }
 
 
@@ -55,7 +55,7 @@ def _safe(value: object) -> str:
 
 
 def render_user_area() -> None:
-    """Renderiza a conta em um bloco que funciona recolhido e expandido."""
+    """Renderiza a conta alinhada ao mesmo eixo visual da rail."""
 
     profile = get_current_profile()
     google_user = get_google_user()
@@ -98,8 +98,9 @@ def render_user_area() -> None:
     )
 
     if st.button(
-        "↪  Sair da conta",
+        "Sair da conta",
         key="sidebar_logout",
+        icon=":material/logout:",
         use_container_width=True,
     ):
         logout()
@@ -108,7 +109,7 @@ def render_user_area() -> None:
 def render_sidebar(
     on_change: Callable[[], None] | None = None,
 ) -> str:
-    """Renderiza a navegação lateral compacta e sem estado visual defasado."""
+    """Renderiza navegação lateral compacta com ícones Material."""
 
     navigation_items = get_available_navigation_items()
     page_names = list(navigation_items.keys())
@@ -146,12 +147,13 @@ def render_sidebar(
             """
         )
 
-        for page, icon in navigation_items.items():
+        for page, material_icon in navigation_items.items():
             is_active = page == current_page
 
             clicked = st.button(
-                f"{icon}   {page}",
+                page,
                 key=f"nav_{page}",
+                icon=material_icon,
                 type="primary" if is_active else "secondary",
                 use_container_width=True,
             )
