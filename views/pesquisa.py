@@ -5,49 +5,59 @@ from components.search_results import render_search_results
 from core.search_service import search_global
 
 
-def render_pesquisa() -> None:
-    """Renderiza a página completa de pesquisa."""
+EXAMPLE_QUERIES = [
+    "Bradesco autorização",
+    "CASSI telefone",
+    "Unimed portal",
+    "Bradesco comunicado",
+]
 
+
+def render_pesquisa() -> None:
     render_hero(
-        eyebrow="Base de conhecimento",
-        title="Pesquisa inteligente",
+        eyebrow="Consulta central",
+        title="Pesquisa Global",
         description=(
-            "Pesquise operadoras, planos, documentos, "
-            "portais, contatos, autorizações e coberturas."
+            "Pesquise do jeito que você pensaria no dia a dia. "
+            "O Portal procura a informação em toda a base comercial."
         ),
     )
 
-    initial_query = st.session_state.get(
-        "last_search_query",
-        "",
-    )
+    initial_query = st.session_state.get("last_search_query", "")
 
     query = st.text_input(
-        label="Pesquisar",
+        label="O que você precisa encontrar?",
         value=initial_query,
-        placeholder=(
-            "Exemplo: autorização CASSI, "
-            "documentos CABERGS ou OPME..."
-        ),
+        placeholder="Ex.: Bradesco autorização, CASSI telefone, Unimed portal...",
         key="full_search_query",
     )
 
     st.session_state.last_search_query = query
 
     if len(query.strip()) < 2:
-        st.info(
-            "Digite pelo menos dois caracteres para pesquisar."
-        )
+        st.caption("Exemplos de pesquisa")
+        columns = st.columns(2)
 
+        for index, example in enumerate(EXAMPLE_QUERIES):
+            with columns[index % 2]:
+                if st.button(
+                    f"🔎 {example}",
+                    key=f"search_example_{index}",
+                    use_container_width=True,
+                ):
+                    st.session_state.last_search_query = example
+                    st.session_state.full_search_query = example
+                    st.rerun()
+
+        st.info(
+            "Digite pelo menos dois caracteres. Você pode combinar "
+            "a operadora com a necessidade, como “Bradesco senha”, "
+            "“CASSI elegibilidade” ou “Unimed contato”."
+        )
         return
 
-    with st.spinner(
-        "Consultando a base comercial..."
-    ):
-        results = search_global(
-            query=query,
-            limit=50,
-        )
+    with st.spinner("Consultando toda a base comercial..."):
+        results = search_global(query=query, limit=50)
 
     render_search_results(
         results=results,
