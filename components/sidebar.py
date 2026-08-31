@@ -131,49 +131,54 @@ def render_user_area() -> None:
         )
     )
 
-    col_avatar, col_user = (
-        st.columns(
-            [0.22, 0.78],
-            vertical_alignment="center",
-        )
+    st.html(
+        '<div class="portal-sidebar-section-label">Sua conta</div>'
     )
 
-    with col_avatar:
-        if foto_url:
-            st.image(
-                foto_url,
-                width=42,
+    with st.container(border=True):
+        col_avatar, col_user = (
+            st.columns(
+                [0.22, 0.78],
+                vertical_alignment="center",
+            )
+        )
+
+        with col_avatar:
+            if foto_url:
+                st.image(
+                    foto_url,
+                    width=42,
+                )
+
+            else:
+                inicial = (
+                    nome[:1].upper()
+                    if nome
+                    else "U"
+                )
+
+                st.markdown(
+                    f"### {inicial}"
+                )
+
+        with col_user:
+            st.markdown(
+                f"**{nome}**"
+            )
+
+            st.caption(
+                email
+            )
+
+        if role == "admin":
+            st.caption(
+                "⚙️ Administrador"
             )
 
         else:
-            inicial = (
-                nome[:1].upper()
-                if nome
-                else "U"
+            st.caption(
+                "👤 Usuário"
             )
-
-            st.markdown(
-                f"### {inicial}"
-            )
-
-    with col_user:
-        st.markdown(
-            f"**{nome}**"
-        )
-
-        st.caption(
-            email
-        )
-
-    if role == "admin":
-        st.caption(
-            "⚙️ Administrador"
-        )
-
-    else:
-        st.caption(
-            "👤 Usuário"
-        )
 
     if st.button(
         "Sair da conta",
@@ -233,6 +238,10 @@ def render_sidebar(
 
         st.html(
             sidebar_header
+        )
+
+        st.html(
+            '<div class="portal-sidebar-section-label">Navegação</div>'
         )
 
         current_page = (
