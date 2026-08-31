@@ -13,6 +13,12 @@ EXAMPLE_QUERIES = [
 ]
 
 
+def _apply_example_query(example: str) -> None:
+    """Callback executado antes do rerun do Streamlit."""
+    st.session_state["full_search_query"] = example
+    st.session_state["last_search_query"] = example
+
+
 def render_pesquisa() -> None:
     render_hero(
         eyebrow="Consulta central",
@@ -23,16 +29,22 @@ def render_pesquisa() -> None:
         ),
     )
 
-    initial_query = st.session_state.get("last_search_query", "")
+    # O widget passa a ser a única fonte de verdade da pesquisa.
+    # A inicialização acontece antes da criação do text_input para evitar
+    # StreamlitAPIException ao tentar alterar seu estado posteriormente.
+    if "full_search_query" not in st.session_state:
+        st.session_state["full_search_query"] = st.session_state.get(
+            "last_search_query",
+            "",
+        )
 
     query = st.text_input(
         label="O que você precisa encontrar?",
-        value=initial_query,
         placeholder="Ex.: Bradesco autorização, CASSI telefone, Unimed portal...",
         key="full_search_query",
     )
 
-    st.session_state.last_search_query = query
+    st.session_state["last_search_query"] = query
 
     if len(query.strip()) < 2:
         st.caption("Exemplos de pesquisa")
@@ -40,14 +52,13 @@ def render_pesquisa() -> None:
 
         for index, example in enumerate(EXAMPLE_QUERIES):
             with columns[index % 2]:
-                if st.button(
+                st.button(
                     f"🔎 {example}",
                     key=f"search_example_{index}",
                     use_container_width=True,
-                ):
-                    st.session_state.last_search_query = example
-                    st.session_state.full_search_query = example
-                    st.rerun()
+                    on_click=_apply_example_query,
+                    args=(example,),
+                )
 
         st.info(
             "Digite pelo menos dois caracteres. Você pode combinar "
