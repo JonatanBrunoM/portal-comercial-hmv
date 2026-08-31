@@ -961,6 +961,22 @@ def render_operadora_detail(operator_id: str) -> None:
     ]
 
     state_key = f"operator_module_{operator_id}"
+
+    # Navegações vindas da Pesquisa Global chegam por uma chave temporária.
+    # O destino é aplicado antes de o selectbox ser criado, evitando que o
+    # estado anterior do widget force novamente "Visão geral".
+    pending_destination = st.session_state.get("pending_operator_destination")
+    if (
+        isinstance(pending_destination, dict)
+        and pending_destination.get("operator_id") == operator_id
+    ):
+        requested_module = pending_destination.get("module") or "Visão geral"
+
+        if requested_module in module_options:
+            st.session_state[state_key] = requested_module
+
+        st.session_state.pop("pending_operator_destination", None)
+
     if st.session_state.get(state_key) not in module_options:
         st.session_state[state_key] = "Visão geral"
 
