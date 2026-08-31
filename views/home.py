@@ -122,26 +122,27 @@ def _render_search() -> str:
 
 
 def _render_quick_dock() -> None:
-    st.html('<div class="portal-home-dock-label">ATALHOS</div>')
+    with st.container(key="home_quick_actions"):
+        st.html('<div class="portal-home-dock-label">ATALHOS RÁPIDOS</div>')
 
-    columns = st.columns(5, gap="small")
-    actions = [
-        ("🏥", "Operadoras", "Operadoras"),
-        ("🌐", "Portais", "Portais"),
-        ("📄", "Documentos", "Documentos"),
-        ("☎", "Contatos", "Contatos"),
-        ("⚠", "Contingências", "Contingências"),
-    ]
+        columns = st.columns(5, gap="small")
+        actions = [
+            ("🏥", "Operadoras", "Operadoras"),
+            ("🌐", "Portais", "Portais"),
+            ("📄", "Documentos", "Documentos"),
+            ("☎️", "Contatos", "Contatos"),
+            ("⚠️", "Contingências", "Contingências"),
+        ]
 
-    for column, (icon, label, page) in zip(columns, actions):
-        with column:
-            if st.button(
-                f"{icon}  {label}",
-                key=f"home_dock_{page}",
-                use_container_width=True,
-            ):
-                _go(page)
-                st.rerun()
+        for column, (icon, label, page) in zip(columns, actions):
+            with column:
+                if st.button(
+                    f"{icon}  {label}",
+                    key=f"home_dock_{page}",
+                    use_container_width=True,
+                ):
+                    _go(page)
+                    st.rerun()
 
 
 def _notice_html(notice, compact: bool = False) -> str:
