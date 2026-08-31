@@ -36,7 +36,6 @@ DATASETS = {
     "coberturas": "coberturas",
     "contatos": "contatos",
     "contingencias": "contingencias",
-    "dicas": "dicas_operacionais",
     "dicas_operacionais": "dicas_operacionais",
     "consultores": "consultores",
     "carteiras": "carteiras",
