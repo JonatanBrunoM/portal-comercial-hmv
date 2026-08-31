@@ -278,13 +278,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                     """,
                     unsafe_allow_html=True,
                 )
-                if st.button(
+                st.button(
                     "Ver orientação de contingência",
                     key=f"overview_contingency_{operator_id}",
                     use_container_width=True,
-                ):
-                    _set_operator_module(operator_id, "Contingências")
-                    st.rerun()
+                    on_click=_set_operator_module,
+                    args=(operator_id, "Contingências"),
+                )
             else:
                 st.markdown(
                     """
@@ -313,13 +313,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                     """,
                     unsafe_allow_html=True,
                 )
-                if st.button(
+                st.button(
                     "Ler comunicado",
                     key=f"overview_notice_{operator_id}",
                     use_container_width=True,
-                ):
-                    _set_operator_module(operator_id, "Comunicados")
-                    st.rerun()
+                    on_click=_set_operator_module,
+                    args=(operator_id, "Comunicados"),
+                )
             else:
                 st.markdown(
                     """
@@ -349,13 +349,13 @@ def _render_overview(operator_id: str, operadora) -> None:
     quick_cols = st.columns(3)
     for index, (icon, label, module, amount) in enumerate(quick):
         with quick_cols[index % 3]:
-            if st.button(
+            st.button(
                 f"{icon}  {label}  ·  {amount}",
                 key=f"quick_{operator_id}_{module}",
                 use_container_width=True,
-            ):
-                _set_operator_module(operator_id, module)
-                st.rerun()
+                on_click=_set_operator_module,
+                args=(operator_id, module),
+            )
 
     st.markdown(
         '<div class="hmv-section-label">Portais e acessos</div>'
@@ -390,13 +390,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                             url,
                             use_container_width=True,
                         )
-                    if st.button(
+                    st.button(
                         "Ver detalhes",
                         key=f"portal_detail_{operator_id}_{portal.get('id', name)}",
                         use_container_width=True,
-                    ):
-                        _set_operator_module(operator_id, "Portais e acessos")
-                        st.rerun()
+                        on_click=_set_operator_module,
+                        args=(operator_id, "Portais e acessos"),
+                    )
 
     st.markdown(
         '<div class="hmv-section-label">Orientações operacionais</div>'
@@ -445,13 +445,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button(
+            st.button(
                 f"Ver {label.lower()}",
                 key=f"orientation_{operator_id}_{label}",
                 use_container_width=True,
-            ):
-                _set_operator_module(operator_id, label)
-                st.rerun()
+                on_click=_set_operator_module,
+                args=(operator_id, label),
+            )
 
     st.markdown(
         '<div class="hmv-section-label">Relacionamento e apoio</div>'
@@ -474,13 +474,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button(
+            st.button(
                 "Ver consultores",
                 key=f"support_consultants_{operator_id}",
                 use_container_width=True,
-            ):
-                _set_operator_module(operator_id, "Consultores")
-                st.rerun()
+                on_click=_set_operator_module,
+                args=(operator_id, "Consultores"),
+            )
         else:
             st.info("Nenhum consultor vinculado.")
 
@@ -497,13 +497,13 @@ def _render_overview(operator_id: str, operadora) -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button(
+            st.button(
                 "Ver todas as dicas",
                 key=f"support_tips_{operator_id}",
                 use_container_width=True,
-            ):
-                _set_operator_module(operator_id, "Dicas")
-                st.rerun()
+                on_click=_set_operator_module,
+                args=(operator_id, "Dicas"),
+            )
         else:
             st.info("Nenhuma dica operacional cadastrada.")
 
