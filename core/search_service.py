@@ -1,23 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 import pandas as pd
 import streamlit as st
-import logging
 
 from config.settings import CACHE_SETTINGS
 from core.data_service import (
-    get_autorizacoes_native,
-    get_coberturas_native,
-    get_contatos_native,
-    get_contingencias_native,
-    get_dicas_operacionais_native,
-    get_documentos_native,
-    get_elegibilidade_native,
-    get_operadoras_native,
-    get_planos_native,
-    get_portais_native,
+    get_autorizacoes, get_coberturas, get_contatos, get_contingencias,
+    get_dicas_operacionais, get_documentos, get_elegibilidade,
+    get_operadoras, get_planos, get_portais,
 )
 from utils.formatting import normalize_text, shorten_text
 
@@ -26,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class SearchResult:
-    """Representa um resultado da pesquisa global."""
-
     result_id: str
     category: str
     title: str
@@ -40,507 +31,139 @@ class SearchResult:
 
 
 SEARCH_SYNONYMS = {
-    "rm": [
-        "ressonancia",
-        "ressonancia magnetica",
-    ],
-    "pet": [
-        "pet scan",
-        "pet ct",
-        "petscan",
-    ],
-    "senha": [
-        "autorizacao",
-        "autorizacao previa",
-    ],
-    "convenio": [
-        "operadora",
-    ],
-    "telefone": [
-        "contato",
-        "fone",
-    ],
-    "guia": [
-        "documento",
-        "guia tiss",
-    ],
-    "material especial": [
-        "opme",
-        "ortese",
-        "protese",
-    ],
+    "rm": ["ressonancia", "ressonancia magnetica"],
+    "pet": ["pet scan", "pet ct", "petscan"],
+    "convenio": ["operadora"],
+    "telefone": ["contato", "fone"],
+    "guia": ["documento", "guia tiss"],
+    "senha": ["portal", "login", "acesso"],
+    "material especial": ["opme", "ortese", "protese"],
 }
 
 
-def _safe_value(
-    row: pd.Series,
-    column: str,
-) -> str:
-    """Retorna o conteúdo de uma coluna sem gerar erro."""
-
-    if column not in row.index:
+def _safe(row: pd.Series, column: str) -> str:
+    if column not in row.index or pd.isna(row[column]):
         return ""
-
-    value = row[column]
-
-    if pd.isna(value):
-        return ""
-
-    return str(value).strip()
+    return str(row[column]).strip()
 
 
-def _first_available(
-    row: pd.Series,
-    columns: list[str],
-) -> str:
-    """Retorna o primeiro campo preenchido da lista."""
-
+def _first(row: pd.Series, columns: list[str]) -> str:
     for column in columns:
-        value = _safe_value(row, column)
-
+        value = _safe(row, column)
         if value:
             return value
-
     return ""
 
 
+def _safe_load(loader, name: str) -> pd.DataFrame:
+    try:
+        return loader()
+    except Exception:
+        logger.exception("Não foi possível carregar %s para a pesquisa.", name)
+        return pd.DataFrame()
+
+
 def _expand_query(query: str) -> list[str]:
-    """Expande a consulta usando sinônimos conhecidos."""
-
-    normalized_query = normalize_text(query)
-
-    terms = {
-        normalized_query,
-    }
-
-    words = normalized_query.split()
-
-    terms.update(words)
-
+    normalized = normalize_text(query)
+    terms = {normalized, *normalized.split()}
     for key, synonyms in SEARCH_SYNONYMS.items():
-        normalized_key = normalize_text(key)
-
-        if (
-            normalized_key in normalized_query
-            or normalized_query in normalized_key
-        ):
-            terms.update(
-                normalize_text(synonym)
-                for synonym in synonyms
-            )
-
-        for synonym in synonyms:
-            normalized_synonym = normalize_text(synonym)
-
-            if (
-                normalized_synonym in normalized_query
-                or normalized_query in normalized_synonym
-            ):
-                terms.add(normalized_key)
-                terms.update(
-                    normalize_text(item)
-                    for item in synonyms
-                )
-
-    return [
-        term
-        for term in terms
-        if term
-    ]
+        candidates = [key, *synonyms]
+        normalized_candidates = [normalize_text(item) for item in candidates]
+        if any(item and (item in normalized or normalized in item) for item in normalized_candidates):
+            terms.update(normalized_candidates)
+    return [term for term in terms if term]
 
 
-def _calculate_relevance(
-    query: str,
-    terms: list[str],
-    title: str,
-    subtitle: str,
-    description: str,
-) -> int:
-    """Calcula a relevância básica do resultado."""
-
-    normalized_query = normalize_text(query)
-    normalized_title = normalize_text(title)
-    normalized_subtitle = normalize_text(subtitle)
-    normalized_description = normalize_text(description)
-
+def _relevance(query: str, terms: list[str], title: str, subtitle: str, description: str) -> int:
+    q = normalize_text(query)
+    t = normalize_text(title)
+    s = normalize_text(subtitle)
+    d = normalize_text(description)
     score = 0
-
-    if normalized_query == normalized_title:
+    if q == t:
         score += 100
-
-    elif normalized_query in normalized_title:
+    elif q in t:
         score += 70
-
-    if normalized_query in normalized_subtitle:
+    if q in s:
         score += 40
-
-    if normalized_query in normalized_description:
+    if q in d:
         score += 25
-
     for term in terms:
-        if term in normalized_title:
-            score += 15
-
-        if term in normalized_subtitle:
-            score += 8
-
-        if term in normalized_description:
-            score += 4
-
+        score += 15 if term in t else 0
+        score += 8 if term in s else 0
+        score += 4 if term in d else 0
     return score
 
 
-def _create_result(
-    *,
-    query: str,
-    terms: list[str],
-    result_id: str,
-    category: str,
-    title: str,
-    subtitle: str,
-    description: str,
-    operator_id: str,
-    plan_id: str,
-    source_dataset: str,
-) -> SearchResult | None:
-    """Cria um resultado apenas quando houver correspondência."""
-
-    relevance = _calculate_relevance(
-        query=query,
-        terms=terms,
-        title=title,
-        subtitle=subtitle,
-        description=description,
-    )
-
-    if relevance <= 0:
-        return None
-
-    return SearchResult(
-        result_id=result_id,
-        category=category,
-        title=title or "Informação sem título",
-        subtitle=subtitle,
-        description=shorten_text(description),
-        operator_id=operator_id,
-        plan_id=plan_id,
-        relevance=relevance,
-        source_dataset=source_dataset,
-    )
+def _name_map(dataframe: pd.DataFrame, key: str = "id", name: str = "nome") -> dict[str, str]:
+    if dataframe.empty or key not in dataframe.columns:
+        return {}
+    result = {}
+    for _, row in dataframe.iterrows():
+        item_id = _safe(row, key)
+        if item_id:
+            result[item_id] = _safe(row, name)
+    return result
 
 
-def _safe_load_dataset(
-    loader,
-    dataset_name: str,
-) -> pd.DataFrame:
-    """
-    Carrega uma conjunto sem derrubar toda a pesquisa.
-
-    Se uma conjunto falhar, registra o erro e retorna
-    um DataFrame vazio.
-    """
-
-    try:
-        return loader()
-
-    except Exception as error:
-        logger.exception(
-            "Não foi possível carregar o conjunto %s.",
-            dataset_name,
-        )
-
-        return pd.DataFrame()
-
-@st.cache_data(
-    ttl=CACHE_SETTINGS.SEARCH_INDEX,
-    show_spinner=False,
-)
-
+@st.cache_data(ttl=CACHE_SETTINGS.SEARCH_INDEX, show_spinner=False)
 def build_search_index() -> list[dict]:
-    """
-    Monta um índice único com as informações pesquisáveis.
-
-    O retorno utiliza dicionários para permitir cache seguro.
-    """
-
+    operadoras = _safe_load(get_operadoras, "operadoras")
+    planos = _safe_load(get_planos, "planos")
+    operator_names = _name_map(operadoras)
+    plan_names = _name_map(planos)
     items: list[dict] = []
 
-    datasets = [
-        (
-            "Operadoras",
-            "02_OPERADORAS",
-            _safe_load_dataset(
-                get_operadoras_native,
-                "Operadoras",
-            ),
-            "id",
-            ["nome_curto", "nome"],
-            ["nome"],
-            ["observacoes"],
-            "id",
-            "",
-        ),
-        (
-            "Planos",
-            "03_PLANOS",
-            _safe_load_dataset(
-                get_planos_native,
-                "Planos",
-            ),
-            "id",
-            ["nome_padronizado", "nome"],
-            ["tipo_plano"],
-            ["observacao_resumida"],
-            "operadora_id",
-            "id",
-        ),
-        (
-            "Portais",
-            "04_PORTAIS",
-            _safe_load_dataset(
-                get_portais_native,
-                "Portais",
-            ),
-            "id",
-            ["nome"],
-            ["tipo", "local_id"],
-            ["instrucao_acesso", "observacoes", "url"],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Elegibilidade",
-            "05_ELEGIBILIDADE",
-            _safe_load_dataset(
-                get_elegibilidade_native,
-                "Elegibilidade",
-            ),
-            "id",
-            ["tipo_atendimento_id"],
-            ["local_id"],
-            [
-                "orientacao",
-                "observacoes",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Documentos",
-            "06_DOCUMENTOS",
-            _safe_load_dataset(
-                get_documentos_native,
-                "Documentos",
-            ),
-            "id",
-            ["nome"],
-            ["tipo_atendimento_id", "local_id"],
-            [
-                "observacoes",
-                "formato",
-                "validade_dias",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Autorizações",
-            "07_AUTORIZACOES",
-            _safe_load_dataset(
-                get_autorizacoes_native,
-                "Autorizações",
-            ),
-            "id",
-            ["tipo_atendimento_id"],
-            ["meio_solicitacao", "local_id"],
-            [
-                "quem_solicita",
-                "observacoes",
-                "momento_autorizacao",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Coberturas",
-            "08_COBERTURAS",
-            _safe_load_dataset(
-                get_coberturas_native,
-                "Coberturas",
-            ),
-            "id",
-            ["tipo_atendimento_id"],
-            ["coberto", "local_id"],
-            [
-                "restricoes_cobertura",
-                "observacoes",
-                "acomodacao",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Contatos",
-            "09_CONTATOS",
-            _safe_load_dataset(
-                get_contatos_native,
-                "Contatos",
-            ),
-            "id",
-            ["nome_setor", "finalidade"],
-            ["tipo", "contato"],
-            [
-                "responsavel",
-                "horario_atendimento",
-                "observacoes",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Contingências",
-            "10_CONTINGENCIAS",
-            _safe_load_dataset(
-                get_contingencias_native,
-                "Contingências",
-            ),
-            "id",
-            ["titulo"],
-            ["prioridade", "local_id"],
-            [
-                "orientacao_alternativa",
-                "descricao",
-            ],
-            "operadora_id",
-            "plano_id",
-        ),
-        (
-            "Dicas operacionais",
-            "11_DICAS_OPERACIONAIS",
-            _safe_load_dataset(
-                get_dicas_operacionais_native,
-                "Dicas operacionais",
-            ),
-            "id",
-            ["titulo", "categoria"],
-            ["local_id", "palavras_chave"],
-            ["dica"],
-            "operadora_id",
-            "plano_id",
-        ),
+    specs = [
+        ("Operadoras", "operadoras", operadoras, ["nome_curto", "nome"], ["codigo"], ["observacoes", "site_url"]),
+        ("Planos", "planos", planos, ["nome_padronizado", "nome"], ["tipo_plano"], ["observacao_resumida"]),
+        ("Portais", "portais", _safe_load(get_portais, "portais"), ["nome"], ["tipo"], ["instrucao_acesso", "dica_geral_acesso", "observacoes", "url"]),
+        ("Elegibilidade", "elegibilidade", _safe_load(get_elegibilidade, "elegibilidade"), ["orientacao"], ["necessario"], ["observacoes"]),
+        ("Documentos", "documentos", _safe_load(get_documentos, "documentos"), ["nome"], ["formato"], ["orientacao", "observacoes"]),
+        ("Autorizações", "autorizacoes", _safe_load(get_autorizacoes, "autorizacoes"), ["orientacao"], ["momento_autorizacao", "meio_solicitacao"], ["quem_solicita", "prazo", "observacoes"]),
+        ("Coberturas", "coberturas", _safe_load(get_coberturas, "coberturas"), ["restricoes_cobertura", "acomodacao"], ["coberto"], ["acompanhante", "observacoes"]),
+        ("Contatos", "contatos", _safe_load(get_contatos, "contatos"), ["nome_setor", "finalidade"], ["tipo", "contato"], ["responsavel", "horario_atendimento", "observacoes"]),
+        ("Contingências", "contingencias", _safe_load(get_contingencias, "contingencias"), ["titulo"], ["prioridade"], ["descricao", "orientacao_alternativa", "contato_alternativo"]),
+        ("Dicas operacionais", "dicas_operacionais", _safe_load(get_dicas_operacionais, "dicas_operacionais"), ["titulo", "categoria"], ["palavras_chave"], ["dica"]),
     ]
 
-    for (
-        category,
-        source_dataset,
-        dataframe,
-        id_column,
-        title_columns,
-        subtitle_columns,
-        description_columns,
-        operator_column,
-        plan_column,
-    ) in datasets:
-        if dataframe is None or dataframe.empty:
+    for category, source, dataframe, title_cols, subtitle_cols, desc_cols in specs:
+        if dataframe.empty:
             continue
-
-        for _, row in dataframe.iterrows():
-            title = _first_available(
-                row,
-                title_columns,
-            )
-
-            subtitle_values = [
-                _safe_value(row, column)
-                for column in subtitle_columns
-            ]
-
-            description_values = [
-                _safe_value(row, column)
-                for column in description_columns
-            ]
-
-            subtitle = " • ".join(
-                value
-                for value in subtitle_values
-                if value
-            )
-
-            description = " | ".join(
-                value
-                for value in description_values
-                if value
-            )
-
-            items.append(
-                {
-                    "result_id": _safe_value(
-                        row,
-                        id_column,
-                    ),
-                    "category": category,
-                    "title": title,
-                    "subtitle": subtitle,
-                    "description": description,
-                    "operator_id": _safe_value(
-                        row,
-                        operator_column,
-                    ),
-                    "plan_id": (
-                        _safe_value(
-                            row,
-                            plan_column,
-                        )
-                        if plan_column
-                        else ""
-                    ),
-                    "source_dataset": source_dataset,
-                }
-            )
-
+        for index, row in dataframe.iterrows():
+            operator_id = _safe(row, "operadora_id") or (_safe(row, "id") if source == "operadoras" else "")
+            plan_id = _safe(row, "plano_id") or (_safe(row, "id") if source == "planos" else "")
+            title = _first(row, title_cols) or f"{category} sem título"
+            subtitle_parts = [operator_names.get(operator_id, ""), plan_names.get(plan_id, "")]
+            subtitle_parts.extend(_safe(row, col) for col in subtitle_cols)
+            description_parts = [_safe(row, col) for col in desc_cols]
+            items.append({
+                "result_id": _safe(row, "id") or str(index),
+                "category": category,
+                "title": title,
+                "subtitle": " • ".join(dict.fromkeys(v for v in subtitle_parts if v)),
+                "description": " | ".join(v for v in description_parts if v),
+                "operator_id": operator_id,
+                "plan_id": plan_id,
+                "source_dataset": source,
+            })
     return items
 
 
-def search_global(
-    query: str,
-    limit: int = 30,
-) -> list[SearchResult]:
-    """Pesquisa em todos os módulos indexados."""
-
-    normalized_query = normalize_text(query)
-
-    if len(normalized_query) < 2:
+def search_global(query: str, limit: int = 30) -> list[SearchResult]:
+    if len(normalize_text(query)) < 2:
         return []
-
-    terms = _expand_query(
-        query,
-    )
-
+    terms = _expand_query(query)
     results: list[SearchResult] = []
-
     for item in build_search_index():
-        result = _create_result(
-            query=query,
-            terms=terms,
-            result_id=item["result_id"],
-            category=item["category"],
-            title=item["title"],
-            subtitle=item["subtitle"],
-            description=item["description"],
-            operator_id=item["operator_id"],
-            plan_id=item["plan_id"],
+        score = _relevance(query, terms, item["title"], item["subtitle"], item["description"])
+        if score <= 0:
+            continue
+        results.append(SearchResult(
+            result_id=item["result_id"], category=item["category"], title=item["title"],
+            subtitle=item["subtitle"], description=shorten_text(item["description"]),
+            operator_id=item["operator_id"], plan_id=item["plan_id"], relevance=score,
             source_dataset=item["source_dataset"],
-        )
-
-        if result is not None:
-            results.append(result)
-
-    results.sort(
-        key=lambda item: (
-            -item.relevance,
-            item.category,
-            item.title,
-        )
-    )
-
+        ))
+    results.sort(key=lambda item: (-item.relevance, item.category, item.title))
     return results[:limit]
