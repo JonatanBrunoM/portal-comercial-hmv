@@ -7,6 +7,9 @@ class CacheSettings:
 
     OPERADORAS: int = 1800
     PLANOS: int = 1800
+    LOCAIS_ATENDIMENTO: int = 1800
+    TIPOS_ATENDIMENTO: int = 1800
+    PLANO_LOCAIS: int = 1800
     PORTAIS: int = 1800
     ELEGIBILIDADE: int = 1800
     DOCUMENTOS: int = 1800
@@ -29,6 +32,9 @@ CACHE_SETTINGS = CacheSettings()
 DATASETS = {
     "operadoras": "operadoras",
     "planos": "planos",
+    "locais_atendimento": "locais_atendimento",
+    "tipos_atendimento": "tipos_atendimento",
+    "plano_locais": "plano_locais",
     "portais": "portais",
     "elegibilidade": "elegibilidade",
     "documentos": "documentos",
