@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from components.hero import render_hero
+from components.portal_cards import render_portal_card
 from core.data_service import get_operadoras, get_planos, get_portais
 
 
@@ -13,35 +14,76 @@ def _safe(row: pd.Series, column: str) -> str:
 
 
 def _maps():
-    ops, plans = get_operadoras(), get_planos()
-    op_names = {str(r["id"]): (r.get("nome_curto") or r.get("nome") or "") for _, r in ops.iterrows()}
-    plan_names = {str(r["id"]): (r.get("nome_padronizado") or r.get("nome") or "") for _, r in plans.iterrows()}
-    return op_names, plan_names
+    operadoras = get_operadoras()
+    planos = get_planos()
+
+    operator_names = {
+        str(row["id"]): (row.get("nome_curto") or row.get("nome") or "")
+        for _, row in operadoras.iterrows()
+    }
+    plan_names = {
+        str(row["id"]): (row.get("nome_padronizado") or row.get("nome") or "")
+        for _, row in planos.iterrows()
+    }
+
+    return operator_names, plan_names
 
 
 def render_portais() -> None:
-    render_hero(eyebrow="Acessos operacionais", title="Portais", description="Consulte os portais das operadoras, finalidades, links e orientações de acesso.")
+    render_hero(
+        eyebrow="Acessos operacionais",
+        title="Portais e Credenciais",
+        description=(
+            "Consulte os portais das operadoras, orientações de acesso "
+            "e credenciais institucionais disponíveis."
+        ),
+    )
+
     try:
-        df = get_portais(); op_names, plan_names = _maps()
+        dataframe = get_portais()
+        operator_names, plan_names = _maps()
     except Exception:
-        st.error("Não foi possível carregar os portais neste momento."); return
-    if df.empty:
-        st.info("Nenhum portal cadastrado até o momento."); return
-    query = st.text_input("Pesquisar portal", placeholder="Operadora, portal ou finalidade...")
+        st.error("Não foi possível carregar os portais neste momento.")
+        return
+
+    if dataframe.empty:
+        st.info("Nenhum portal cadastrado até o momento.")
+        return
+
+    query = st.text_input(
+        "Pesquisar portal",
+        placeholder="Operadora, portal ou finalidade...",
+    )
+
     if query.strip():
-        term=query.casefold()
-        mask=df.apply(lambda r: term in " ".join([_safe(r,"nome"), _safe(r,"tipo"), op_names.get(_safe(r,"operadora_id"),""), plan_names.get(_safe(r,"plano_id"),"")]).casefold(), axis=1)
-        df=df[mask]
-    st.caption(f"{len(df)} portal(is) encontrado(s).")
-    for _, row in df.iterrows():
-        with st.container(border=True):
-            st.markdown(f"### 🌐 {_safe(row,'nome') or 'Portal sem nome'}")
-            op=op_names.get(_safe(row,"operadora_id"), "Operadora não identificada")
-            plan=plan_names.get(_safe(row,"plano_id"), "")
-            st.caption(" • ".join(v for v in [op, plan, _safe(row,"tipo")] if v))
-            if _safe(row,"instrucao_acesso"): st.write(_safe(row,"instrucao_acesso"))
-            if _safe(row,"dica_geral_acesso"): st.info(_safe(row,"dica_geral_acesso"), icon="💡")
-            if _safe(row,"observacoes"): st.caption(_safe(row,"observacoes"))
-            url=_safe(row,"url")
-            if url: st.link_button("Abrir portal", url, use_container_width=False)
-            if str(row.get("exige_login", False)).lower() in {"true","1"}: st.caption("🔐 Este portal exige autenticação.")
+        term = query.casefold()
+        mask = dataframe.apply(
+            lambda row: term
+            in " ".join(
+                [
+                    _safe(row, "nome"),
+                    _safe(row, "tipo"),
+                    operator_names.get(_safe(row, "operadora_id"), ""),
+                    plan_names.get(_safe(row, "plano_id"), ""),
+                ]
+            ).casefold(),
+            axis=1,
+        )
+        dataframe = dataframe[mask]
+
+    st.caption(f"{len(dataframe)} portal(is) encontrado(s).")
+
+    for _, portal in dataframe.iterrows():
+        operator_name = operator_names.get(
+            _safe(portal, "operadora_id"),
+            "Operadora não identificada",
+        )
+        plan_name = plan_names.get(_safe(portal, "plano_id"), "")
+
+        render_portal_card(
+            portal,
+            operator_name=operator_name,
+            plan_name=plan_name,
+            show_credentials=True,
+            key_prefix="portals_page",
+        )
