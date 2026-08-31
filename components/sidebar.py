@@ -12,16 +12,16 @@ from core.auth_service import (
 
 
 NAVIGATION_ITEMS = {
-    "Início": "⌂",
-    "Pesquisa": "⌕",
-    "Operadoras": "▦",
-    "Portais": "◎",
-    "Documentos": "▤",
-    "Contatos": "☎",
-    "Consultores": "♙",
-    "Comunicados": "◖",
-    "Contingências": "△",
-    "Administração": "⚙",
+    "Início": "🏠",
+    "Pesquisa": "🔎",
+    "Operadoras": "🏥",
+    "Portais": "🌐",
+    "Documentos": "📄",
+    "Contatos": "☎️",
+    "Consultores": "👥",
+    "Comunicados": "📢",
+    "Contingências": "⚠️",
+    "Administração": "⚙️",
 }
 
 
