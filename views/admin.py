@@ -32,6 +32,20 @@ from core.admin_rules_service import (
     save_document,
     save_eligibility,
 )
+from core.admin_operational_content_service import (
+    get_all_announcements,
+    get_all_consultants,
+    get_all_contacts,
+    get_all_contingencies,
+    get_all_tips,
+    get_all_wallets,
+    save_announcement,
+    save_consultant,
+    save_contact,
+    save_contingency,
+    save_tip,
+    save_wallet,
+)
 from core.auth_service import get_current_profile
 from core.credentials_service import format_timestamp, get_credential_history
 from core.data_service import (
@@ -1207,6 +1221,637 @@ def _render_rules_backoffice() -> None:
     with tab_documents:
         _render_document_management()
 
+
+def _date_value(value: object):
+    parsed = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed):
+        return None
+    return parsed.date()
+
+
+def _iso_datetime(date_value, end_of_day: bool = False) -> str | None:
+    if not date_value:
+        return None
+    suffix = "23:59:59-03:00" if end_of_day else "00:00:00-03:00"
+    return f"{date_value.isoformat()}T{suffix}"
+
+
+def _render_contact_management() -> None:
+    st.markdown("### Contatos")
+    st.caption("Mantenha os canais de suporte, autorização, relacionamento e atendimento das operadoras.")
+
+    try:
+        dataframe = get_all_contacts()
+        operators = get_all_operators()
+        plans = get_all_plans()
+    except Exception:
+        st.error("Não foi possível carregar os contatos.")
+        return
+
+    ids, labels = _options(dataframe, ("nome_setor", "finalidade", "contato"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome"))
+
+    mode = st.radio(
+        "Ação do contato",
+        ["Editar contato existente", "Cadastrar novo contato"],
+        horizontal=True,
+        key="admin_contact_mode",
+    )
+
+    record_id = ""
+    current = {}
+    if mode == "Editar contato existente":
+        if not ids:
+            st.info("Nenhum contato cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Contato",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_contact_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    selected_operator = _safe(current.get("operadora_id"))
+    filtered_plan_ids = [
+        plan_id for plan_id in plan_ids
+        if _safe(_row_by_id(plans, plan_id).get("operadora_id")) == selected_operator
+    ] if selected_operator else plan_ids
+
+    with st.form("admin_contact_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            sector_name = st.text_input("Setor / nome do contato *", value=_safe(current.get("nome_setor")))
+            purpose = st.text_input("Finalidade", value=_safe(current.get("finalidade")), placeholder="Ex.: autorização, suporte ao portal")
+            contact_type = st.selectbox(
+                "Tipo de contato",
+                ["Telefone", "E-mail", "WhatsApp", "Portal", "Outro"],
+                index=_index(
+                    ["Telefone", "E-mail", "WhatsApp", "Portal", "Outro"],
+                    current.get("tipo"),
+                ),
+            )
+            contact = st.text_input("Contato *", value=_safe(current.get("contato")))
+        with c2:
+            operator_id = st.selectbox(
+                "Operadora *",
+                operator_ids,
+                index=_index(operator_ids, current.get("operadora_id")),
+                format_func=lambda item: operator_labels.get(item, item),
+            ) if operator_ids else ""
+            plan_options = [None] + filtered_plan_ids
+            plan_id = st.selectbox(
+                "Plano",
+                plan_options,
+                index=_index(plan_options, current.get("plano_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else plan_labels.get(item, item),
+            )
+            responsible = st.text_input("Responsável", value=_safe(current.get("responsavel")))
+            service_hours = st.text_input("Horário de atendimento", value=_safe(current.get("horario_atendimento")))
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=100)
+        submitted = st.form_submit_button("Salvar contato", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_contact(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                sector_name=sector_name,
+                purpose=purpose,
+                contact_type=contact_type,
+                contact=contact,
+                responsible=responsible,
+                service_hours=service_hours,
+                observations=observations,
+                status=status,
+            )
+            st.success("Contato salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o contato.")
+
+
+def _render_consultant_management() -> None:
+    st.markdown("### Consultores")
+    st.caption("Cadastre os consultores e, em seguida, vincule-os às operadoras e planos atendidos.")
+
+    try:
+        consultants = get_all_consultants()
+        wallets = get_all_wallets()
+        operators = get_all_operators()
+        plans = get_all_plans()
+    except Exception:
+        st.error("Não foi possível carregar os consultores.")
+        return
+
+    consultant_ids, consultant_labels = _options(consultants, ("nome", "cargo", "email"))
+    wallet_ids, wallet_labels = _options(wallets, ("papel", "codigo"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome"))
+
+    st.markdown("#### Cadastro do consultor")
+    mode = st.radio(
+        "Ação do consultor",
+        ["Editar consultor existente", "Cadastrar novo consultor"],
+        horizontal=True,
+        key="admin_consultant_mode",
+    )
+    record_id = ""
+    current = {}
+    if mode == "Editar consultor existente":
+        if consultant_ids:
+            record_id = st.selectbox(
+                "Consultor",
+                consultant_ids,
+                format_func=lambda item: consultant_labels.get(item, item),
+                key="admin_consultant_selected",
+            )
+            current = _row_by_id(consultants, record_id)
+        else:
+            st.info("Nenhum consultor cadastrado.")
+
+    with st.form("admin_consultant_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            name = st.text_input("Nome *", value=_safe(current.get("nome")))
+            role_title = st.text_input("Cargo", value=_safe(current.get("cargo")))
+        with c2:
+            email = st.text_input("E-mail", value=_safe(current.get("email")))
+            phone = st.text_input("Telefone", value=_safe(current.get("telefone")))
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+        submitted = st.form_submit_button("Salvar consultor", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_consultant(
+                record_id=record_id or None,
+                code=code,
+                name=name,
+                role_title=role_title,
+                email=email,
+                phone=phone,
+                observations=observations,
+                status=status,
+            )
+            st.success("Consultor salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o consultor.")
+
+    st.divider()
+    st.markdown("#### Carteira / vínculo")
+    st.caption("Um mesmo consultor pode ter mais de um vínculo com operadoras ou planos.")
+
+    wallet_mode = st.radio(
+        "Ação do vínculo",
+        ["Editar vínculo existente", "Cadastrar novo vínculo"],
+        horizontal=True,
+        key="admin_wallet_mode",
+    )
+    wallet_id = ""
+    wallet_current = {}
+    if wallet_mode == "Editar vínculo existente":
+        if wallet_ids:
+            wallet_id = st.selectbox(
+                "Vínculo",
+                wallet_ids,
+                format_func=lambda item: wallet_labels.get(item, item),
+                key="admin_wallet_selected",
+            )
+            wallet_current = _row_by_id(wallets, wallet_id)
+        else:
+            st.info("Nenhum vínculo cadastrado.")
+
+    with st.form("admin_wallet_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            consultant_id = st.selectbox(
+                "Consultor *",
+                consultant_ids,
+                index=_index(consultant_ids, wallet_current.get("consultor_id")),
+                format_func=lambda item: consultant_labels.get(item, item),
+            ) if consultant_ids else ""
+            operator_id = st.selectbox(
+                "Operadora *",
+                operator_ids,
+                index=_index(operator_ids, wallet_current.get("operadora_id")),
+                format_func=lambda item: operator_labels.get(item, item),
+            ) if operator_ids else ""
+        with c2:
+            plan_options = [None] + plan_ids
+            plan_id = st.selectbox(
+                "Plano",
+                plan_options,
+                index=_index(plan_options, wallet_current.get("plano_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else plan_labels.get(item, item),
+            )
+            role = st.text_input("Papel / atuação", value=_safe(wallet_current.get("papel")), placeholder="Ex.: relacionamento comercial")
+            wallet_status = st.selectbox(
+                "Status do vínculo",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(wallet_current.get("status")) != "Inativo" else 1,
+            )
+
+        wallet_observations = st.text_area(
+            "Observações do vínculo",
+            value=_safe(wallet_current.get("observacoes")),
+            height=90,
+        )
+        wallet_submitted = st.form_submit_button("Salvar vínculo", type="primary", use_container_width=True)
+
+    if wallet_submitted:
+        try:
+            save_wallet(
+                record_id=wallet_id or None,
+                consultant_id=consultant_id,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                role=role,
+                observations=wallet_observations,
+                status=wallet_status,
+            )
+            st.success("Vínculo salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o vínculo.")
+
+
+def _render_announcement_management() -> None:
+    st.markdown("### Comunicados")
+    st.caption("Publique avisos gerais ou específicos de uma operadora com período de vigência e prioridade.")
+
+    try:
+        dataframe = get_all_announcements()
+        operators = get_all_operators()
+    except Exception:
+        st.error("Não foi possível carregar os comunicados.")
+        return
+
+    ids, labels = _options(dataframe, ("titulo", "categoria", "prioridade"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+
+    mode = st.radio(
+        "Ação do comunicado",
+        ["Editar comunicado existente", "Cadastrar novo comunicado"],
+        horizontal=True,
+        key="admin_announcement_mode",
+    )
+    record_id = ""
+    current = {}
+    if mode == "Editar comunicado existente":
+        if not ids:
+            st.info("Nenhum comunicado cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Comunicado",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_announcement_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    current_start = _date_value(current.get("inicio_em"))
+    current_end = _date_value(current.get("fim_em"))
+
+    with st.form("admin_announcement_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            title = st.text_input("Título *", value=_safe(current.get("titulo")))
+            category = st.text_input("Categoria", value=_safe(current.get("categoria")))
+            priority_values = ["Normal", "Alta", "Urgente", "Baixa"]
+            priority = st.selectbox(
+                "Prioridade",
+                priority_values,
+                index=_index(priority_values, current.get("prioridade")),
+            )
+            operator_options = [None] + operator_ids
+            operator_id = st.selectbox(
+                "Operadora",
+                operator_options,
+                index=_index(operator_options, current.get("operadora_id")),
+                format_func=lambda item: "Geral / todas as operadoras" if item is None else operator_labels.get(item, item),
+            )
+        with c2:
+            target_audience = st.text_input("Público-alvo", value=_safe(current.get("publico_alvo")))
+            responsible = st.text_input("Responsável", value=_safe(current.get("responsavel")))
+            start_at = st.date_input("Início da publicação", value=current_start)
+            has_end = st.checkbox("Definir data final", value=bool(current_end))
+            end_at = st.date_input("Fim da publicação", value=current_end) if has_end else None
+            featured = st.checkbox("Destacar comunicado", value=bool(current.get("destaque", False)))
+            status_values = ["Rascunho", "Publicado", "Inativo"]
+            status = st.selectbox(
+                "Status",
+                status_values,
+                index=_index(status_values, current.get("status")),
+            )
+
+        summary = st.text_area("Resumo", value=_safe(current.get("resumo")), height=80)
+        content = st.text_area("Conteúdo *", value=_safe(current.get("conteudo")), height=180)
+        submitted = st.form_submit_button("Salvar comunicado", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            if start_at and end_at and end_at < start_at:
+                raise ValueError("A data final não pode ser anterior à data inicial.")
+            save_announcement(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                title=title,
+                summary=summary,
+                content=content,
+                category=category,
+                priority=priority,
+                target_audience=target_audience,
+                start_at=_iso_datetime(start_at),
+                end_at=_iso_datetime(end_at, end_of_day=True),
+                featured=featured,
+                status=status,
+                responsible=responsible,
+            )
+            st.success("Comunicado salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o comunicado.")
+
+
+def _render_contingency_management() -> None:
+    st.markdown("### Contingências")
+    st.caption("Registre indisponibilidades e orientações alternativas com vigência definida.")
+
+    try:
+        dataframe = get_all_contingencies()
+        operators = get_all_operators()
+        plans = get_all_plans()
+        locations = get_all_locations()
+    except Exception:
+        st.error("Não foi possível carregar as contingências.")
+        return
+
+    ids, labels = _options(dataframe, ("titulo", "prioridade", "codigo"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome"))
+    location_ids, location_labels = _options(locations, ("nome", "codigo"))
+
+    mode = st.radio(
+        "Ação da contingência",
+        ["Editar contingência existente", "Cadastrar nova contingência"],
+        horizontal=True,
+        key="admin_contingency_mode",
+    )
+    record_id = ""
+    current = {}
+    if mode == "Editar contingência existente":
+        if not ids:
+            st.info("Nenhuma contingência cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Contingência",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_contingency_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    current_start = _date_value(current.get("inicio_em"))
+    current_end = _date_value(current.get("fim_em"))
+
+    with st.form("admin_contingency_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            title = st.text_input("Título *", value=_safe(current.get("titulo")))
+            operator_options = [None] + operator_ids
+            operator_id = st.selectbox(
+                "Operadora",
+                operator_options,
+                index=_index(operator_options, current.get("operadora_id")),
+                format_func=lambda item: "Geral / todas as operadoras" if item is None else operator_labels.get(item, item),
+            )
+            plan_options = [None] + plan_ids
+            plan_id = st.selectbox(
+                "Plano",
+                plan_options,
+                index=_index(plan_options, current.get("plano_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else plan_labels.get(item, item),
+            )
+            location_options = [None] + location_ids
+            location_id = st.selectbox(
+                "Local",
+                location_options,
+                index=_index(location_options, current.get("local_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else location_labels.get(item, item),
+            )
+        with c2:
+            priority_values = ["Baixa", "Média", "Alta", "Crítica"]
+            priority = st.selectbox(
+                "Prioridade",
+                priority_values,
+                index=_index(priority_values, current.get("prioridade")),
+            )
+            start_at = st.date_input("Início", value=current_start)
+            has_end = st.checkbox("Definir previsão/fim", value=bool(current_end))
+            end_at = st.date_input("Previsão / fim", value=current_end) if has_end else None
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+            alternative_contact = st.text_input(
+                "Contato alternativo",
+                value=_safe(current.get("contato_alternativo")),
+            )
+
+        description = st.text_area("Descrição *", value=_safe(current.get("descricao")), height=120)
+        alternative_guidance = st.text_area(
+            "Orientação alternativa",
+            value=_safe(current.get("orientacao_alternativa")),
+            height=120,
+        )
+        submitted = st.form_submit_button("Salvar contingência", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            if start_at and end_at and end_at < start_at:
+                raise ValueError("A data final não pode ser anterior à data inicial.")
+            save_contingency(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                title=title,
+                description=description,
+                alternative_guidance=alternative_guidance,
+                alternative_contact=alternative_contact,
+                priority=priority,
+                start_at=_iso_datetime(start_at),
+                end_at=_iso_datetime(end_at, end_of_day=True),
+                status=status,
+            )
+            st.success("Contingência salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a contingência.")
+
+
+def _render_tip_management() -> None:
+    st.markdown("### Dicas operacionais")
+    st.caption("Mantenha orientações rápidas que ajudam as equipes no dia a dia.")
+
+    try:
+        dataframe = get_all_tips()
+        operators = get_all_operators()
+        plans = get_all_plans()
+        locations = get_all_locations()
+    except Exception:
+        st.error("Não foi possível carregar as dicas operacionais.")
+        return
+
+    ids, labels = _options(dataframe, ("titulo", "categoria", "codigo"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome"))
+    location_ids, location_labels = _options(locations, ("nome", "codigo"))
+
+    mode = st.radio(
+        "Ação da dica",
+        ["Editar dica existente", "Cadastrar nova dica"],
+        horizontal=True,
+        key="admin_tip_mode",
+    )
+    record_id = ""
+    current = {}
+    if mode == "Editar dica existente":
+        if not ids:
+            st.info("Nenhuma dica cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Dica operacional",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_tip_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    with st.form("admin_tip_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            title = st.text_input("Título *", value=_safe(current.get("titulo")))
+            category = st.text_input("Categoria", value=_safe(current.get("categoria")))
+            operator_id = st.selectbox(
+                "Operadora *",
+                operator_ids,
+                index=_index(operator_ids, current.get("operadora_id")),
+                format_func=lambda item: operator_labels.get(item, item),
+            ) if operator_ids else ""
+        with c2:
+            plan_options = [None] + plan_ids
+            plan_id = st.selectbox(
+                "Plano",
+                plan_options,
+                index=_index(plan_options, current.get("plano_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else plan_labels.get(item, item),
+            )
+            location_options = [None] + location_ids
+            location_id = st.selectbox(
+                "Local",
+                location_options,
+                index=_index(location_options, current.get("local_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else location_labels.get(item, item),
+            )
+            featured = st.checkbox("Destacar dica", value=bool(current.get("destaque", False)))
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+
+        keywords = st.text_input(
+            "Palavras-chave",
+            value=_safe(current.get("palavras_chave")),
+            placeholder="Ex.: senha, autorização, urgência",
+        )
+        tip = st.text_area("Orientação / dica *", value=_safe(current.get("dica")), height=150)
+        submitted = st.form_submit_button("Salvar dica operacional", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_tip(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                title=title,
+                category=category,
+                tip=tip,
+                keywords=keywords,
+                featured=featured,
+                status=status,
+            )
+            st.success("Dica operacional salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a dica operacional.")
+
+
+def _render_operational_content_backoffice() -> None:
+    st.markdown("## Conteúdo operacional")
+    st.info(
+        "Gerencie os canais de apoio, responsáveis, avisos, contingências e orientações rápidas "
+        "que complementam as regras de atendimento.",
+        icon="🧭",
+    )
+
+    tab_contacts, tab_consultants, tab_announcements, tab_contingencies, tab_tips = st.tabs([
+        "☎️ Contatos",
+        "🤝 Consultores",
+        "📣 Comunicados",
+        "🚨 Contingências",
+        "💡 Dicas operacionais",
+    ])
+
+    with tab_contacts:
+        _render_contact_management()
+    with tab_consultants:
+        _render_consultant_management()
+    with tab_announcements:
+        _render_announcement_management()
+    with tab_contingencies:
+        _render_contingency_management()
+    with tab_tips:
+        _render_tip_management()
+
 def _render_portals_backoffice() -> None:
     st.markdown("## Portais e credenciais")
     st.info(
@@ -1243,10 +1888,11 @@ def render_admin() -> None:
         st.success("Cache atualizado.")
         st.rerun()
 
-    tab_overview, tab_master, tab_rules, tab_portals, tab_data, tab_users = st.tabs([
+    tab_overview, tab_master, tab_rules, tab_operational, tab_portals, tab_data, tab_users = st.tabs([
         "📊 Visão geral",
         "🧩 Cadastros-base",
         "📚 Regras de atendimento",
+        "🧭 Conteúdo operacional",
         "🔐 Portais e credenciais",
         "🗃️ Dados",
         "👥 Usuários",
@@ -1258,6 +1904,8 @@ def render_admin() -> None:
         _render_master_data_backoffice()
     with tab_rules:
         _render_rules_backoffice()
+    with tab_operational:
+        _render_operational_content_backoffice()
     with tab_portals:
         _render_portals_backoffice()
     with tab_data:
