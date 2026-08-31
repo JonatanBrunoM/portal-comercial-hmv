@@ -70,6 +70,41 @@ def apply_theme() -> None:
             padding-top: 1.4rem;
         }}
 
+        section[data-testid="stSidebar"] [role="radiogroup"] {{
+            gap: 0.25rem;
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"] {{
+            min-height: 42px;
+            padding: 0.52rem 0.7rem;
+            border-radius: 10px;
+            color: var(--text);
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"]:hover {{
+            background-color: var(--primary-light);
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"] p {{
+            color: var(--text) !important;
+            font-weight: 600;
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: var(--primary-light);
+            box-shadow: inset 3px 0 0 var(--primary);
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"]:has(input:checked) p {{
+            color: var(--primary-dark) !important;
+            font-weight: 750;
+        }}
+
+        section[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-child {{
+            display: none;
+        }}
+
         h1,
         h2,
         h3,
