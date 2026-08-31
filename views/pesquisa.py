@@ -2,21 +2,34 @@ import streamlit as st
 
 from components.hero import render_hero
 from components.search_results import render_search_results
-from core.search_service import search_global
+from core.search_service import analyze_search_query, search_global
 
 
 EXAMPLE_QUERIES = [
     "Bradesco autorização",
     "CASSI telefone",
     "Unimed portal",
-    "Bradesco comunicado",
+    "Como autorizar CASSI",
 ]
 
 
 def _apply_example_query(example: str) -> None:
-    """Callback executado antes do rerun do Streamlit."""
     st.session_state["full_search_query"] = example
     st.session_state["last_search_query"] = example
+
+
+def _render_query_context(analysis: dict[str, object]) -> None:
+    operator_names = analysis.get("operator_names") or []
+    intents = analysis.get("category_intents") or []
+
+    parts: list[str] = []
+    if operator_names:
+        parts.append("Operadora: " + ", ".join(operator_names))
+    if intents:
+        parts.append("Assunto: " + ", ".join(intents))
+
+    if parts:
+        st.caption(" · ".join(parts))
 
 
 def render_pesquisa() -> None:
@@ -24,14 +37,11 @@ def render_pesquisa() -> None:
         eyebrow="Consulta central",
         title="Pesquisa Global",
         description=(
-            "Pesquise do jeito que você pensaria no dia a dia. "
-            "O Portal procura a informação em toda a base comercial."
+            "Digite a operadora e o que você precisa. "
+            "A pesquisa consulta toda a base comercial e leva você ao ponto certo."
         ),
     )
 
-    # O widget passa a ser a única fonte de verdade da pesquisa.
-    # A inicialização acontece antes da criação do text_input para evitar
-    # StreamlitAPIException ao tentar alterar seu estado posteriormente.
     if "full_search_query" not in st.session_state:
         st.session_state["full_search_query"] = st.session_state.get(
             "last_search_query",
@@ -43,7 +53,6 @@ def render_pesquisa() -> None:
         placeholder="Ex.: Bradesco autorização, CASSI telefone, Unimed portal...",
         key="full_search_query",
     )
-
     st.session_state["last_search_query"] = query
 
     if len(query.strip()) < 2:
@@ -61,11 +70,14 @@ def render_pesquisa() -> None:
                 )
 
         st.info(
-            "Digite pelo menos dois caracteres. Você pode combinar "
-            "a operadora com a necessidade, como “Bradesco senha”, "
-            "“CASSI elegibilidade” ou “Unimed contato”."
+            "Você pode pesquisar de forma natural, por exemplo: "
+            "“como autorizar CASSI”, “telefone Bradesco”, "
+            "“senha portal Unimed” ou “documentos internação Bradesco”."
         )
         return
+
+    analysis = analyze_search_query(query)
+    _render_query_context(analysis)
 
     with st.spinner("Consultando toda a base comercial..."):
         results = search_global(query=query, limit=50)
@@ -73,4 +85,6 @@ def render_pesquisa() -> None:
     render_search_results(
         results=results,
         key_prefix="full_search",
+        query=query,
+        query_analysis=analysis,
     )
