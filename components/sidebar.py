@@ -79,109 +79,63 @@ def navigate_to(
 
 
 def render_user_area() -> None:
-    """
-    Renderiza os dados do usuário
-    no rodapé da sidebar.
-    """
+    """Renderiza a conta em formato compatível com a sidebar compacta."""
 
-    profile = (
-        get_current_profile()
-    )
-
-    google_user = (
-        get_google_user()
-    )
+    profile = get_current_profile()
+    google_user = get_google_user()
 
     if not google_user:
         return
 
     nome = (
-        (profile or {}).get(
-            "nome"
-        )
-        or google_user.get(
-            "name"
-        )
+        (profile or {}).get("nome")
+        or google_user.get("name")
         or "Usuário"
     )
-
-    email = (
-        (profile or {}).get(
-            "email"
-        )
-        or google_user.get(
-            "email"
-        )
-        or ""
-    )
-
-    role = (
-        (profile or {}).get(
-            "role",
-            "usuario",
-        )
-    )
-
+    role = (profile or {}).get("role", "usuario")
     foto_url = (
-        (profile or {}).get(
-            "foto_url"
-        )
-        or google_user.get(
-            "picture"
-        )
+        (profile or {}).get("foto_url")
+        or google_user.get("picture")
     )
+
+    role_label = "Administrador" if role == "admin" else "Usuário"
 
     st.html(
         '<div class="portal-sidebar-section-label">Sua conta</div>'
     )
 
-    with st.container(border=True):
-        col_avatar, col_user = (
-            st.columns(
-                [0.22, 0.78],
-                vertical_alignment="center",
+    if foto_url:
+        col_avatar, col_copy = st.columns(
+            [0.20, 0.80],
+            vertical_alignment="center",
+        )
+        with col_avatar:
+            st.image(foto_url, width=42)
+        with col_copy:
+            st.html(
+                f"""
+                <div class="portal-sidebar-user-copy">
+                    <div class="portal-sidebar-user-name">{nome}</div>
+                    <div class="portal-sidebar-user-role">{role_label}</div>
+                </div>
+                """
             )
+    else:
+        inicial = nome[:1].upper() if nome else "U"
+        st.html(
+            f"""
+            <div class="portal-sidebar-user-compact">
+                <div class="portal-sidebar-avatar-fallback">{inicial}</div>
+                <div class="portal-sidebar-user-copy">
+                    <div class="portal-sidebar-user-name">{nome}</div>
+                    <div class="portal-sidebar-user-role">{role_label}</div>
+                </div>
+            </div>
+            """
         )
 
-        with col_avatar:
-            if foto_url:
-                st.image(
-                    foto_url,
-                    width=42,
-                )
-
-            else:
-                inicial = (
-                    nome[:1].upper()
-                    if nome
-                    else "U"
-                )
-
-                st.markdown(
-                    f"### {inicial}"
-                )
-
-        with col_user:
-            st.markdown(
-                f"**{nome}**"
-            )
-
-            st.caption(
-                email
-            )
-
-        if role == "admin":
-            st.caption(
-                "⚙️ Administrador"
-            )
-
-        else:
-            st.caption(
-                "👤 Usuário"
-            )
-
     if st.button(
-        "Sair da conta",
+        "↪  Sair da conta",
         key="sidebar_logout",
         use_container_width=True,
     ):
@@ -226,12 +180,16 @@ def render_sidebar(
     with st.sidebar:
         sidebar_header = f"""
         <div class="portal-sidebar-header">
-            <div class="portal-sidebar-organization">
-                {APP_CONFIG.ORGANIZATION_NAME}
-            </div>
-
-            <div class="portal-sidebar-title">
-                {APP_CONFIG.APP_NAME}
+            <div class="portal-sidebar-brandmark">
+                <div class="portal-sidebar-brand-icon">M</div>
+                <div class="portal-sidebar-brand-copy">
+                    <div class="portal-sidebar-organization">
+                        {APP_CONFIG.ORGANIZATION_NAME}
+                    </div>
+                    <div class="portal-sidebar-title">
+                        {APP_CONFIG.APP_NAME}
+                    </div>
+                </div>
             </div>
         </div>
         """
