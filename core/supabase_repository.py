@@ -84,11 +84,7 @@ def _require_admin() -> dict:
 
 
 def check_supabase_connection() -> tuple[bool, str]:
-    """
-    Valida a conexão server-side com o Supabase.
-
-    A consulta é mínima e não retorna dados sensíveis.
-    """
+    """Valida a conexão server-side sem expor detalhes sensíveis."""
 
     _require_authenticated()
 
@@ -101,35 +97,45 @@ def check_supabase_connection() -> tuple[bool, str]:
             .execute()
         )
 
-        return True, "Conexão com o Supabase ativa."
+        return True, "Supabase conectado e operacional."
 
-    except Exception as error:
+    except Exception:
         return (
             False,
-            "Falha na conexão com o Supabase: "
-            f"{type(error).__name__}: {error}",
+            "Não foi possível validar a conexão com o Supabase. "
+            "Verifique os Secrets e tente novamente.",
         )
 
-def fetch_table(
+
+def fetch_records(
     table_name: str,
     *,
+    filters: dict[str, object] | None = None,
+    columns: str = "*",
     order_by: str | None = None,
     ascending: bool = True,
+    limit: int | None = None,
 ) -> pd.DataFrame:
     """
-    Busca todos os registros
-    de uma tabela.
+    Busca registros com filtros executados no Supabase.
+
+    Esta função é a base para serviços que não precisam carregar
+    uma tabela inteira antes de filtrar os dados em memória.
     """
 
     _require_authenticated()
 
     query = (
         get_supabase_client()
-        .table(
-            table_name
-        )
-        .select("*")
+        .table(table_name)
+        .select(columns)
     )
+
+    for column, value in (filters or {}).items():
+        if value is None:
+            query = query.is_(column, "null")
+        else:
+            query = query.eq(column, value)
 
     if order_by:
         query = query.order(
@@ -137,12 +143,25 @@ def fetch_table(
             desc=not ascending,
         )
 
-    response = (
-        query.execute()
-    )
+    if limit is not None:
+        query = query.limit(limit)
 
-    return pd.DataFrame(
-        response.data or []
+    response = query.execute()
+
+    return pd.DataFrame(response.data or [])
+
+def fetch_table(
+    table_name: str,
+    *,
+    order_by: str | None = None,
+    ascending: bool = True,
+) -> pd.DataFrame:
+    """Busca todos os registros de uma tabela."""
+
+    return fetch_records(
+        table_name,
+        order_by=order_by,
+        ascending=ascending,
     )
 
 
