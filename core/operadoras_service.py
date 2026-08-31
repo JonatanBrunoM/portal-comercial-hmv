@@ -16,6 +16,8 @@ from core.data_service import (
     get_planos,
     get_portais,
     get_consultores,
+    get_comunicados,
+    get_dicas_operacionais,
 )
 
 
@@ -136,3 +138,46 @@ def get_operadora_contatos(operator_id: str) -> pd.DataFrame:
 
 def get_operadora_contingencias(operator_id: str) -> pd.DataFrame:
     return _filter_by_operator(get_contingencias(), operator_id)
+
+
+def get_operadora_comunicados(operator_id: str) -> pd.DataFrame:
+    """Retorna os comunicados vinculados à operadora."""
+    return _filter_by_operator(get_comunicados(), operator_id)
+
+
+def get_operadora_dicas(operator_id: str) -> pd.DataFrame:
+    """Retorna as dicas operacionais vinculadas à operadora."""
+    return _filter_by_operator(get_dicas_operacionais(), operator_id)
+
+
+def get_operadora_consultores(operator_id: str) -> pd.DataFrame:
+    """Retorna os consultores vinculados à operadora por meio das carteiras."""
+    carteiras = _filter_by_operator(get_carteiras(), operator_id)
+    consultores = get_consultores()
+
+    if carteiras.empty or consultores.empty or "id" not in consultores.columns:
+        return consultores.iloc[0:0].copy()
+
+    consultant_ids = {
+        str(value).strip()
+        for value in carteiras.get("consultor_id", pd.Series(dtype=str)).dropna()
+        if str(value).strip()
+    }
+
+    if not consultant_ids:
+        return consultores.iloc[0:0].copy()
+
+    mask = consultores["id"].fillna("").astype(str).str.strip().isin(consultant_ids)
+    return consultores[mask].reset_index(drop=True)
+
+
+def get_operadora_counts(operator_id: str) -> dict[str, int]:
+    """Consolida contadores usados no cabeçalho da ficha da operadora."""
+    return {
+        "planos": len(get_operadora_planos(operator_id)),
+        "portais": len(get_operadora_portais(operator_id)),
+        "documentos": len(get_operadora_documentos(operator_id)),
+        "contatos": len(get_operadora_contatos(operator_id)),
+        "comunicados": len(get_operadora_comunicados(operator_id)),
+        "contingencias": len(get_operadora_contingencias(operator_id)),
+    }
