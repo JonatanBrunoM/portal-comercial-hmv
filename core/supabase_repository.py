@@ -297,3 +297,41 @@ def delete_record(
         )
         .execute()
     )
+
+def append_audit_event(
+    *,
+    action: str,
+    entity: str,
+    entity_id: str | None = None,
+    description: str | None = None,
+    previous_data: dict | None = None,
+    new_data: dict | None = None,
+) -> dict | None:
+    """
+    Registra um evento de auditoria para qualquer usuário autenticado.
+
+    Esta função é deliberadamente limitada à tabela audit_logs e não aceita
+    payload arbitrário do chamador. Nunca use para registrar senha, token,
+    cookie, chave de API ou conteúdo descriptografado.
+    """
+    profile = _require_authenticated()
+
+    payload = {
+        "usuario_id": profile.get("id"),
+        "acao": action,
+        "entidade": entity,
+        "entidade_id": entity_id,
+        "descricao": description,
+        "dados_anteriores": previous_data,
+        "dados_novos": new_data,
+    }
+
+    response = (
+        get_supabase_client()
+        .table("audit_logs")
+        .insert(payload)
+        .execute()
+    )
+
+    data = response.data or []
+    return data[0] if data else None
