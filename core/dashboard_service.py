@@ -50,12 +50,25 @@ def _safe(row: pd.Series, column: str) -> str:
 
 
 def _parse_date(value: object) -> pd.Timestamp | None:
+    """Converte datas do Supabase para comparação sem conflito de timezone.
+
+    Campos timestamptz chegam normalmente com timezone (UTC), enquanto
+    pd.Timestamp.today() é timezone-naive. Para o dashboard, interessa apenas
+    a data vigente no horário de Brasília.
+    """
     if value is None or pd.isna(value):
         return None
-    if isinstance(value, (date, datetime)):
-        return pd.Timestamp(value).normalize()
-    parsed = pd.to_datetime(str(value).strip(), errors="coerce")
-    return None if pd.isna(parsed) else pd.Timestamp(parsed).normalize()
+
+    parsed = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed):
+        return None
+
+    parsed = pd.Timestamp(parsed)
+
+    if parsed.tzinfo is not None:
+        parsed = parsed.tz_convert("America/Sao_Paulo").tz_localize(None)
+
+    return parsed.normalize()
 
 
 def _format_date(value: object) -> str:
