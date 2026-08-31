@@ -95,6 +95,13 @@ CATEGORY_ALIASES = {
     },
 }
 
+STOPWORDS = {
+    "a", "ao", "aos", "as", "como", "da", "das", "de", "do", "dos",
+    "e", "em", "na", "nas", "no", "nos", "o", "os", "para", "por",
+    "pra", "pro", "qual", "quais", "que", "um", "uma", "me", "eu",
+    "preciso", "quero", "ver", "consultar", "saber", "fazer", "sobre",
+}
+
 TERM_SYNONYMS = {
     "rm": {"ressonancia", "ressonancia magnetica"},
     "ressonancia": {"rm", "ressonancia magnetica"},
@@ -107,6 +114,18 @@ TERM_SYNONYMS = {
     "login": {"senha", "acesso", "credencial", "portal"},
     "credencial": {"senha", "login", "acesso", "portal"},
     "guia": {"documento", "formulario"},
+    "autorizar": {"autorizacao", "autorizacoes"},
+    "autoriza": {"autorizacao", "autorizacoes"},
+    "autorizado": {"autorizacao", "autorizacoes"},
+    "elegivel": {"elegibilidade", "beneficiario"},
+    "beneficiario": {"elegibilidade", "carteira"},
+    "coberto": {"cobertura", "coberturas"},
+    "cobrir": {"cobertura", "coberturas"},
+    "documentacao": {"documento", "documentos", "guia"},
+    "formulario": {"documento", "documentos", "guia"},
+    "internacao": {"internacao", "hospitalar"},
+    "urgencia": {"urgencia", "emergencia"},
+    "emergencia": {"emergencia", "urgencia"},
 }
 
 
@@ -173,7 +192,11 @@ def _published_notice(row: pd.Series) -> bool:
 
 def _expand_tokens(query: str) -> tuple[list[str], set[str]]:
     normalized_query = normalize_text(query)
-    base_tokens = [token for token in normalized_query.split() if len(token) >= 2]
+    base_tokens = [
+        token
+        for token in normalized_query.split()
+        if len(token) >= 2 and token not in STOPWORDS
+    ]
     expanded: set[str] = set(base_tokens)
 
     for token in list(base_tokens):
@@ -253,7 +276,19 @@ def _score_item(
             normalize_text(value)
             for value in TERM_SYNONYMS.get(token, set())
         }}
-        if not any(alternative and alternative in searchable for alternative in alternatives):
+
+        # Também considera sinônimos reversos. Isso faz, por exemplo,
+        # "autorizar" encontrar itens indexados como "autorização".
+        for source_term, synonyms in TERM_SYNONYMS.items():
+            normalized_synonyms = {normalize_text(value) for value in synonyms}
+            if token in normalized_synonyms:
+                alternatives.add(normalize_text(source_term))
+                alternatives.update(normalized_synonyms)
+
+        if not any(
+            alternative and alternative in searchable
+            for alternative in alternatives
+        ):
             missing.append(token)
 
     # Consultas com intenção de categoria podem ter o token atendido
@@ -289,17 +324,20 @@ def _score_item(
     # Associação da operadora é extremamente importante em consultas como
     # "bradesco autorização" ou "cassi telefone".
     for token in base_tokens:
-        if token in operator:
+        alternatives = {token, *{
+            normalize_text(value) for value in TERM_SYNONYMS.get(token, set())
+        }}
+        if any(term in operator for term in alternatives):
             score += 65
-        if token in plan:
+        if any(term in plan for term in alternatives):
             score += 45
-        if token in title:
+        if any(term in title for term in alternatives):
             score += 35
-        if token in category:
+        if any(term in category for term in alternatives):
             score += 30
-        if token in subtitle:
+        if any(term in subtitle for term in alternatives):
             score += 22
-        if token in description:
+        if any(term in description for term in alternatives):
             score += 14
 
     for term in expanded_terms:
@@ -530,6 +568,40 @@ def build_search_index() -> list[dict]:
 
     return items
 
+
+def analyze_search_query(query: str) -> dict[str, object]:
+    """Retorna metadados simples para orientar a apresentação dos resultados."""
+    normalized = normalize_text(query)
+    base_tokens, _ = _expand_tokens(query)
+    intents = _category_intents(query)
+
+    operator_names: list[str] = []
+    operadoras = _safe_load(get_operadoras, "operadoras")
+    if not operadoras.empty:
+        for _, row in operadoras.iterrows():
+            name = _first(row, ["nome_curto", "nome"])
+            normalized_name = normalize_text(name)
+            if normalized_name and (
+                normalized_name in normalized
+                or any(token in normalized_name for token in base_tokens)
+            ):
+                operator_names.append(name)
+
+    return {
+        "normalized_query": normalized,
+        "tokens": base_tokens,
+        "category_intents": sorted(intents),
+        "operator_names": list(dict.fromkeys(operator_names)),
+        "is_operator_only": bool(operator_names) and not intents and len(base_tokens) <= 2,
+        "is_specific": bool(intents) or len(base_tokens) >= 2,
+    }
+
+
+def group_search_results(results: list[SearchResult]) -> dict[str, list[SearchResult]]:
+    groups: dict[str, list[SearchResult]] = {}
+    for result in results:
+        groups.setdefault(result.category, []).append(result)
+    return groups
 
 def search_global(query: str, limit: int = 30) -> list[SearchResult]:
     normalized = normalize_text(query)
