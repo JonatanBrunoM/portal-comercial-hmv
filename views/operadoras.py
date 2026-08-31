@@ -49,13 +49,14 @@ def _render_planos(operator_id: str) -> None:
     for _, plano in planos.iterrows():
         plan_name = (
             _safe_text(plano, "nome_padronizado")
-            or _safe_text(plano, "nome")
             or "Plano sem nome"
         )
         plan_type = _safe_text(plano, "tipo_plano") or "Tipo não informado"
 
         with st.expander(f"📋 {plan_name}", expanded=False):
-            st.markdown(f"**Tipo:** {plan_type}")
+            col_1, col_2 = st.columns(2)
+            col_1.markdown(f"**Tipo:** {plan_type}")
+            col_2.markdown(f"**Código:** {_safe_text(plano, 'codigo') or 'Não informado'}")
 
             observation = _safe_text(plano, "observacao_resumida")
             if observation:
@@ -76,14 +77,11 @@ def _render_portais(operator_id: str) -> None:
         name = _safe_text(portal, "nome") or "Portal sem nome"
         url = _safe_text(portal, "url")
         portal_type = _safe_text(portal, "tipo")
-        unit = _safe_text(portal, "local_nome")
         instructions = _safe_text(portal, "instrucao_acesso")
 
         with st.expander(f"🌐 {name}", expanded=False):
             if portal_type:
                 st.markdown(f"**Tipo:** {portal_type}")
-            if unit:
-                st.markdown(f"**Unidade:** {unit}")
             if instructions:
                 st.markdown(f"**Orientação:** {instructions}")
             if url:
@@ -101,20 +99,17 @@ def _render_elegibilidade(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} regra(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Regra geral"
+        attendance_type = "Regra específica" if _safe_text(item, "tipo_atendimento_id") else "Regra geral"
 
         with st.expander(f"✅ {attendance_type}", expanded=False):
-            orientation = _safe_text(item, "orientacao")
-            unit = _safe_text(item, "local_nome")
-            required = _safe_text(item, "necessario")
-
-            if unit:
-                st.markdown(f"**Unidade:** {unit}")
-            if required:
-                st.markdown(f"**Necessária:** {required}")
-            if orientation:
+            how_to = _safe_text(item, "orientacao")
+            necessary = bool(item.get("necessario", True))
+            st.markdown(
+                f"**Verificação necessária:** {'Sim' if necessary else 'Não'}"
+            )
+            if how_to:
                 st.markdown("**Orientação:**")
-                st.write(orientation)
+                st.write(how_to)
 
 
 def _render_documentos(operator_id: str) -> None:
@@ -129,13 +124,13 @@ def _render_documentos(operator_id: str) -> None:
 
     for _, item in dataframe.iterrows():
         document = _safe_text(item, "nome") or "Documento sem identificação"
-        attendance_type = _safe_text(item, "tipo_atendimento_nome")
+        attendance_type = "Atendimento específico" if _safe_text(item, "tipo_atendimento_id") else ""
 
         with st.expander(f"📄 {document}", expanded=False):
             col_1, col_2 = st.columns(2)
             col_1.markdown(
                 "**Obrigatório:** "
-                f"{_safe_text(item, 'obrigatorio') or 'Não informado'}"
+                f"{'Sim' if bool(item.get('obrigatorio', False)) else 'Não'}"
             )
 
             validity = _safe_text(item, "validade_dias")
@@ -167,17 +162,17 @@ def _render_autorizacoes(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} regra(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Autorização geral"
+        attendance_type = "Autorização específica" if _safe_text(item, "tipo_atendimento_id") else "Autorização geral"
 
         with st.expander(f"🔑 {attendance_type}", expanded=False):
             col_1, col_2 = st.columns(2)
             col_1.markdown(
                 "**Necessita autorização:** "
-                f"{_safe_text(item, 'necessita_autorizacao') or 'Não identificado'}"
+                f"{'Sim' if bool(item.get('necessita_autorizacao', True)) else 'Não'}"
             )
             col_2.markdown(
-                "**Pré/Pós:** "
-                f"{_safe_text(item, 'momento_autorizacao') or 'Não identificado'}"
+                "**Momento:** "
+                f"{_safe_text(item, 'momento_autorizacao') or 'Não informado'}"
             )
 
             requester = _safe_text(item, "quem_solicita")
@@ -189,7 +184,7 @@ def _render_autorizacoes(operator_id: str) -> None:
             if method:
                 st.markdown(f"**Meio:** {method}")
             if return_time:
-                st.markdown(f"**Prazo de retorno:** {return_time} hora(s)")
+                st.markdown(f"**Prazo:** {return_time}")
 
             observations = _safe_text(item, "observacoes")
             if observations:
@@ -207,17 +202,15 @@ def _render_coberturas(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} cobertura(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Cobertura geral"
-        covered = _safe_text(item, "coberto") or "Não identificado"
+        attendance_type = "Cobertura específica" if _safe_text(item, "tipo_atendimento_id") else "Cobertura geral"
+        covered_raw = item.get("coberto")
+        covered = "Sim" if covered_raw is True else "Não" if covered_raw is False else "Não informado"
 
         with st.expander(f"🩺 {attendance_type} — {covered}", expanded=False):
-            unit = _safe_text(item, "local_nome")
             accommodation = _safe_text(item, "acomodacao")
             companion = _safe_text(item, "acompanhante")
             restriction = _safe_text(item, "restricoes_cobertura")
 
-            if unit:
-                st.markdown(f"**Unidade:** {unit}")
             if accommodation:
                 st.markdown(f"**Acomodação:** {accommodation}")
             if companion:
@@ -289,9 +282,9 @@ def _render_contingencias(operator_id: str) -> None:
                 st.markdown("**Orientação:**")
                 st.write(guidance)
 
-            description = _safe_text(item, "descricao")
-            if description:
-                st.caption(description)
+            observations = _safe_text(item, "observacoes")
+            if observations:
+                st.caption(observations)
 
 
 def render_operadora_detail(operator_id: str) -> None:
