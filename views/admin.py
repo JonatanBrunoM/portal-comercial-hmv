@@ -11,6 +11,17 @@ from core.admin_portals_service import (
     save_credential,
     save_portal,
 )
+from core.admin_master_data_service import (
+    get_all_attendance_types,
+    get_all_locations,
+    get_all_operators,
+    get_all_plans,
+    get_plan_location_ids,
+    save_attendance_type,
+    save_location,
+    save_operator,
+    save_plan,
+)
 from core.auth_service import get_current_profile
 from core.credentials_service import format_timestamp, get_credential_history
 from core.data_service import (
@@ -366,6 +377,345 @@ def _render_credential_management() -> None:
                 st.caption("Por segurança, senhas históricas não são exibidas no backoffice.")
 
 
+
+def _render_operator_management() -> None:
+    st.markdown("### Operadoras")
+    st.caption("Cadastre, edite ou inative as operadoras utilizadas no Portal Comercial.")
+
+    try:
+        dataframe = get_all_operators()
+    except Exception:
+        st.error("Não foi possível carregar as operadoras.")
+        return
+
+    ids, labels = _options(dataframe, ("nome_curto", "nome", "codigo"))
+    mode = st.radio(
+        "Ação da operadora",
+        ["Editar operadora existente", "Cadastrar nova operadora"],
+        horizontal=True,
+        key="admin_operator_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar operadora existente":
+        if not ids:
+            st.info("Nenhuma operadora cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Operadora",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_operator_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    with st.form("admin_operator_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            name = st.text_input("Nome da operadora *", value=_safe(current.get("nome")))
+            short_name = st.text_input("Nome curto", value=_safe(current.get("nome_curto")))
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+        with col2:
+            site_url = st.text_input("Site institucional", value=_safe(current.get("site_url")), placeholder="https://...")
+            logo_url = st.text_input("URL da logo", value=_safe(current.get("logo_url")), placeholder="https://...")
+
+        observations = st.text_area(
+            "Observações",
+            value=_safe(current.get("observacoes")),
+            height=100,
+        )
+        submitted = st.form_submit_button(
+            "Salvar operadora",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if submitted:
+        try:
+            save_operator(
+                operator_id=record_id or None,
+                code=code,
+                name=name,
+                short_name=short_name,
+                site_url=site_url,
+                logo_url=logo_url,
+                observations=observations,
+                status=status,
+            )
+            st.success("Operadora salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a operadora.")
+
+
+def _render_plan_management() -> None:
+    st.markdown("### Planos")
+    st.caption("Mantenha os planos vinculados às operadoras e aos locais de atendimento.")
+
+    try:
+        plans = get_all_plans()
+        operators = get_all_operators()
+        locations = get_all_locations()
+    except Exception:
+        st.error("Não foi possível carregar os dados necessários para administrar os planos.")
+        return
+
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome", "codigo"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    location_ids, location_labels = _options(locations, ("nome", "codigo"))
+
+    mode = st.radio(
+        "Ação do plano",
+        ["Editar plano existente", "Cadastrar novo plano"],
+        horizontal=True,
+        key="admin_plan_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    selected_locations: list[str] = []
+    if mode == "Editar plano existente":
+        if not plan_ids:
+            st.info("Nenhum plano cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Plano",
+            plan_ids,
+            format_func=lambda item: plan_labels.get(item, item),
+            key="admin_plan_selected",
+        )
+        current = _row_by_id(plans, record_id)
+        try:
+            selected_locations = get_plan_location_ids(record_id)
+        except Exception:
+            selected_locations = []
+
+    with st.form("admin_plan_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            name = st.text_input("Nome do plano *", value=_safe(current.get("nome")))
+            standardized_name = st.text_input(
+                "Nome padronizado",
+                value=_safe(current.get("nome_padronizado")),
+            )
+            plan_type = st.text_input(
+                "Tipo do plano",
+                value=_safe(current.get("tipo_plano")),
+                placeholder="Ex.: Empresarial, Individual, Associado",
+            )
+
+        with col2:
+            operator_id = st.selectbox(
+                "Operadora *",
+                operator_ids,
+                index=_index(operator_ids, current.get("operadora_id")),
+                format_func=lambda item: operator_labels.get(item, item),
+            ) if operator_ids else ""
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+            linked_locations = st.multiselect(
+                "Locais de atendimento",
+                options=location_ids,
+                default=[
+                    item for item in selected_locations
+                    if item in location_ids
+                ],
+                format_func=lambda item: location_labels.get(item, item),
+            )
+
+        summary = st.text_area(
+            "Observação resumida",
+            value=_safe(current.get("observacao_resumida")),
+            height=100,
+        )
+
+        submitted = st.form_submit_button(
+            "Salvar plano",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if submitted:
+        try:
+            save_plan(
+                plan_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                name=name,
+                standardized_name=standardized_name,
+                plan_type=plan_type,
+                summary=summary,
+                status=status,
+                location_ids=linked_locations,
+            )
+            st.success("Plano salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o plano.")
+
+
+def _render_location_management() -> None:
+    st.markdown("### Locais de atendimento")
+    st.caption("Cadastre os locais usados para contextualizar regras e planos.")
+
+    try:
+        dataframe = get_all_locations()
+    except Exception:
+        st.error("Não foi possível carregar os locais de atendimento.")
+        return
+
+    ids, labels = _options(dataframe, ("nome", "codigo"))
+    mode = st.radio(
+        "Ação do local",
+        ["Editar local existente", "Cadastrar novo local"],
+        horizontal=True,
+        key="admin_location_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar local existente":
+        if not ids:
+            st.info("Nenhum local cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Local",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_location_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    with st.form("admin_location_form"):
+        code = st.text_input("Código", value=_safe(current.get("codigo")))
+        name = st.text_input("Nome do local *", value=_safe(current.get("nome")))
+        status = st.selectbox(
+            "Status",
+            ["Ativo", "Inativo"],
+            index=0 if _safe(current.get("status")) != "Inativo" else 1,
+        )
+        submitted = st.form_submit_button(
+            "Salvar local",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if submitted:
+        try:
+            save_location(
+                location_id=record_id or None,
+                code=code,
+                name=name,
+                status=status,
+            )
+            st.success("Local salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o local.")
+
+
+def _render_attendance_type_management() -> None:
+    st.markdown("### Tipos de atendimento")
+    st.caption("Mantenha os tipos utilizados nas regras de elegibilidade, autorização, cobertura e documentação.")
+
+    try:
+        dataframe = get_all_attendance_types()
+    except Exception:
+        st.error("Não foi possível carregar os tipos de atendimento.")
+        return
+
+    ids, labels = _options(dataframe, ("nome", "codigo"))
+    mode = st.radio(
+        "Ação do tipo",
+        ["Editar tipo existente", "Cadastrar novo tipo"],
+        horizontal=True,
+        key="admin_attendance_type_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar tipo existente":
+        if not ids:
+            st.info("Nenhum tipo de atendimento cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Tipo de atendimento",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_attendance_type_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    with st.form("admin_attendance_type_form"):
+        code = st.text_input("Código", value=_safe(current.get("codigo")))
+        name = st.text_input("Nome do tipo *", value=_safe(current.get("nome")))
+        status = st.selectbox(
+            "Status",
+            ["Ativo", "Inativo"],
+            index=0 if _safe(current.get("status")) != "Inativo" else 1,
+        )
+        submitted = st.form_submit_button(
+            "Salvar tipo de atendimento",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if submitted:
+        try:
+            save_attendance_type(
+                attendance_type_id=record_id or None,
+                code=code,
+                name=name,
+                status=status,
+            )
+            st.success("Tipo de atendimento salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o tipo de atendimento.")
+
+
+def _render_master_data_backoffice() -> None:
+    st.markdown("## Cadastros-base")
+    st.info(
+        "Estes cadastros estruturam todo o restante do Portal Comercial. "
+        "Registros em uso devem ser inativados, e não excluídos.",
+        icon="🧩",
+    )
+
+    tab_operators, tab_plans, tab_locations, tab_types = st.tabs([
+        "🏥 Operadoras",
+        "📋 Planos",
+        "📍 Locais",
+        "🩺 Tipos de atendimento",
+    ])
+
+    with tab_operators:
+        _render_operator_management()
+    with tab_plans:
+        _render_plan_management()
+    with tab_locations:
+        _render_location_management()
+    with tab_types:
+        _render_attendance_type_management()
+
 def _render_portals_backoffice() -> None:
     st.markdown("## Portais e credenciais")
     st.info(
@@ -387,7 +737,7 @@ def render_admin() -> None:
     render_hero(
         eyebrow="Gestão do Portal",
         title="Administração",
-        description="Gerencie a base do Portal Comercial, portais, credenciais e usuários autorizados.",
+        description="Gerencie cadastros-base, portais, credenciais, dados operacionais e usuários autorizados.",
     )
 
     connected, connection_message = check_supabase_connection()
@@ -402,12 +752,18 @@ def render_admin() -> None:
         st.success("Cache atualizado.")
         st.rerun()
 
-    tab_overview, tab_portals, tab_data, tab_users = st.tabs([
-        "📊 Visão geral", "🔐 Portais e credenciais", "🗃️ Dados", "👥 Usuários"
+    tab_overview, tab_master, tab_portals, tab_data, tab_users = st.tabs([
+        "📊 Visão geral",
+        "🧩 Cadastros-base",
+        "🔐 Portais e credenciais",
+        "🗃️ Dados",
+        "👥 Usuários",
     ])
 
     with tab_overview:
         _render_overview()
+    with tab_master:
+        _render_master_data_backoffice()
     with tab_portals:
         _render_portals_backoffice()
     with tab_data:
