@@ -46,6 +46,11 @@ from core.admin_operational_content_service import (
     save_tip,
     save_wallet,
 )
+from core.admin_dashboard_service import (
+    get_admin_health,
+    get_admin_table_summary,
+    get_recent_audit_logs,
+)
 from core.auth_service import get_current_profile
 from core.credentials_service import format_timestamp, get_credential_history
 from core.data_service import (
@@ -109,20 +114,69 @@ def _index(options: list[str | None], value: object) -> int:
 
 
 def _render_overview() -> None:
-    st.markdown("## Visão geral da base")
-    cols = st.columns(4)
-    counts: list[tuple[str, int]] = []
-    for key in ADMIN_DATASETS:
-        try:
-            counts.append((key, len(read_dataset(key))))
-        except Exception:
-            counts.append((key, -1))
+    st.markdown("## Visão geral administrativa")
+    st.caption(
+        "Acompanhe a estrutura da base, itens que precisam de atenção e os principais indicadores do Portal Comercial."
+    )
 
-    for index, (key, count) in enumerate(counts):
-        label = key.replace("_", " ").title()
-        value = count if count >= 0 else "Erro"
-        cols[index % 4].metric(label, value)
+    try:
+        health = get_admin_health()
+        summary = get_admin_table_summary()
+    except Exception:
+        st.error("Não foi possível consolidar os indicadores administrativos.")
+        return
 
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Operadoras", health.operators)
+    c2.metric("Planos", health.plans)
+    c3.metric("Portais", health.portals)
+    c4.metric("Credenciais", health.credentials)
+
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("Registros monitorados", health.total_records)
+    c6.metric("Registros ativos", health.active_records)
+    c7.metric("Comunicados publicados", health.published_announcements)
+    c8.metric("Contingências ativas", health.active_contingencies)
+
+    st.markdown("### Atenções da base")
+    if health.issues:
+        severity_icons = {
+            "Alta": "🔴",
+            "Média": "🟠",
+            "Baixa": "🟡",
+        }
+        for issue in health.issues:
+            icon = severity_icons.get(issue["severity"], "ℹ️")
+            with st.container(border=True):
+                st.markdown(
+                    f"**{icon} {issue['area']} · Prioridade {issue['severity']}**"
+                )
+                st.write(issue["message"])
+    else:
+        st.success(
+            "Nenhuma inconsistência básica foi identificada nos cadastros monitorados.",
+            icon="✅",
+        )
+
+    st.markdown("### Distribuição dos registros")
+    if not summary.empty:
+        st.dataframe(
+            summary,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Área": st.column_config.TextColumn("Área"),
+                "Total": st.column_config.NumberColumn("Total", format="%d"),
+                "Ativos": st.column_config.NumberColumn("Ativos", format="%d"),
+                "Inativos": st.column_config.NumberColumn("Inativos", format="%d"),
+            },
+        )
+
+    st.info(
+        "Os indicadores desta tela são diagnósticos administrativos. "
+        "Nenhum registro é alterado automaticamente.",
+        icon="ℹ️",
+    )
 
 def _render_dataset_browser() -> None:
     st.markdown("## Dados no Supabase")
@@ -1865,6 +1919,122 @@ def _render_portals_backoffice() -> None:
         _render_credential_management()
 
 
+
+def _render_audit() -> None:
+    st.markdown("## Auditoria")
+    st.caption(
+        "Consulte as alterações administrativas recentes sem expor credenciais ou outros dados sensíveis."
+    )
+
+    col1, col2, col3 = st.columns([1.2, 1.2, 1])
+    with col1:
+        action_filter = st.text_input(
+            "Filtrar por ação",
+            placeholder="Ex.: contato_atualizado",
+            key="audit_action_filter",
+        )
+    with col2:
+        entity_filter = st.text_input(
+            "Filtrar por entidade",
+            placeholder="Ex.: contatos",
+            key="audit_entity_filter",
+        )
+    with col3:
+        row_limit = st.selectbox(
+            "Quantidade",
+            [50, 100, 200, 500],
+            index=1,
+            key="audit_limit",
+        )
+
+    try:
+        dataframe = get_recent_audit_logs(limit=row_limit)
+    except Exception:
+        st.error("Não foi possível carregar os registros de auditoria.")
+        return
+
+    if dataframe.empty:
+        st.info("Ainda não há eventos de auditoria registrados.")
+        return
+
+    filtered = dataframe.copy()
+
+    if action_filter.strip() and "acao" in filtered.columns:
+        filtered = filtered[
+            filtered["acao"]
+            .fillna("")
+            .astype(str)
+            .str.contains(action_filter.strip(), case=False, na=False)
+        ]
+
+    if entity_filter.strip() and "entidade" in filtered.columns:
+        filtered = filtered[
+            filtered["entidade"]
+            .fillna("")
+            .astype(str)
+            .str.contains(entity_filter.strip(), case=False, na=False)
+        ]
+
+    st.caption(
+        f"{len(filtered)} evento(s) exibido(s) de {len(dataframe)} carregado(s)."
+    )
+
+    if filtered.empty:
+        st.info("Nenhum evento corresponde aos filtros informados.")
+        return
+
+    visible = filtered.copy()
+    if "created_at" in visible.columns:
+        parsed = pd.to_datetime(visible["created_at"], errors="coerce", utc=True)
+        visible["data_hora"] = parsed.dt.tz_convert("America/Sao_Paulo").dt.strftime(
+            "%d/%m/%Y %H:%M"
+        )
+
+    rename_map = {
+        "data_hora": "Data/hora",
+        "usuario": "Usuário",
+        "acao": "Ação",
+        "entidade": "Entidade",
+        "descricao": "Descrição",
+    }
+
+    ordered = [
+        column for column in
+        ["data_hora", "usuario", "acao", "entidade", "descricao"]
+        if column in visible.columns
+    ]
+
+    st.dataframe(
+        visible[ordered].rename(columns=rename_map),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    with st.expander("Detalhes técnicos dos eventos"):
+        st.caption(
+            "Os campos abaixo são destinados à rastreabilidade administrativa. "
+            "Senhas e credenciais descriptografadas não são registradas no audit log."
+        )
+        detail_columns = [
+            column for column in
+            [
+                "created_at",
+                "usuario",
+                "acao",
+                "entidade",
+                "entidade_id",
+                "descricao",
+                "dados_anteriores",
+                "dados_novos",
+            ]
+            if column in dataframe.columns
+        ]
+        st.dataframe(
+            filtered[detail_columns],
+            use_container_width=True,
+            hide_index=True,
+        )
+
 def render_admin() -> None:
     if not _is_admin():
         st.error("Esta área é restrita aos administradores do Portal Comercial.")
@@ -1888,12 +2058,13 @@ def render_admin() -> None:
         st.success("Cache atualizado.")
         st.rerun()
 
-    tab_overview, tab_master, tab_rules, tab_operational, tab_portals, tab_data, tab_users = st.tabs([
+    tab_overview, tab_master, tab_rules, tab_operational, tab_portals, tab_audit, tab_data, tab_users = st.tabs([
         "📊 Visão geral",
         "🧩 Cadastros-base",
         "📚 Regras de atendimento",
         "🧭 Conteúdo operacional",
         "🔐 Portais e credenciais",
+        "🕘 Auditoria",
         "🗃️ Dados",
         "👥 Usuários",
     ])
@@ -1908,6 +2079,8 @@ def render_admin() -> None:
         _render_operational_content_backoffice()
     with tab_portals:
         _render_portals_backoffice()
+    with tab_audit:
+        _render_audit()
     with tab_data:
         _render_dataset_browser()
     with tab_users:
