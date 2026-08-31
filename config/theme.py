@@ -141,109 +141,129 @@ def apply_theme() -> None:
         }}
 
         /* =============================================================
-           SIDEBAR
+           SIDEBAR COMPACTA / EXPANSÍVEL
            ============================================================= */
 
         section[data-testid="stSidebar"] {{
+            width: 76px !important; min-width: 76px !important; max-width: 76px !important;
             background: var(--portal-surface) !important;
             border-right: 1px solid var(--portal-border) !important;
+            box-shadow: 6px 0 20px rgba(13, 38, 56, 0.04);
+            overflow: hidden !important;
+            transition: width .22s ease, min-width .22s ease, max-width .22s ease, box-shadow .22s ease;
+            z-index: 999;
         }}
-
+        section[data-testid="stSidebar"]:hover,
+        section[data-testid="stSidebar"]:focus-within {{
+            width: 286px !important; min-width: 286px !important; max-width: 286px !important;
+            box-shadow: 12px 0 34px rgba(13, 38, 56, 0.12);
+        }}
         section[data-testid="stSidebar"] > div {{
-            background: var(--portal-surface) !important;
-            padding-top: 1.15rem;
+            width: 286px !important; min-width: 286px !important;
+            background: var(--portal-surface) !important; padding-top: .85rem;
         }}
-
-        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-        section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
-        section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {{
-            color: var(--portal-text-secondary) !important;
-        }}
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+        section[data-testid="stSidebar"] button[kind="header"] {{ display: none !important; }}
 
         .portal-sidebar-header {{
-            padding: 0.35rem 0.2rem 1.25rem;
-            border-bottom: 1px solid var(--portal-border);
-            margin-bottom: 0.9rem;
+            height: 62px; padding: .2rem .55rem .9rem;
+            border-bottom: 1px solid var(--portal-border); margin: 0 .35rem .65rem 0;
+            overflow: hidden; white-space: nowrap;
         }}
-
+        .portal-sidebar-brandmark {{ display:flex; align-items:center; gap:.75rem; min-height:46px; }}
+        .portal-sidebar-brand-icon {{
+            display:inline-flex; align-items:center; justify-content:center;
+            width:42px; min-width:42px; height:42px; border-radius:12px;
+            background:linear-gradient(145deg,var(--portal-primary),var(--portal-primary-dark));
+            color:#fff !important; font-size:1.15rem; font-weight:800;
+            box-shadow:0 6px 16px rgba(0,86,145,.18);
+        }}
+        .portal-sidebar-brand-copy {{
+            opacity:0; transform:translateX(-4px);
+            transition:opacity .16s ease, transform .16s ease;
+        }}
+        section[data-testid="stSidebar"]:hover .portal-sidebar-brand-copy,
+        section[data-testid="stSidebar"]:focus-within .portal-sidebar-brand-copy {{
+            opacity:1; transform:translateX(0);
+        }}
         .portal-sidebar-organization {{
-            color: var(--portal-primary) !important;
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
+            color:var(--portal-primary)!important; font-size:.64rem; font-weight:800;
+            letter-spacing:.075em; text-transform:uppercase;
         }}
-
         .portal-sidebar-title {{
-            color: var(--portal-text-strong) !important;
-            font-size: 1.25rem;
-            font-weight: 760;
-            margin-top: 0.28rem;
-            letter-spacing: -0.02em;
+            color:var(--portal-text-strong)!important; font-size:1.02rem;
+            font-weight:760; margin-top:.12rem; letter-spacing:-.02em;
         }}
-
         .portal-sidebar-section-label {{
-            margin: 0.8rem 0.2rem 0.45rem;
-            color: var(--portal-text-muted) !important;
-            font-size: 0.68rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            height:22px; margin:.6rem .75rem .35rem; color:var(--portal-text-muted)!important;
+            font-size:.66rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+            opacity:0; white-space:nowrap; transition:opacity .12s ease;
         }}
+        section[data-testid="stSidebar"]:hover .portal-sidebar-section-label,
+        section[data-testid="stSidebar"]:focus-within .portal-sidebar-section-label {{ opacity:1; }}
 
-        section[data-testid="stSidebar"] [role="radiogroup"] {{
-            gap: 0.18rem;
-        }}
-
+        section[data-testid="stSidebar"] [role="radiogroup"] {{ gap:.15rem; width:270px; }}
         section[data-testid="stSidebar"] label[data-baseweb="radio"] {{
-            min-height: 42px;
-            padding: 0.52rem 0.7rem;
-            border-radius: 10px;
-            color: var(--portal-text) !important;
-            transition: background-color 0.16s ease, color 0.16s ease;
+            width:258px; min-height:44px; margin-left:.05rem; padding:.58rem .72rem;
+            border-radius:11px; color:var(--portal-text)!important; overflow:hidden;
+            white-space:nowrap; transition:background-color .16s ease,color .16s ease;
         }}
-
-        section[data-testid="stSidebar"] label[data-baseweb="radio"]:hover {{
-            background: var(--portal-primary-soft) !important;
-        }}
-
+        section[data-testid="stSidebar"] label[data-baseweb="radio"]:hover {{ background:var(--portal-primary-soft)!important; }}
         section[data-testid="stSidebar"] label[data-baseweb="radio"] p {{
-            color: var(--portal-text) !important;
-            font-weight: 620 !important;
+            width:235px; overflow:hidden; white-space:nowrap; color:var(--portal-text)!important;
+            font-weight:650!important; font-size:.9rem!important; line-height:1.55rem!important;
         }}
-
         section[data-testid="stSidebar"] label[data-baseweb="radio"]:has(input:checked) {{
-            background: var(--portal-primary-soft-strong) !important;
-            box-shadow: inset 3px 0 0 var(--portal-primary);
+            background:var(--portal-primary-soft-strong)!important;
+            box-shadow:inset 3px 0 0 var(--portal-primary);
         }}
-
         section[data-testid="stSidebar"] label[data-baseweb="radio"]:has(input:checked) p {{
-            color: var(--portal-primary-dark) !important;
-            font-weight: 760 !important;
+            color:var(--portal-primary-dark)!important; font-weight:760!important;
         }}
+        section[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-child {{ display:none; }}
 
-        section[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-child {{
-            display: none;
+        .portal-sidebar-user-compact {{
+            display:flex; align-items:center; gap:.75rem; width:252px; min-height:54px;
+            margin:.15rem 0 .55rem; padding:.42rem .55rem; border-radius:12px;
+            overflow:hidden; white-space:nowrap;
         }}
-
-        .portal-user-card {{
-            padding: 0.85rem;
-            margin: 0.25rem 0 0.65rem;
-            border: 1px solid var(--portal-border);
-            border-radius: var(--portal-radius-md);
-            background: var(--portal-surface-soft);
+        .portal-sidebar-avatar-fallback {{
+            display:inline-flex; align-items:center; justify-content:center;
+            width:42px; min-width:42px; height:42px; border-radius:50%;
+            background:var(--portal-primary-soft-strong); color:var(--portal-primary-dark)!important;
+            font-weight:800;
         }}
+        .portal-sidebar-user-copy {{ opacity:0; transition:opacity .14s ease; min-width:0; }}
+        section[data-testid="stSidebar"]:hover .portal-sidebar-user-copy,
+        section[data-testid="stSidebar"]:focus-within .portal-sidebar-user-copy {{ opacity:1; }}
+        .portal-sidebar-user-name {{
+            color:var(--portal-text-strong)!important; font-size:.82rem; font-weight:760;
+            overflow:hidden; text-overflow:ellipsis;
+        }}
+        .portal-sidebar-user-role {{ margin-top:.08rem; color:var(--portal-text-secondary)!important; font-size:.7rem; }}
+        section[data-testid="stSidebar"] [data-testid="stImage"] {{ width:42px!important; min-width:42px!important; }}
+        section[data-testid="stSidebar"] [data-testid="stImage"] img {{
+            width:42px!important; height:42px!important; border-radius:50%!important; object-fit:cover!important;
+        }}
+        section[data-testid="stSidebar"] .stButton > button {{
+            width:252px!important; justify-content:flex-start!important; overflow:hidden; white-space:nowrap;
+        }}
+        section[data-testid="stSidebar"] hr,
+        section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {{
+            opacity:0; transition:opacity .12s ease;
+        }}
+        section[data-testid="stSidebar"]:hover hr,
+        section[data-testid="stSidebar"]:hover [data-testid="stCaptionContainer"],
+        section[data-testid="stSidebar"]:focus-within hr,
+        section[data-testid="stSidebar"]:focus-within [data-testid="stCaptionContainer"] {{ opacity:1; }}
 
-        .portal-user-role {{
-            display: inline-flex;
-            align-items: center;
-            margin-top: 0.25rem;
-            padding: 0.2rem 0.45rem;
-            border-radius: 999px;
-            background: var(--portal-primary-soft);
-            color: var(--portal-primary-dark) !important;
-            font-size: 0.7rem;
-            font-weight: 750;
+        @media (max-width:900px) {{
+            section[data-testid="stSidebar"] {{ width:286px!important; min-width:286px!important; max-width:286px!important; }}
+            .portal-sidebar-brand-copy,.portal-sidebar-section-label,.portal-sidebar-user-copy,
+            section[data-testid="stSidebar"] hr,
+            section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {{
+                opacity:1!important; transform:none!important;
+            }}
         }}
 
         /* =============================================================
@@ -767,6 +787,64 @@ def apply_theme() -> None:
                 flex-wrap: nowrap;
             }}
         }}
+
+        /* HOME / HALL DE ENTRADA */
+        .portal-home-hero {{
+            position:relative; overflow:hidden; padding:clamp(2rem,4vw,3.35rem);
+            border-radius:24px;
+            background:radial-gradient(circle at 88% 20%,rgba(255,255,255,.16) 0,rgba(255,255,255,0) 26%),
+                       linear-gradient(135deg,#005691 0%,#004777 48%,#003D66 100%);
+            box-shadow:0 18px 44px rgba(0,61,102,.18); margin-bottom:1.15rem;
+        }}
+        .portal-home-hero::after {{
+            content:""; position:absolute; width:260px; height:260px; right:-95px; bottom:-150px;
+            border:1px solid rgba(255,255,255,.14); border-radius:50%;
+        }}
+        .portal-home-kicker {{ color:#D9EEFA!important; font-size:.72rem; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }}
+        .portal-home-title {{ max-width:820px; margin:.45rem 0 0; color:#fff!important; font-size:clamp(2rem,4vw,3.35rem); line-height:1.04; letter-spacing:-.045em; }}
+        .portal-home-description {{ max-width:720px; margin:.95rem 0 0; color:#E6F2F8!important; font-size:1rem; line-height:1.65; }}
+        .portal-home-badge {{
+            display:inline-flex; align-items:center; gap:.4rem; margin-top:1.2rem; padding:.42rem .7rem;
+            border:1px solid rgba(255,255,255,.22); border-radius:999px; background:rgba(255,255,255,.10);
+            color:#fff!important; font-size:.75rem; font-weight:650;
+        }}
+        .portal-home-search-intro {{ margin:1.65rem 0 .55rem; text-align:center; }}
+        .portal-home-search-title {{ color:var(--portal-text-strong)!important; font-size:clamp(1.45rem,2.4vw,2rem); font-weight:780; letter-spacing:-.03em; }}
+        .portal-home-search-subtitle {{ margin-top:.25rem; color:var(--portal-text-secondary)!important; font-size:.9rem; }}
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) {{ max-width:980px; margin:0 auto 1.55rem; }}
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) div[data-baseweb="input"] > div {{
+            min-height:64px!important; border:1px solid #C9D8E2!important; border-radius:18px!important;
+            background:#fff!important; box-shadow:0 12px 32px rgba(13,38,56,.09)!important;
+            padding-left:.55rem!important; padding-right:.55rem!important;
+        }}
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) input {{ font-size:1rem!important; padding-left:.5rem!important; }}
+        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) div[data-baseweb="input"] > div:focus-within {{
+            border-color:var(--portal-primary)!important;
+            box-shadow:0 0 0 4px rgba(0,86,145,.10),0 14px 34px rgba(13,38,56,.11)!important;
+        }}
+        .portal-home-section-head {{ margin:1.55rem 0 .75rem; }}
+        .portal-home-section-eyebrow {{ color:var(--portal-primary)!important; font-size:.7rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }}
+        .portal-home-section-title {{ margin-top:.16rem; color:var(--portal-text-strong)!important; font-size:1.55rem; font-weight:780; letter-spacing:-.03em; }}
+        .portal-home-section-description {{ margin-top:.2rem; color:var(--portal-text-secondary)!important; font-size:.88rem; }}
+        .portal-home-status-strip {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem; margin:.25rem 0 1.35rem; }}
+        .portal-home-status-item {{ padding:.82rem .9rem; border:1px solid var(--portal-border); border-radius:13px; background:rgba(255,255,255,.72); }}
+        .portal-home-status-value {{ color:var(--portal-text-strong)!important; font-size:1.25rem; font-weight:800; }}
+        .portal-home-status-label {{ margin-top:.1rem; color:var(--portal-text-secondary)!important; font-size:.74rem; }}
+        .portal-home-notice {{
+            padding:1rem 1.05rem; border:1px solid var(--portal-border); border-left:4px solid var(--portal-primary);
+            border-radius:13px; background:var(--portal-surface); box-shadow:var(--portal-shadow-sm); margin-bottom:.7rem;
+        }}
+        .portal-home-notice-title {{ color:var(--portal-text-strong)!important; font-size:1rem; font-weight:760; }}
+        .portal-home-notice-meta {{ margin-top:.22rem; color:var(--portal-text-muted)!important; font-size:.75rem; }}
+        .portal-home-notice-body {{ margin-top:.55rem; color:var(--portal-text-secondary)!important; font-size:.86rem; line-height:1.5; }}
+        .portal-home-notice-footer {{ display:flex; flex-wrap:wrap; gap:.55rem 1.25rem; margin-top:.7rem; color:var(--portal-text-secondary)!important; font-size:.76rem; }}
+        .portal-module-card {{ min-height:100px; }}
+        @media (max-width:900px) {{ .portal-home-status-strip {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
+        @media (max-width:600px) {{
+            .portal-home-hero {{ padding:1.6rem 1.25rem; border-radius:18px; }}
+            .portal-home-status-strip {{ grid-template-columns:1fr 1fr; }}
+        }}
+
     </style>
     """
 
