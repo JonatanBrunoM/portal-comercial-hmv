@@ -7,7 +7,7 @@ class CacheSettings:
 
     OPERADORAS: int = 1800
     PLANOS: int = 1800
-    LOCAIS_ATENDIMENTO: int = 1800
+    LOCAIS: int = 1800
     TIPOS_ATENDIMENTO: int = 1800
     PLANO_LOCAIS: int = 1800
     PORTAIS: int = 1800
@@ -21,8 +21,6 @@ class CacheSettings:
     COMUNICADOS: int = 600
     CONSULTORES: int = 1800
     CARTEIRAS: int = 1800
-    FORUM: int = 600
-    CONHECIMENTO: int = 1800
     SEARCH_INDEX: int = 1800
 
 
@@ -46,7 +44,4 @@ DATASETS = {
     "consultores": "consultores",
     "carteiras": "carteiras",
     "comunicados": "comunicados",
-    "forum_posts": "forum_posts",
-    "forum_comentarios": "forum_comentarios",
-    "conhecimento": "conhecimento_ia",
 }
