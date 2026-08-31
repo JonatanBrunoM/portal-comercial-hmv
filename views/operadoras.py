@@ -8,6 +8,7 @@ import streamlit as st
 
 from components.hero import render_hero
 from components.operadora_cards import render_operadora_card
+from components.portal_cards import render_portal_card
 from core.operadoras_service import (
     get_operadora_autorizacoes,
     get_operadora_by_id,
@@ -542,44 +543,27 @@ def _render_planos(operator_id: str) -> None:
 
 def _render_portais(operator_id: str) -> None:
     portais = get_operadora_portais(operator_id)
+    operadora = get_operadora_by_id(operator_id)
+
     _section_intro(
         "Portais e acessos",
-        "Canais digitais usados para elegibilidade, autorização e outras rotinas.",
+        "Canais digitais, orientações e credenciais institucionais da operadora.",
     )
 
     if portais.empty:
         _render_empty_module("Nenhum portal foi encontrado.")
         return
 
+    operator_name = operadora.short_name if operadora else ""
+
     for _, portal in portais.iterrows():
-        with st.container(border=True):
-            name = _safe_text(portal, "nome") or "Portal sem nome"
-            portal_type = _safe_text(portal, "tipo")
-            url = _safe_text(portal, "url")
-
-            st.markdown(f"**🌐 {name}**")
-            if portal_type:
-                st.caption(portal_type)
-
-            requires_login = _safe_bool(portal.get("exige_login"), False)
-            st.write(
-                f"**Acesso autenticado:** {'Sim' if requires_login else 'Não'}"
-            )
-
-            instructions = _safe_text(portal, "instrucao_acesso")
-            tip = _safe_text(portal, "dica_geral_acesso")
-            observations = _safe_text(portal, "observacoes")
-
-            if instructions:
-                st.markdown("**Como acessar**")
-                st.write(instructions)
-            if tip:
-                st.caption(f"💡 {tip}")
-            if observations:
-                st.caption(observations)
-            if url:
-                st.link_button("Abrir portal", url, use_container_width=True)
-
+        render_portal_card(
+            portal,
+            operator_name=operator_name,
+            plan_name="",
+            show_credentials=True,
+            key_prefix=f"operator_{operator_id}",
+        )
 
 def _render_elegibilidade(operator_id: str) -> None:
     dataframe = get_operadora_elegibilidade(operator_id)
