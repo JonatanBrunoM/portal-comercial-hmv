@@ -127,18 +127,19 @@ def _render_quick_dock() -> None:
 
         columns = st.columns(5, gap="small")
         actions = [
-            ("🏥", "Operadoras", "Operadoras"),
-            ("🌐", "Portais", "Portais"),
-            ("📄", "Documentos", "Documentos"),
-            ("☎️", "Contatos", "Contatos"),
-            ("⚠️", "Contingências", "Contingências"),
+            (":material/apartment:", "Operadoras", "Operadoras"),
+            (":material/language:", "Portais", "Portais"),
+            (":material/description:", "Documentos", "Documentos"),
+            (":material/contact_phone:", "Contatos", "Contatos"),
+            (":material/warning:", "Contingências", "Contingências"),
         ]
 
         for column, (icon, label, page) in zip(columns, actions):
             with column:
                 if st.button(
-                    f"{icon}  {label}",
+                    label,
                     key=f"home_dock_{page}",
+                    icon=icon,
                     use_container_width=True,
                 ):
                     _go(page)
@@ -267,33 +268,36 @@ def _render_explore() -> None:
 
     rows = [
         [
-            ("🏥", "Operadoras e planos", "Consulte o panorama completo de cada convênio.", "Operadoras"),
-            ("🌐", "Portais e acessos", "Encontre os sistemas utilizados na operação.", "Portais"),
-            ("📄", "Documentação", "Confira documentos, validade e orientações.", "Documentos"),
+            ("CONVÊNIOS", "Operadoras e planos", "Consulte o panorama completo de cada convênio.", "Operadoras"),
+            ("ACESSO", "Portais e acessos", "Encontre os sistemas utilizados na operação.", "Portais"),
+            ("REGRAS", "Documentação", "Confira documentos, validade e orientações.", "Documentos"),
         ],
         [
-            ("☎", "Contatos", "Localize centrais, e-mails e responsáveis.", "Contatos"),
-            ("👥", "Relacionamento", "Consulte consultores e carteiras.", "Consultores"),
-            ("📢", "Atualizações", "Veja comunicados e mudanças recentes.", "Comunicados"),
+            ("SUPORTE", "Contatos", "Localize centrais, e-mails e responsáveis.", "Contatos"),
+            ("RELAÇÃO", "Relacionamento", "Consulte consultores e carteiras.", "Consultores"),
+            ("NOVIDADES", "Atualizações", "Veja comunicados e mudanças recentes.", "Comunicados"),
         ],
     ]
 
     for row_index, items in enumerate(rows):
         columns = st.columns(3, gap="medium")
-        for column, (icon, title, description, page) in zip(columns, items):
+
+        for column, (eyebrow, title, description, page) in zip(columns, items):
             with column:
                 st.html(
                     f"""
                     <div class="portal-explore-card">
-                        <div class="portal-explore-icon">{_safe(icon)}</div>
+                        <div class="portal-explore-eyebrow">{_safe(eyebrow)}</div>
                         <div class="portal-explore-title">{_safe(title)}</div>
                         <div class="portal-explore-description">{_safe(description)}</div>
                     </div>
                     """
                 )
+
                 if st.button(
-                    f"Acessar {title}  →",
+                    f"Acessar {title}",
                     key=f"home_explore_{row_index}_{page}",
+                    icon=":material/arrow_forward:",
                     use_container_width=True,
                 ):
                     _go(page)
