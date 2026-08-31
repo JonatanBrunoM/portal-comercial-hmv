@@ -23,8 +23,6 @@ NAVIGATION_ITEMS = {
     "Consultores": "👥",
     "Comunicados": "📢",
     "Contingências": "⚠️",
-    "Fórum": "💬",
-    "Assistente": "✨",
     "Administração": "⚙️",
 }
 
