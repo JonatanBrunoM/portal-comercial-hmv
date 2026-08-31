@@ -265,32 +265,18 @@ def render_sidebar(
                 None,
             )
 
-        labels = [
-            f"{icon}  {page}"
-            for page, icon
-            in navigation_items.items()
-        ]
-
-        selected_label = (
-            st.radio(
-                label="Navegação",
-                options=labels,
-                index=page_names.index(
-                    current_page
-                ),
-                label_visibility=(
-                    "collapsed"
-                ),
-                key="main_navigation",
-                on_change=on_change,
-            )
-        )
-
-        selected_page = (
-            selected_label.split(
-                "  ",
-                maxsplit=1,
-            )[1]
+        selected_page = st.radio(
+            label="Navegação",
+            options=page_names,
+            index=page_names.index(
+                current_page
+            ),
+            format_func=lambda page: (
+                f"{navigation_items[page]}  {page}"
+            ),
+            label_visibility="collapsed",
+            key="main_navigation",
+            on_change=on_change,
         )
 
         st.session_state[
