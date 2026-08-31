@@ -1,11 +1,9 @@
 from collections.abc import Callable
+import html
 
 import streamlit as st
 
-from config.constants import (
-    APP_CONFIG,
-)
-
+from config.constants import APP_CONFIG
 from core.auth_service import (
     get_current_profile,
     get_google_user,
@@ -14,72 +12,50 @@ from core.auth_service import (
 
 
 NAVIGATION_ITEMS = {
-    "Início": "🏠",
-    "Pesquisa": "🔎",
-    "Operadoras": "🏥",
-    "Portais": "🌐",
-    "Documentos": "📄",
-    "Contatos": "📞",
-    "Consultores": "👥",
-    "Comunicados": "📢",
-    "Contingências": "⚠️",
-    "Administração": "⚙️",
+    "Início": "⌂",
+    "Pesquisa": "⌕",
+    "Operadoras": "▦",
+    "Portais": "◎",
+    "Documentos": "▤",
+    "Contatos": "☎",
+    "Consultores": "♙",
+    "Comunicados": "◖",
+    "Contingências": "△",
+    "Administração": "⚙",
 }
 
 
-def get_available_navigation_items(
-) -> dict[str, str]:
-    """
-    Retorna apenas os módulos permitidos
-    para o usuário atual.
-    """
+def get_available_navigation_items() -> dict[str, str]:
+    """Retorna apenas os módulos permitidos para o usuário atual."""
 
-    navigation_items = (
-        NAVIGATION_ITEMS.copy()
-    )
+    navigation_items = NAVIGATION_ITEMS.copy()
+    profile = get_current_profile()
 
-    profile = (
-        get_current_profile()
-    )
-
-    if (
-        not profile
-        or profile.get(
-            "role"
-        ) != "admin"
-    ):
-        navigation_items.pop(
-            "Administração",
-            None,
-        )
+    if not profile or profile.get("role") != "admin":
+        navigation_items.pop("Administração", None)
 
     return navigation_items
 
 
-def navigate_to(
-    page: str,
-) -> None:
-    """
-    Agenda uma mudança de página
-    para a próxima execução.
-    """
+def navigate_to(page: str) -> None:
+    """Altera a rota principal e mantém a sidebar sincronizada."""
 
-    navigation_items = (
-        get_available_navigation_items()
-    )
+    navigation_items = get_available_navigation_items()
 
     if page not in navigation_items:
-        page = (
-            APP_CONFIG.DEFAULT_PAGE
-        )
+        page = APP_CONFIG.DEFAULT_PAGE
 
-    st.session_state[
-        "pending_page"
-    ] = page
+    st.session_state["current_page"] = page
+    st.session_state.pop("pending_page", None)
+    st.session_state.pop("main_navigation", None)
+
+
+def _safe(value: object) -> str:
+    return html.escape(str(value or ""))
 
 
 def render_user_area() -> None:
-    """Renderiza a conta em formato compatível com a sidebar compacta."""
+    """Renderiza a conta em um bloco que funciona recolhido e expandido."""
 
     profile = get_current_profile()
     google_user = get_google_user()
@@ -87,52 +63,39 @@ def render_user_area() -> None:
     if not google_user:
         return
 
-    nome = (
+    name = (
         (profile or {}).get("nome")
         or google_user.get("name")
         or "Usuário"
     )
     role = (profile or {}).get("role", "usuario")
-    foto_url = (
+    picture = (
         (profile or {}).get("foto_url")
         or google_user.get("picture")
+        or ""
     )
 
     role_label = "Administrador" if role == "admin" else "Usuário"
+    initial = name[:1].upper() if name else "U"
 
-    st.html(
-        '<div class="portal-sidebar-section-label">Sua conta</div>'
+    avatar_html = (
+        f'<img class="portal-sidebar-avatar" src="{_safe(picture)}" alt="">'
+        if picture
+        else f'<div class="portal-sidebar-avatar-fallback">{_safe(initial)}</div>'
     )
 
-    if foto_url:
-        col_avatar, col_copy = st.columns(
-            [0.20, 0.80],
-            vertical_alignment="center",
-        )
-        with col_avatar:
-            st.image(foto_url, width=42)
-        with col_copy:
-            st.html(
-                f"""
-                <div class="portal-sidebar-user-copy">
-                    <div class="portal-sidebar-user-name">{nome}</div>
-                    <div class="portal-sidebar-user-role">{role_label}</div>
-                </div>
-                """
-            )
-    else:
-        inicial = nome[:1].upper() if nome else "U"
-        st.html(
-            f"""
-            <div class="portal-sidebar-user-compact">
-                <div class="portal-sidebar-avatar-fallback">{inicial}</div>
-                <div class="portal-sidebar-user-copy">
-                    <div class="portal-sidebar-user-name">{nome}</div>
-                    <div class="portal-sidebar-user-role">{role_label}</div>
-                </div>
+    st.html(
+        f"""
+        <div class="portal-sidebar-account-label">CONTA</div>
+        <div class="portal-sidebar-user-compact">
+            {avatar_html}
+            <div class="portal-sidebar-user-copy">
+                <div class="portal-sidebar-user-name">{_safe(name)}</div>
+                <div class="portal-sidebar-user-role">{_safe(role_label)}</div>
             </div>
-            """
-        )
+        </div>
+        """
+    )
 
     if st.button(
         "↪  Sair da conta",
@@ -143,120 +106,78 @@ def render_user_area() -> None:
 
 
 def render_sidebar(
-    on_change: Callable[
-        [],
-        None,
-    ]
-    | None = None,
+    on_change: Callable[[], None] | None = None,
 ) -> str:
-    """
-    Renderiza a navegação lateral.
-    """
+    """Renderiza a navegação lateral compacta e sem estado visual defasado."""
 
-    navigation_items = (
-        get_available_navigation_items()
+    navigation_items = get_available_navigation_items()
+    page_names = list(navigation_items.keys())
+
+    pending_page = st.session_state.pop("pending_page", None)
+    if pending_page in navigation_items:
+        st.session_state["current_page"] = pending_page
+
+    current_page = st.session_state.get(
+        "current_page",
+        APP_CONFIG.DEFAULT_PAGE,
     )
 
-    pending_page = (
-        st.session_state.pop(
-            "pending_page",
-            None,
-        )
-    )
-
-    if (
-        pending_page
-        in navigation_items
-    ):
-        st.session_state[
-            "current_page"
-        ] = pending_page
-
-        st.session_state.pop(
-            "main_navigation",
-            None,
-        )
+    if current_page not in page_names:
+        current_page = APP_CONFIG.DEFAULT_PAGE
+        st.session_state["current_page"] = current_page
 
     with st.sidebar:
-        sidebar_header = f"""
-        <div class="portal-sidebar-header">
-            <div class="portal-sidebar-brandmark">
-                <div class="portal-sidebar-brand-icon">M</div>
-                <div class="portal-sidebar-brand-copy">
-                    <div class="portal-sidebar-organization">
-                        {APP_CONFIG.ORGANIZATION_NAME}
-                    </div>
-                    <div class="portal-sidebar-title">
-                        {APP_CONFIG.APP_NAME}
+        st.html(
+            f"""
+            <div class="portal-sidebar-header">
+                <div class="portal-sidebar-brandmark">
+                    <div class="portal-sidebar-brand-icon">M</div>
+                    <div class="portal-sidebar-brand-copy">
+                        <div class="portal-sidebar-organization">
+                            {_safe(APP_CONFIG.ORGANIZATION_NAME)}
+                        </div>
+                        <div class="portal-sidebar-title">
+                            {_safe(APP_CONFIG.APP_NAME)}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        """
-
-        st.html(
-            sidebar_header
+            <div class="portal-sidebar-section-label">NAVEGAÇÃO</div>
+            """
         )
 
-        st.html(
-            '<div class="portal-sidebar-section-label">Navegação</div>'
-        )
+        for page, icon in navigation_items.items():
+            is_active = page == current_page
 
-        current_page = (
-            st.session_state.get(
-                "current_page",
-                APP_CONFIG.DEFAULT_PAGE,
-            )
-        )
-
-        page_names = list(
-            navigation_items.keys()
-        )
-
-        if (
-            current_page
-            not in page_names
-        ):
-            current_page = (
-                APP_CONFIG.DEFAULT_PAGE
+            clicked = st.button(
+                f"{icon}   {page}",
+                key=f"nav_{page}",
+                type="primary" if is_active else "secondary",
+                use_container_width=True,
             )
 
-            st.session_state[
-                "current_page"
-            ] = current_page
+            if clicked:
+                st.session_state["current_page"] = page
+                st.session_state.pop("pending_page", None)
+                st.session_state.pop("main_navigation", None)
 
-            st.session_state.pop(
-                "main_navigation",
-                None,
-            )
+                if on_change:
+                    on_change()
 
-        selected_page = st.radio(
-            label="Navegação",
-            options=page_names,
-            index=page_names.index(
-                current_page
-            ),
-            format_func=lambda page: (
-                f"{navigation_items[page]}  {page}"
-            ),
-            label_visibility="collapsed",
-            key="main_navigation",
-            on_change=on_change,
-        )
+                st.rerun()
 
-        st.session_state[
-            "current_page"
-        ] = selected_page
-
-        st.divider()
-
+        st.html('<div class="portal-sidebar-separator"></div>')
         render_user_area()
 
-        st.divider()
-
-        st.caption(
-            "Base de conhecimento "
-            "da área Comercial."
+        st.html(
+            """
+            <div class="portal-sidebar-footer">
+                Base Comercial HMV
+            </div>
+            """
         )
 
-    return selected_page
+    return st.session_state.get(
+        "current_page",
+        APP_CONFIG.DEFAULT_PAGE,
+    )
