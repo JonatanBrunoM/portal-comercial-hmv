@@ -16,76 +16,76 @@ CATEGORY_ICONS = {
     "Autorizações": "🔑",
     "Coberturas": "🩺",
     "Contatos": "📞",
+    "Consultores": "👤",
+    "Comunicados": "📢",
     "Contingências": "⚠️",
     "Dicas operacionais": "💡",
 }
+
+
+def _open_result(result: SearchResult) -> None:
+    if result.operator_id:
+        st.session_state["selected_operator_id"] = result.operator_id
+        st.session_state[
+            f"operator_module_{result.operator_id}"
+        ] = result.target_module or "Visão geral"
+        st.session_state.current_page = "Operadoras"
+    else:
+        st.session_state["selected_search_result"] = result
+        st.session_state.current_page = "Pesquisa"
+
+    st.rerun()
 
 
 def render_search_result(
     result: SearchResult,
     key_prefix: str,
 ) -> bool:
-    """Renderiza um resultado individual."""
+    icon = CATEGORY_ICONS.get(result.category, "🔎")
 
-    icon = CATEGORY_ICONS.get(
-        result.category,
-        "🔎",
+    safe_category = html.escape(result.category)
+    safe_title = html.escape(result.title)
+    safe_subtitle = html.escape(result.subtitle)
+    safe_description = html.escape(result.description)
+    safe_operator = html.escape(result.operator_name)
+
+    operator_badge = (
+        f'<span class="portal-search-result-operator">{safe_operator}</span>'
+        if safe_operator
+        else ""
     )
 
-    safe_category = html.escape(
-        result.category,
-    )
-
-    safe_title = html.escape(
-        result.title,
-    )
-
-    safe_subtitle = html.escape(
-        result.subtitle,
-    )
-
-    safe_description = html.escape(
-        result.description,
+    description_html = (
+        f'<div class="portal-search-result-description">{safe_description}</div>'
+        if safe_description
+        else ""
     )
 
     result_html = f"""
     <article class="portal-search-result">
         <div class="portal-search-result-top">
-            <span class="portal-search-result-icon">
-                {icon}
-            </span>
-
-            <span class="portal-search-result-category">
-                {safe_category}
-            </span>
+            <span class="portal-search-result-icon">{icon}</span>
+            <span class="portal-search-result-category">{safe_category}</span>
+            {operator_badge}
         </div>
-
-        <div class="portal-search-result-title">
-            {safe_title}
-        </div>
-
-        <div class="portal-search-result-subtitle">
-            {safe_subtitle}
-        </div>
-
-        <div class="portal-search-result-description">
-            {safe_description}
-        </div>
+        <div class="portal-search-result-title">{safe_title}</div>
+        <div class="portal-search-result-subtitle">{safe_subtitle}</div>
+        {description_html}
     </article>
     """
 
     with st.container(border=True):
-        st.html(
-            result_html,
+        st.html(result_html)
+
+        button_label = (
+            f"Abrir em {result.target_module}"
+            if result.target_module and result.target_module != "Visão geral"
+            else "Abrir operadora"
         )
 
         return st.button(
-            "Ver detalhes",
-            key=(
-                f"{key_prefix}_"
-                f"{result.category}_"
-                f"{result.result_id}"
-            ),
+            button_label,
+            key=f"{key_prefix}_{result.category}_{result.result_id}_{result.operator_id}",
             use_container_width=True,
         )
 
@@ -94,42 +94,17 @@ def render_search_results(
     results: list[SearchResult],
     key_prefix: str,
 ) -> None:
-    """Renderiza a lista completa de resultados."""
-
     if not results:
         st.info(
             "Não encontramos informações para essa pesquisa. "
-            "Tente o nome da operadora, plano, documento, "
-            "procedimento ou tipo de atendimento."
+            "Tente combinar a operadora com o que você precisa, "
+            "por exemplo: “Bradesco autorização”, “CASSI telefone” "
+            "ou “Unimed portal”."
         )
-
         return
 
-    st.caption(
-        f"{len(results)} resultado(s) encontrado(s)."
-    )
+    st.caption(f"{len(results)} resultado(s) relevante(s) encontrado(s).")
 
     for result in results:
-        if render_search_result(
-            result=result,
-            key_prefix=key_prefix,
-        ):
-            if result.operator_id:
-                st.session_state[
-                    "selected_operator_id"
-                ] = result.operator_id
-        
-                st.session_state.current_page = (
-                    "Operadoras"
-                )
-        
-            else:
-                st.session_state[
-                    "selected_search_result"
-                ] = result
-        
-                st.session_state.current_page = (
-                    "Pesquisa"
-                )
-        
-            st.rerun()
+        if render_search_result(result=result, key_prefix=key_prefix):
+            _open_result(result)
