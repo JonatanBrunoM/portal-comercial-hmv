@@ -7,7 +7,10 @@ from components.hero import render_hero
 from config.settings import DATASETS
 from core.auth_service import get_current_profile
 from core.data_service import clear_data_cache, read_dataset
-from core.supabase_repository import get_supabase_client
+from core.supabase_repository import (
+    check_supabase_connection,
+    fetch_table,
+)
 
 
 ADMIN_DATASETS = [
@@ -64,14 +67,29 @@ def _render_dataset_browser() -> None:
 def _render_users() -> None:
     st.markdown("## Usuários")
     try:
-        response = (
-            get_supabase_client()
-            .table("profiles")
-            .select("id,nome,email,role,status,primeiro_acesso_em,ultimo_acesso_em,ultimo_login_em")
-            .order("nome", desc=False)
-            .execute()
+        dataframe = fetch_table(
+            "profiles",
+            order_by="nome",
         )
-        dataframe = pd.DataFrame(response.data or [])
+
+        visible_columns = [
+            "id",
+            "nome",
+            "email",
+            "role",
+            "status",
+            "primeiro_acesso_em",
+            "ultimo_acesso_em",
+            "ultimo_login_em",
+        ]
+
+        dataframe = dataframe[
+            [
+                column
+                for column in visible_columns
+                if column in dataframe.columns
+            ]
+        ]
     except Exception as error:
         st.error(f"Não foi possível carregar os usuários: {error}")
         return
@@ -94,6 +112,14 @@ def render_admin() -> None:
         title="Administração",
         description="Acompanhe a base Supabase, os módulos do portal e os usuários autorizados.",
     )
+
+    connected, connection_message = check_supabase_connection()
+
+    if connected:
+        st.success("Supabase conectado e operacional.", icon="✅")
+    else:
+        st.error(connection_message, icon="❌")
+        return
 
     if st.button("Atualizar dados agora", use_container_width=False):
         clear_data_cache()
