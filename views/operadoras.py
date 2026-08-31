@@ -48,19 +48,16 @@ def _render_planos(operator_id: str) -> None:
 
     for _, plano in planos.iterrows():
         plan_name = (
-            _safe_text(plano, "Nome padronizado")
-            or _safe_text(plano, "Plano")
+            _safe_text(plano, "nome_padronizado")
+            or _safe_text(plano, "nome")
             or "Plano sem nome"
         )
-        unit = _safe_text(plano, "Unidade") or "Unidade não informada"
-        plan_type = _safe_text(plano, "Tipo do plano") or "Tipo não informado"
+        plan_type = _safe_text(plano, "tipo_plano") or "Tipo não informado"
 
         with st.expander(f"📋 {plan_name}", expanded=False):
-            col_1, col_2 = st.columns(2)
-            col_1.markdown(f"**Unidade:** {unit}")
-            col_2.markdown(f"**Tipo:** {plan_type}")
+            st.markdown(f"**Tipo:** {plan_type}")
 
-            observation = _safe_text(plano, "Observação resumida")
+            observation = _safe_text(plano, "observacao_resumida")
             if observation:
                 st.markdown(f"**Observação:** {observation}")
 
@@ -76,11 +73,11 @@ def _render_portais(operator_id: str) -> None:
     st.caption(f"{len(portais)} portal(is) encontrado(s).")
 
     for _, portal in portais.iterrows():
-        name = _safe_text(portal, "Nome do portal") or "Portal sem nome"
-        url = _safe_text(portal, "URL")
-        portal_type = _safe_text(portal, "Tipo")
-        unit = _safe_text(portal, "Unidade")
-        instructions = _safe_text(portal, "Instrução de acesso")
+        name = _safe_text(portal, "nome") or "Portal sem nome"
+        url = _safe_text(portal, "url")
+        portal_type = _safe_text(portal, "tipo")
+        unit = _safe_text(portal, "local_nome")
+        instructions = _safe_text(portal, "instrucao_acesso")
 
         with st.expander(f"🌐 {name}", expanded=False):
             if portal_type:
@@ -104,23 +101,20 @@ def _render_elegibilidade(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} regra(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "Tipo atendimento") or "Regra geral"
+        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Regra geral"
 
         with st.expander(f"✅ {attendance_type}", expanded=False):
-            how_to = _safe_text(item, "Como verificar")
-            document = _safe_text(item, "Documento necessário")
-            unit = _safe_text(item, "Unidade")
-            eligible = _safe_text(item, "Elegível")
+            orientation = _safe_text(item, "orientacao")
+            unit = _safe_text(item, "local_nome")
+            required = _safe_text(item, "necessario")
 
             if unit:
                 st.markdown(f"**Unidade:** {unit}")
-            if eligible:
-                st.markdown(f"**Elegível:** {eligible}")
-            if document:
-                st.markdown(f"**Documento necessário:** {document}")
-            if how_to:
-                st.markdown("**Como verificar:**")
-                st.write(how_to)
+            if required:
+                st.markdown(f"**Necessária:** {required}")
+            if orientation:
+                st.markdown("**Orientação:**")
+                st.write(orientation)
 
 
 def _render_documentos(operator_id: str) -> None:
@@ -134,17 +128,17 @@ def _render_documentos(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} registro(s) encontrado(s).")
 
     for _, item in dataframe.iterrows():
-        document = _safe_text(item, "Documento") or "Documento sem identificação"
-        attendance_type = _safe_text(item, "Tipo atendimento")
+        document = _safe_text(item, "nome") or "Documento sem identificação"
+        attendance_type = _safe_text(item, "tipo_atendimento_nome")
 
         with st.expander(f"📄 {document}", expanded=False):
             col_1, col_2 = st.columns(2)
             col_1.markdown(
                 "**Obrigatório:** "
-                f"{_safe_text(item, 'Obrigatório') or 'Não informado'}"
+                f"{_safe_text(item, 'obrigatorio') or 'Não informado'}"
             )
 
-            validity = _safe_text(item, "Validade em dias")
+            validity = _safe_text(item, "validade_dias")
             col_2.markdown(
                 "**Validade:** "
                 f"{validity + ' dias' if validity else 'Não informada'}"
@@ -153,11 +147,11 @@ def _render_documentos(operator_id: str) -> None:
             if attendance_type:
                 st.markdown(f"**Atendimento:** {attendance_type}")
 
-            original_copy = _safe_text(item, "Original/Cópia")
+            original_copy = _safe_text(item, "formato")
             if original_copy:
                 st.markdown(f"**Formato:** {original_copy}")
 
-            observations = _safe_text(item, "Observações")
+            observations = _safe_text(item, "observacoes")
             if observations:
                 st.write(observations)
 
@@ -173,22 +167,22 @@ def _render_autorizacoes(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} regra(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "Tipo atendimento") or "Autorização geral"
+        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Autorização geral"
 
         with st.expander(f"🔑 {attendance_type}", expanded=False):
             col_1, col_2 = st.columns(2)
             col_1.markdown(
                 "**Necessita autorização:** "
-                f"{_safe_text(item, 'Necessita autorização') or 'Não identificado'}"
+                f"{_safe_text(item, 'necessita_autorizacao') or 'Não identificado'}"
             )
             col_2.markdown(
                 "**Pré/Pós:** "
-                f"{_safe_text(item, 'Pré/Pós') or 'Não identificado'}"
+                f"{_safe_text(item, 'momento_autorizacao') or 'Não identificado'}"
             )
 
-            requester = _safe_text(item, "Quem solicita")
-            method = _safe_text(item, "Meio de solicitação")
-            return_time = _safe_text(item, "Prazo retorno horas")
+            requester = _safe_text(item, "quem_solicita")
+            method = _safe_text(item, "meio_solicitacao")
+            return_time = _safe_text(item, "prazo")
 
             if requester:
                 st.markdown(f"**Quem solicita:** {requester}")
@@ -197,7 +191,7 @@ def _render_autorizacoes(operator_id: str) -> None:
             if return_time:
                 st.markdown(f"**Prazo de retorno:** {return_time} hora(s)")
 
-            observations = _safe_text(item, "Observações")
+            observations = _safe_text(item, "observacoes")
             if observations:
                 st.write(observations)
 
@@ -213,14 +207,14 @@ def _render_coberturas(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} cobertura(s) encontrada(s).")
 
     for _, item in dataframe.iterrows():
-        attendance_type = _safe_text(item, "Tipo atendimento") or "Cobertura geral"
-        covered = _safe_text(item, "Coberto") or "Não identificado"
+        attendance_type = _safe_text(item, "tipo_atendimento_nome") or "Cobertura geral"
+        covered = _safe_text(item, "coberto") or "Não identificado"
 
         with st.expander(f"🩺 {attendance_type} — {covered}", expanded=False):
-            unit = _safe_text(item, "Unidade")
-            accommodation = _safe_text(item, "Acomodação")
-            companion = _safe_text(item, "Acompanhante")
-            restriction = _safe_text(item, "Restrição")
+            unit = _safe_text(item, "local_nome")
+            accommodation = _safe_text(item, "acomodacao")
+            companion = _safe_text(item, "acompanhante")
+            restriction = _safe_text(item, "restricoes_cobertura")
 
             if unit:
                 st.markdown(f"**Unidade:** {unit}")
@@ -231,7 +225,7 @@ def _render_coberturas(operator_id: str) -> None:
             if restriction:
                 st.markdown(f"**Restrição:** {restriction}")
 
-            observations = _safe_text(item, "Observações")
+            observations = _safe_text(item, "observacoes")
             if observations:
                 st.write(observations)
 
@@ -247,9 +241,9 @@ def _render_contatos(operator_id: str) -> None:
     st.caption(f"{len(dataframe)} contato(s) encontrado(s).")
 
     for _, item in dataframe.iterrows():
-        purpose = _safe_text(item, "Finalidade") or "Contato geral"
-        contact_type = _safe_text(item, "Tipo")
-        contact = _safe_text(item, "Contato")
+        purpose = _safe_text(item, "finalidade") or "Contato geral"
+        contact_type = _safe_text(item, "tipo")
+        contact = _safe_text(item, "contato")
 
         with st.expander(f"📞 {purpose}", expanded=False):
             if contact_type:
@@ -257,8 +251,8 @@ def _render_contatos(operator_id: str) -> None:
             if contact:
                 st.markdown(f"**Contato:** {contact}")
 
-            responsible = _safe_text(item, "Responsável")
-            schedule = _safe_text(item, "Horário atendimento")
+            responsible = _safe_text(item, "responsavel")
+            schedule = _safe_text(item, "horario_atendimento")
 
             if responsible:
                 st.markdown(f"**Responsável:** {responsible}")
@@ -280,8 +274,8 @@ def _render_contingencias(operator_id: str) -> None:
     )
 
     for _, item in dataframe.iterrows():
-        event = _safe_text(item, "Evento") or "Contingência"
-        priority = _safe_text(item, "Prioridade")
+        event = _safe_text(item, "titulo") or "Contingência"
+        priority = _safe_text(item, "prioridade")
 
         with st.expander(
             f"⚠️ {event}",
@@ -290,14 +284,14 @@ def _render_contingencias(operator_id: str) -> None:
             if priority:
                 st.markdown(f"**Prioridade:** {priority}")
 
-            guidance = _safe_text(item, "Orientação alternativa")
+            guidance = _safe_text(item, "orientacao_alternativa")
             if guidance:
                 st.markdown("**Orientação:**")
                 st.write(guidance)
 
-            observations = _safe_text(item, "Observações")
-            if observations:
-                st.caption(observations)
+            description = _safe_text(item, "descricao")
+            if description:
+                st.caption(description)
 
 
 def render_operadora_detail(operator_id: str) -> None:
