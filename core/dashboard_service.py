@@ -7,10 +7,10 @@ import pandas as pd
 import streamlit as st
 
 from core.data_service import (
-    get_comunicados,
-    get_contingencias,
-    get_operadoras,
-    get_planos,
+    get_comunicados_native,
+    get_contingencias_native,
+    get_operadoras_native,
+    get_planos_native,
 )
 from utils.formatting import normalize_text
 
@@ -157,9 +157,9 @@ def _is_notice_active(
     status = _first_available(
         row,
         [
-            "Status",
-            "Status publicação",
-            "Status revisão",
+            "status",
+            "status",
+            "status",
         ],
     )
 
@@ -172,8 +172,8 @@ def _is_notice_active(
         _first_available(
             row,
             [
-                "Data início",
-                "Data Inicio",
+                "inicio_em",
+                "inicio_em",
             ],
         )
     )
@@ -182,8 +182,8 @@ def _is_notice_active(
         _first_available(
             row,
             [
-                "Data fim",
-                "Data Fim",
+                "fim_em",
+                "fim_em",
             ],
         )
     )
@@ -205,9 +205,9 @@ def _is_contingency_active(
     status = _first_available(
         row,
         [
-            "Status contingência",
-            "Status",
-            "Status revisão",
+            "status",
+            "status",
+            "status",
         ],
     )
 
@@ -268,7 +268,7 @@ def _build_notices(
         lambda row: _priority_order(
             _safe_value(
                 row,
-                "Prioridade",
+                "prioridade",
             )
         ),
         axis=1,
@@ -276,7 +276,7 @@ def _build_notices(
 
     filtered["_date_sort"] = pd.to_datetime(
         filtered.get(
-            "Data início",
+            "inicio_em",
             pd.Series(
                 index=filtered.index,
                 dtype="object",
@@ -309,8 +309,8 @@ def _build_notices(
                     _first_available(
                         row,
                         [
-                            "ID Comunicado",
-                            "ID",
+                            "id",
+                            "id",
                         ],
                     )
                     or str(index)
@@ -318,28 +318,28 @@ def _build_notices(
                 title=(
                     _safe_value(
                         row,
-                        "Título",
+                        "titulo",
                     )
                     or "Comunicado sem título"
                 ),
                 summary=_first_available(
                     row,
                     [
-                        "Resumo",
-                        "Conteúdo",
+                        "resumo",
+                        "conteudo",
                     ],
                 ),
                 priority=(
                     _safe_value(
                         row,
-                        "Prioridade",
+                        "prioridade",
                     )
                     or "Não informada"
                 ),
                 category=(
                     _safe_value(
                         row,
-                        "Categoria",
+                        "categoria",
                     )
                     or "Geral"
                 ),
@@ -347,8 +347,7 @@ def _build_notices(
                     _first_available(
                         row,
                         [
-                            "Nome Operadora",
-                            "Operadora",
+                            "operadora_nome",
                         ],
                     )
                     or "Comunicado geral"
@@ -357,8 +356,8 @@ def _build_notices(
                     _first_available(
                         row,
                         [
-                            "Data início",
-                            "Data Inicio",
+                            "inicio_em",
+                            "inicio_em",
                         ],
                     )
                 ),
@@ -366,8 +365,8 @@ def _build_notices(
                     _first_available(
                         row,
                         [
-                            "Data fim",
-                            "Data Fim",
+                            "fim_em",
+                            "fim_em",
                         ],
                     )
                 ),
@@ -399,7 +398,7 @@ def _build_contingencies(
         lambda row: _priority_order(
             _safe_value(
                 row,
-                "Prioridade",
+                "prioridade",
             )
         ),
         axis=1,
@@ -424,8 +423,8 @@ def _build_contingencies(
                     _first_available(
                         row,
                         [
-                            "ID Contingência",
-                            "ID",
+                            "id",
+                            "id",
                         ],
                     )
                     or str(index)
@@ -433,7 +432,7 @@ def _build_contingencies(
                 event=(
                     _safe_value(
                         row,
-                        "Evento",
+                        "titulo",
                     )
                     or "Contingência sem identificação"
                 ),
@@ -441,8 +440,7 @@ def _build_contingencies(
                     _first_available(
                         row,
                         [
-                            "Nome Operadora",
-                            "Operadora",
+                            "operadora_nome",
                         ],
                     )
                     or "Operadora não identificada"
@@ -450,7 +448,7 @@ def _build_contingencies(
                 priority=(
                     _safe_value(
                         row,
-                        "Prioridade",
+                        "prioridade",
                     )
                     or "Não informada"
                 ),
@@ -458,21 +456,21 @@ def _build_contingencies(
                     _first_available(
                         row,
                         [
-                            "Status contingência",
-                            "Status",
-                            "Status revisão",
+                            "status",
+                            "status",
+                            "status",
                         ],
                     )
                     or "Não informado"
                 ),
                 guidance=_safe_value(
                     row,
-                    "Orientação alternativa",
+                    "orientacao_alternativa",
                 ),
                 unit=(
                     _safe_value(
                         row,
-                        "Unidade",
+                        "local_nome",
                     )
                     or "Todas as unidades"
                 ),
@@ -491,10 +489,22 @@ def _build_contingencies(
 def get_dashboard_summary() -> DashboardSummary:
     """Carrega os indicadores e destaques da Home."""
 
-    operadoras = get_operadoras()
-    planos = get_planos()
-    comunicados = get_comunicados()
-    contingencias = get_contingencias()
+    operadoras = get_operadoras_native()
+    planos = get_planos_native()
+    comunicados = get_comunicados_native()
+    contingencias = get_contingencias_native()
+
+    operator_names = {}
+    if not operadoras.empty and {"id", "nome"}.issubset(operadoras.columns):
+        operator_names = dict(zip(operadoras["id"].astype(str), operadoras["nome"].fillna("").astype(str)))
+
+    if not comunicados.empty and "operadora_id" in comunicados.columns:
+        comunicados = comunicados.copy()
+        comunicados["operadora_nome"] = comunicados["operadora_id"].astype(str).map(operator_names).fillna("")
+
+    if not contingencias.empty and "operadora_id" in contingencias.columns:
+        contingencias = contingencias.copy()
+        contingencias["operadora_nome"] = contingencias["operadora_id"].astype(str).map(operator_names).fillna("")
 
     notices = _build_notices(
         comunicados
