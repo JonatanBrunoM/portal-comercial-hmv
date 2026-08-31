@@ -217,6 +217,12 @@ def render_home() -> None:
         key="home_search",
     )
 
+    if data_error:
+        st.warning(
+            "Não foi possível carregar todos os indicadores da Home. "
+            "Tente novamente em alguns instantes."
+        )
+
     if search_query:
         with st.spinner(
             "Pesquisando na base comercial..."
@@ -225,21 +231,13 @@ def render_home() -> None:
                 query=search_query,
                 limit=12,
             )
-    
+
         render_search_results(
             results=search_results,
             key_prefix="home_search",
         )
-    
-        st.divider()
 
-        if data_error:
-            st.warning(
-                "A base comercial atingiu temporariamente o limite "
-                "de consultas. Aguarde alguns instantes e tente novamente."
-            )
-    
-        st.code(data_error)
+        st.divider()
 
     st.markdown(
         "## Visão geral"
@@ -360,7 +358,7 @@ def render_home() -> None:
             icon="🌐",
             button_key="home_portais",
         ):
-            st.session_state.current_page = "Portais"
+            navigate_to("Portais")
             st.rerun()
 
     with row_1[2]:
@@ -373,7 +371,7 @@ def render_home() -> None:
             icon="📄",
             button_key="home_documentos",
         ):
-            st.session_state.current_page = "Documentos"
+            navigate_to("Documentos")
             st.rerun()
 
     row_2 = st.columns(3)
@@ -388,7 +386,7 @@ def render_home() -> None:
             icon="📞",
             button_key="home_contatos",
         ):
-            st.session_state.current_page = "Contatos"
+            navigate_to("Contatos")
             st.rerun()
 
     with row_2[1]:
@@ -401,7 +399,7 @@ def render_home() -> None:
             icon="⚠️",
             button_key="home_contingencias",
         ):
-            st.session_state.current_page = "Contingências"
+            navigate_to("Contingências")
             st.rerun()
 
     with row_2[2]:
@@ -414,5 +412,5 @@ def render_home() -> None:
             icon="✨",
             button_key="home_assistente",
         ):
-            st.session_state.current_page = "Assistente"
+            navigate_to("Assistente")
             st.rerun()
