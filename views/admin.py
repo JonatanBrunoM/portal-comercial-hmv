@@ -17,7 +17,7 @@ ADMIN_DATASETS = [
     "operadoras", "planos", "portais", "elegibilidade", "documentos",
     "autorizacoes", "coberturas", "contatos", "contingencias",
     "dicas_operacionais", "consultores", "carteiras", "comunicados",
-    "forum_posts", "forum_comentarios", "conhecimento",
+    "locais_atendimento", "tipos_atendimento", "plano_locais",
 ]
 
 
