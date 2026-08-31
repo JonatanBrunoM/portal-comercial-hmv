@@ -82,6 +82,34 @@ def _require_admin() -> dict:
     return profile
 
 
+
+def check_supabase_connection() -> tuple[bool, str]:
+    """
+    Valida a conexão server-side com o Supabase.
+
+    A consulta é mínima e não retorna dados sensíveis.
+    """
+
+    _require_authenticated()
+
+    try:
+        (
+            get_supabase_client()
+            .table("operadoras")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
+
+        return True, "Conexão com o Supabase ativa."
+
+    except Exception as error:
+        return (
+            False,
+            "Falha na conexão com o Supabase: "
+            f"{type(error).__name__}: {error}",
+        )
+
 def fetch_table(
     table_name: str,
     *,
