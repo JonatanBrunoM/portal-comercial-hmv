@@ -121,29 +121,75 @@ def _render_search() -> str:
     )
 
 
+def _nav_href(page: str) -> str:
+    slugs = {
+        "Início": "inicio",
+        "Pesquisa": "pesquisa",
+        "Operadoras": "operadoras",
+        "Portais": "portais",
+        "Documentos": "documentos",
+        "Contatos": "contatos",
+        "Consultores": "consultores",
+        "Comunicados": "comunicados",
+        "Contingências": "contingencias",
+        "Administração": "administracao",
+    }
+    return f"?page={slugs.get(page, 'inicio')}"
+
+
+QUICK_ICONS = {
+    "Operadoras": """
+        <svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8h8v13M8 7v2M8 12v2M8 17v2M16 11v2M16 16v2"/></svg>
+    """,
+    "Portais": """
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+    """,
+    "Documentos": """
+        <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6"/></svg>
+    """,
+    "Contatos": """
+        <svg viewBox="0 0 24 24"><path d="M7 3 4 5.5c.5 7 7 13.5 14 14l2.5-3-4-3-2 2c-2.5-1-5-3.5-6-6l2-2z"/></svg>
+    """,
+    "Contingências": """
+        <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4zM12 9v5M12 17.5h.01"/></svg>
+    """,
+}
+
+
 def _render_quick_dock() -> None:
-    with st.container(key="home_quick_actions"):
-        st.html('<div class="portal-home-dock-label">ATALHOS RÁPIDOS</div>')
+    actions = [
+        ("Operadoras", "Convênios e planos"),
+        ("Portais", "Acessos operacionais"),
+        ("Documentos", "Regras e documentos"),
+        ("Contatos", "Centrais e responsáveis"),
+        ("Contingências", "Situações ativas"),
+    ]
 
-        columns = st.columns(5, gap="small")
-        actions = [
-            (":material/apartment:", "Operadoras", "Operadoras"),
-            (":material/language:", "Portais", "Portais"),
-            (":material/description:", "Documentos", "Documentos"),
-            (":material/contact_phone:", "Contatos", "Contatos"),
-            (":material/warning:", "Contingências", "Contingências"),
-        ]
+    cards = []
+    for page, subtitle in actions:
+        cards.append(
+            f"""
+            <a class="portal-quick-card" href="{_nav_href(page)}" target="_self">
+                <span class="portal-quick-icon">{QUICK_ICONS[page]}</span>
+                <span class="portal-quick-copy">
+                    <strong>{_safe(page)}</strong>
+                    <small>{_safe(subtitle)}</small>
+                </span>
+                <span class="portal-quick-arrow">→</span>
+            </a>
+            """
+        )
 
-        for column, (icon, label, page) in zip(columns, actions):
-            with column:
-                if st.button(
-                    label,
-                    key=f"home_dock_{page}",
-                    icon=icon,
-                    use_container_width=True,
-                ):
-                    _go(page)
-                    st.rerun()
+    st.html(
+        f"""
+        <div class="portal-home-quick-wrap">
+            <div class="portal-home-dock-label">ATALHOS RÁPIDOS</div>
+            <div class="portal-home-quick-grid">
+                {''.join(cards)}
+            </div>
+        </div>
+        """
+    )
 
 
 def _notice_html(notice, compact: bool = False) -> str:
@@ -227,12 +273,16 @@ def _render_radar(summary) -> None:
                 """
             )
 
-        if st.button(
-            "Ver todas as contingências  →",
-            key="home_all_contingencies",
-        ):
-            _go("Contingências")
-            st.rerun()
+        st.html(
+            f"""
+            <a class="portal-section-link"
+               href="{_nav_href('Contingências')}"
+               target="_self">
+                Ver todas as contingências
+                <span>→</span>
+            </a>
+            """
+        )
 
     with right:
         if summary and summary.notices:
@@ -251,12 +301,16 @@ def _render_radar(summary) -> None:
                 """
             )
 
-        if st.button(
-            "Ver todos os comunicados  →",
-            key="home_all_notices",
-        ):
-            _go("Comunicados")
-            st.rerun()
+        st.html(
+            f"""
+            <a class="portal-section-link"
+               href="{_nav_href('Comunicados')}"
+               target="_self">
+                Ver todos os comunicados
+                <span>→</span>
+            </a>
+            """
+        )
 
 
 def _render_explore() -> None:
@@ -266,42 +320,39 @@ def _render_explore() -> None:
         "Entre pelo caminho que melhor representa a sua necessidade.",
     )
 
-    rows = [
-        [
-            ("CONVÊNIOS", "Operadoras e planos", "Consulte o panorama completo de cada convênio.", "Operadoras"),
-            ("ACESSO", "Portais e acessos", "Encontre os sistemas utilizados na operação.", "Portais"),
-            ("REGRAS", "Documentação", "Confira documentos, validade e orientações.", "Documentos"),
-        ],
-        [
-            ("SUPORTE", "Contatos", "Localize centrais, e-mails e responsáveis.", "Contatos"),
-            ("RELAÇÃO", "Relacionamento", "Consulte consultores e carteiras.", "Consultores"),
-            ("NOVIDADES", "Atualizações", "Veja comunicados e mudanças recentes.", "Comunicados"),
-        ],
+    items = [
+        ("CONVÊNIOS", "Operadoras e planos", "Consulte o panorama completo de cada convênio.", "Operadoras"),
+        ("ACESSO", "Portais e acessos", "Encontre os sistemas utilizados na operação.", "Portais"),
+        ("REGRAS", "Documentação", "Confira documentos, validade e orientações.", "Documentos"),
+        ("SUPORTE", "Contatos", "Localize centrais, e-mails e responsáveis.", "Contatos"),
+        ("RELAÇÃO", "Relacionamento", "Consulte consultores e carteiras.", "Consultores"),
+        ("NOVIDADES", "Atualizações", "Veja comunicados e mudanças recentes.", "Comunicados"),
     ]
 
-    for row_index, items in enumerate(rows):
-        columns = st.columns(3, gap="medium")
+    cards = []
+    for eyebrow, title, description, page in items:
+        cards.append(
+            f"""
+            <a class="portal-explore-link"
+               href="{_nav_href(page)}"
+               target="_self">
+                <span class="portal-explore-eyebrow">{_safe(eyebrow)}</span>
+                <strong class="portal-explore-title">{_safe(title)}</strong>
+                <span class="portal-explore-description">{_safe(description)}</span>
+                <span class="portal-explore-action">
+                    Acessar <span>→</span>
+                </span>
+            </a>
+            """
+        )
 
-        for column, (eyebrow, title, description, page) in zip(columns, items):
-            with column:
-                st.html(
-                    f"""
-                    <div class="portal-explore-card">
-                        <div class="portal-explore-eyebrow">{_safe(eyebrow)}</div>
-                        <div class="portal-explore-title">{_safe(title)}</div>
-                        <div class="portal-explore-description">{_safe(description)}</div>
-                    </div>
-                    """
-                )
-
-                if st.button(
-                    f"Acessar {title}",
-                    key=f"home_explore_{row_index}_{page}",
-                    icon=":material/arrow_forward:",
-                    use_container_width=True,
-                ):
-                    _go(page)
-                    st.rerun()
+    st.html(
+        f"""
+        <div class="portal-explore-grid">
+            {''.join(cards)}
+        </div>
+        """
+    )
 
 
 def render_home() -> None:
