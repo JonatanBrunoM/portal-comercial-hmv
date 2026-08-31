@@ -22,6 +22,16 @@ from core.admin_master_data_service import (
     save_operator,
     save_plan,
 )
+from core.admin_rules_service import (
+    get_all_authorizations,
+    get_all_coverages,
+    get_all_documents,
+    get_all_eligibility,
+    save_authorization,
+    save_coverage,
+    save_document,
+    save_eligibility,
+)
 from core.auth_service import get_current_profile
 from core.credentials_service import format_timestamp, get_credential_history
 from core.data_service import (
@@ -716,6 +726,487 @@ def _render_master_data_backoffice() -> None:
     with tab_types:
         _render_attendance_type_management()
 
+
+def _rule_context_data() -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame,
+    list[str], dict[str, str], list[str], dict[str, str],
+    list[str], dict[str, str], list[str], dict[str, str],
+]:
+    operators = get_all_operators()
+    plans = get_all_plans()
+    locations = get_all_locations()
+    attendance_types = get_all_attendance_types()
+
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+
+    plan_ids: list[str] = []
+    plan_labels: dict[str, str] = {}
+    operator_names = {
+        _safe(row.get("id")): (_safe(row.get("nome_curto")) or _safe(row.get("nome")))
+        for _, row in operators.iterrows()
+    }
+    for _, row in plans.iterrows():
+        plan_id = _safe(row.get("id"))
+        if not plan_id:
+            continue
+        plan_name = _safe(row.get("nome_padronizado")) or _safe(row.get("nome")) or plan_id
+        operator_name = operator_names.get(_safe(row.get("operadora_id")), "")
+        plan_ids.append(plan_id)
+        plan_labels[plan_id] = f"{operator_name} · {plan_name}" if operator_name else plan_name
+
+    location_ids, location_labels = _options(locations, ("nome", "codigo"))
+    attendance_ids, attendance_labels = _options(attendance_types, ("nome", "codigo"))
+
+    return (
+        operators, plans, locations, attendance_types,
+        operator_ids, operator_labels, plan_ids, plan_labels,
+        location_ids, location_labels, attendance_ids, attendance_labels,
+    )
+
+
+def _rule_common_selects(
+    *,
+    current: dict,
+    operator_ids: list[str],
+    operator_labels: dict[str, str],
+    plan_ids: list[str],
+    plan_labels: dict[str, str],
+    location_ids: list[str],
+    location_labels: dict[str, str],
+    attendance_ids: list[str],
+    attendance_labels: dict[str, str],
+) -> tuple[str, str | None, str | None, str | None, str]:
+    col1, col2 = st.columns(2)
+    with col1:
+        operator_id = st.selectbox(
+            "Operadora *",
+            operator_ids,
+            index=_index(operator_ids, current.get("operadora_id")),
+            format_func=lambda item: operator_labels.get(item, item),
+        ) if operator_ids else ""
+
+        plan_options: list[str | None] = [None] + plan_ids
+        plan_id = st.selectbox(
+            "Plano",
+            plan_options,
+            index=_index(plan_options, current.get("plano_id")),
+            format_func=lambda item: "Todos / regra geral" if item is None else plan_labels.get(str(item), str(item)),
+        )
+
+    with col2:
+        location_options: list[str | None] = [None] + location_ids
+        location_id = st.selectbox(
+            "Local de atendimento",
+            location_options,
+            index=_index(location_options, current.get("local_id")),
+            format_func=lambda item: "Todos / não específico" if item is None else location_labels.get(str(item), str(item)),
+        )
+
+        attendance_options: list[str | None] = [None] + attendance_ids
+        attendance_type_id = st.selectbox(
+            "Tipo de atendimento",
+            attendance_options,
+            index=_index(attendance_options, current.get("tipo_atendimento_id")),
+            format_func=lambda item: "Todos / não específico" if item is None else attendance_labels.get(str(item), str(item)),
+        )
+
+    status = st.selectbox(
+        "Status",
+        ["Ativo", "Inativo"],
+        index=0 if _safe(current.get("status")) != "Inativo" else 1,
+    )
+
+    return operator_id, plan_id, location_id, attendance_type_id, status
+
+
+def _render_eligibility_management() -> None:
+    st.markdown("### Elegibilidade")
+    st.caption("Defina quando a elegibilidade deve ser consultada e qual orientação deve ser seguida.")
+
+    try:
+        dataframe = get_all_eligibility()
+        context = _rule_context_data()
+    except Exception:
+        st.error("Não foi possível carregar as regras de elegibilidade.")
+        return
+
+    ids, labels = _options(dataframe, ("codigo", "orientacao"))
+    mode = st.radio(
+        "Ação de elegibilidade",
+        ["Editar regra existente", "Cadastrar nova regra"],
+        horizontal=True,
+        key="admin_eligibility_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar regra existente":
+        if not ids:
+            st.info("Nenhuma regra de elegibilidade cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Regra",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_eligibility_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    (_, _, _, _, operator_ids, operator_labels, plan_ids, plan_labels,
+     location_ids, location_labels, attendance_ids, attendance_labels) = context
+
+    with st.form("admin_eligibility_form"):
+        code = st.text_input("Código", value=_safe(current.get("codigo")))
+        operator_id, plan_id, location_id, attendance_type_id, status = _rule_common_selects(
+            current=current,
+            operator_ids=operator_ids,
+            operator_labels=operator_labels,
+            plan_ids=plan_ids,
+            plan_labels=plan_labels,
+            location_ids=location_ids,
+            location_labels=location_labels,
+            attendance_ids=attendance_ids,
+            attendance_labels=attendance_labels,
+        )
+        required = st.checkbox(
+            "Consulta de elegibilidade necessária",
+            value=bool(current.get("necessario", False)),
+        )
+        guidance = st.text_area("Orientação", value=_safe(current.get("orientacao")), height=120)
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+        submitted = st.form_submit_button("Salvar regra de elegibilidade", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_eligibility(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                attendance_type_id=attendance_type_id,
+                required=required,
+                guidance=guidance,
+                observations=observations,
+                status=status,
+            )
+            st.success("Regra de elegibilidade salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a regra de elegibilidade.")
+
+
+def _render_authorization_management() -> None:
+    st.markdown("### Autorizações")
+    st.caption("Mantenha necessidade, momento, responsável, canal e prazo de autorização.")
+
+    try:
+        dataframe = get_all_authorizations()
+        context = _rule_context_data()
+    except Exception:
+        st.error("Não foi possível carregar as regras de autorização.")
+        return
+
+    ids, labels = _options(dataframe, ("codigo", "orientacao"))
+    mode = st.radio(
+        "Ação de autorização",
+        ["Editar regra existente", "Cadastrar nova regra"],
+        horizontal=True,
+        key="admin_authorization_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar regra existente":
+        if not ids:
+            st.info("Nenhuma regra de autorização cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Regra",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_authorization_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    (_, _, _, _, operator_ids, operator_labels, plan_ids, plan_labels,
+     location_ids, location_labels, attendance_ids, attendance_labels) = context
+
+    with st.form("admin_authorization_form"):
+        code = st.text_input("Código", value=_safe(current.get("codigo")))
+        operator_id, plan_id, location_id, attendance_type_id, status = _rule_common_selects(
+            current=current,
+            operator_ids=operator_ids,
+            operator_labels=operator_labels,
+            plan_ids=plan_ids,
+            plan_labels=plan_labels,
+            location_ids=location_ids,
+            location_labels=location_labels,
+            attendance_ids=attendance_ids,
+            attendance_labels=attendance_labels,
+        )
+        requires_authorization = st.checkbox(
+            "Necessita autorização",
+            value=bool(current.get("necessita_autorizacao", False)),
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            moment = st.text_input("Momento da autorização", value=_safe(current.get("momento_autorizacao")), placeholder="Ex.: Antes do atendimento")
+            requester = st.text_input("Quem solicita", value=_safe(current.get("quem_solicita")), placeholder="Ex.: Central de Autorizações")
+        with col2:
+            channel = st.text_input("Meio de solicitação", value=_safe(current.get("meio_solicitacao")), placeholder="Ex.: Portal da operadora")
+            deadline = st.text_input("Prazo", value=_safe(current.get("prazo")), placeholder="Ex.: Até 2 dias úteis")
+        guidance = st.text_area("Orientação", value=_safe(current.get("orientacao")), height=120)
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+        submitted = st.form_submit_button("Salvar regra de autorização", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_authorization(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                attendance_type_id=attendance_type_id,
+                requires_authorization=requires_authorization,
+                authorization_moment=moment,
+                requester=requester,
+                request_channel=channel,
+                deadline=deadline,
+                guidance=guidance,
+                observations=observations,
+                status=status,
+            )
+            st.success("Regra de autorização salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a regra de autorização.")
+
+
+def _render_coverage_management() -> None:
+    st.markdown("### Coberturas")
+    st.caption("Registre cobertura, restrições, acomodação, acompanhante e demais particularidades.")
+
+    try:
+        dataframe = get_all_coverages()
+        context = _rule_context_data()
+    except Exception:
+        st.error("Não foi possível carregar as regras de cobertura.")
+        return
+
+    ids, labels = _options(dataframe, ("codigo", "restricoes_cobertura"))
+    mode = st.radio(
+        "Ação de cobertura",
+        ["Editar regra existente", "Cadastrar nova regra"],
+        horizontal=True,
+        key="admin_coverage_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar regra existente":
+        if not ids:
+            st.info("Nenhuma regra de cobertura cadastrada.")
+            return
+        record_id = st.selectbox(
+            "Regra",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_coverage_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    (_, _, _, _, operator_ids, operator_labels, plan_ids, plan_labels,
+     location_ids, location_labels, attendance_ids, attendance_labels) = context
+
+    current_covered = current.get("coberto")
+    coverage_choice = "Não informado"
+    if current_covered is True:
+        coverage_choice = "Sim"
+    elif current_covered is False:
+        coverage_choice = "Não"
+
+    with st.form("admin_coverage_form"):
+        code = st.text_input("Código", value=_safe(current.get("codigo")))
+        operator_id, plan_id, location_id, attendance_type_id, status = _rule_common_selects(
+            current=current,
+            operator_ids=operator_ids,
+            operator_labels=operator_labels,
+            plan_ids=plan_ids,
+            plan_labels=plan_labels,
+            location_ids=location_ids,
+            location_labels=location_labels,
+            attendance_ids=attendance_ids,
+            attendance_labels=attendance_labels,
+        )
+        coverage_choice = st.selectbox(
+            "Possui cobertura?",
+            ["Não informado", "Sim", "Não"],
+            index=["Não informado", "Sim", "Não"].index(coverage_choice),
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            accommodation = st.text_input("Acomodação", value=_safe(current.get("acomodacao")), placeholder="Ex.: Apartamento")
+        with col2:
+            companion = st.text_input("Acompanhante", value=_safe(current.get("acompanhante")), placeholder="Ex.: Conforme regra contratual")
+        restrictions = st.text_area("Restrições de cobertura", value=_safe(current.get("restricoes_cobertura")), height=110)
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+        submitted = st.form_submit_button("Salvar regra de cobertura", type="primary", use_container_width=True)
+
+    if submitted:
+        covered = None if coverage_choice == "Não informado" else coverage_choice == "Sim"
+        try:
+            save_coverage(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                attendance_type_id=attendance_type_id,
+                covered=covered,
+                restrictions=restrictions,
+                accommodation=accommodation,
+                companion=companion,
+                observations=observations,
+                status=status,
+            )
+            st.success("Regra de cobertura salva com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a regra de cobertura.")
+
+
+def _render_document_management() -> None:
+    st.markdown("### Documentos")
+    st.caption("Cadastre a documentação exigida por operadora, plano, local ou tipo de atendimento.")
+
+    try:
+        dataframe = get_all_documents()
+        context = _rule_context_data()
+    except Exception:
+        st.error("Não foi possível carregar os documentos.")
+        return
+
+    ids, labels = _options(dataframe, ("nome", "codigo"))
+    mode = st.radio(
+        "Ação de documento",
+        ["Editar documento existente", "Cadastrar novo documento"],
+        horizontal=True,
+        key="admin_document_mode",
+    )
+
+    record_id = ""
+    current: dict = {}
+    if mode == "Editar documento existente":
+        if not ids:
+            st.info("Nenhum documento cadastrado.")
+            return
+        record_id = st.selectbox(
+            "Documento",
+            ids,
+            format_func=lambda item: labels.get(item, item),
+            key="admin_document_selected",
+        )
+        current = _row_by_id(dataframe, record_id)
+
+    (_, _, _, _, operator_ids, operator_labels, plan_ids, plan_labels,
+     location_ids, location_labels, attendance_ids, attendance_labels) = context
+
+    validity_value = current.get("validade_dias")
+    try:
+        validity_value = int(validity_value) if validity_value is not None and not pd.isna(validity_value) else 0
+    except (TypeError, ValueError):
+        validity_value = 0
+
+    with st.form("admin_document_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")))
+            name = st.text_input("Nome do documento *", value=_safe(current.get("nome")))
+        with col2:
+            mandatory = st.checkbox("Documento obrigatório", value=bool(current.get("obrigatorio", False)))
+            file_format = st.text_input("Formato", value=_safe(current.get("formato")), placeholder="Ex.: PDF, formulário, guia")
+
+        operator_id, plan_id, location_id, attendance_type_id, status = _rule_common_selects(
+            current=current,
+            operator_ids=operator_ids,
+            operator_labels=operator_labels,
+            plan_ids=plan_ids,
+            plan_labels=plan_labels,
+            location_ids=location_ids,
+            location_labels=location_labels,
+            attendance_ids=attendance_ids,
+            attendance_labels=attendance_labels,
+        )
+
+        validity_days = st.number_input(
+            "Validade em dias (0 = não informada)",
+            min_value=0,
+            step=1,
+            value=validity_value,
+        )
+        file_url = st.text_input("Link do arquivo / modelo", value=_safe(current.get("arquivo_url")), placeholder="https://...")
+        guidance = st.text_area("Orientação", value=_safe(current.get("orientacao")), height=110)
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+        submitted = st.form_submit_button("Salvar documento", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_document(
+                record_id=record_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                attendance_type_id=attendance_type_id,
+                name=name,
+                mandatory=mandatory,
+                file_format=file_format,
+                validity_days=int(validity_days) if validity_days else None,
+                guidance=guidance,
+                observations=observations,
+                file_url=file_url,
+                status=status,
+            )
+            st.success("Documento salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o documento.")
+
+
+def _render_rules_backoffice() -> None:
+    st.markdown("## Regras de atendimento")
+    st.info(
+        "Centralize aqui as regras que orientam o atendimento. Elas podem ser gerais da operadora "
+        "ou específicas por plano, local e tipo de atendimento.",
+        icon="📚",
+    )
+
+    tab_eligibility, tab_authorizations, tab_coverages, tab_documents = st.tabs([
+        "✅ Elegibilidade",
+        "📝 Autorizações",
+        "🛡️ Coberturas",
+        "📄 Documentos",
+    ])
+
+    with tab_eligibility:
+        _render_eligibility_management()
+    with tab_authorizations:
+        _render_authorization_management()
+    with tab_coverages:
+        _render_coverage_management()
+    with tab_documents:
+        _render_document_management()
+
 def _render_portals_backoffice() -> None:
     st.markdown("## Portais e credenciais")
     st.info(
@@ -752,9 +1243,10 @@ def render_admin() -> None:
         st.success("Cache atualizado.")
         st.rerun()
 
-    tab_overview, tab_master, tab_portals, tab_data, tab_users = st.tabs([
+    tab_overview, tab_master, tab_rules, tab_portals, tab_data, tab_users = st.tabs([
         "📊 Visão geral",
         "🧩 Cadastros-base",
+        "📚 Regras de atendimento",
         "🔐 Portais e credenciais",
         "🗃️ Dados",
         "👥 Usuários",
@@ -764,6 +1256,8 @@ def render_admin() -> None:
         _render_overview()
     with tab_master:
         _render_master_data_backoffice()
+    with tab_rules:
+        _render_rules_backoffice()
     with tab_portals:
         _render_portals_backoffice()
     with tab_data:
