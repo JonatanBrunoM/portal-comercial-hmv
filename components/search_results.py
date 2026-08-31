@@ -5,6 +5,7 @@ import html
 import streamlit as st
 
 from core.search_service import SearchResult
+from components.sidebar import navigate_to
 
 
 CATEGORY_ICONS = {
@@ -24,15 +25,21 @@ CATEGORY_ICONS = {
 
 
 def _open_result(result: SearchResult) -> None:
+    """Agenda a navegação sem disputar estado com widgets já renderizados."""
     if result.operator_id:
         st.session_state["selected_operator_id"] = result.operator_id
-        st.session_state[
-            f"operator_module_{result.operator_id}"
-        ] = result.target_module or "Visão geral"
-        st.session_state.current_page = "Operadoras"
+
+        # Não alteramos diretamente o estado do selectbox da ficha.
+        # A ficha da operadora consome este destino antes de criar o widget.
+        st.session_state["pending_operator_destination"] = {
+            "operator_id": result.operator_id,
+            "module": result.target_module or "Visão geral",
+        }
+
+        navigate_to("Operadoras")
     else:
         st.session_state["selected_search_result"] = result
-        st.session_state.current_page = "Pesquisa"
+        navigate_to("Pesquisa")
 
     st.rerun()
 
