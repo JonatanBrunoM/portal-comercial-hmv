@@ -5,12 +5,22 @@ import streamlit as st
 
 from components.hero import render_hero
 from config.settings import DATASETS
-from core.auth_service import get_current_profile
-from core.data_service import clear_data_cache, read_dataset
-from core.supabase_repository import (
-    check_supabase_connection,
-    fetch_table,
+from core.admin_portals_service import (
+    get_all_credentials,
+    get_all_portals,
+    save_credential,
+    save_portal,
 )
+from core.auth_service import get_current_profile
+from core.credentials_service import format_timestamp, get_credential_history
+from core.data_service import (
+    clear_data_cache,
+    get_locais_atendimento,
+    get_operadoras,
+    get_planos,
+    read_dataset,
+)
+from core.supabase_repository import check_supabase_connection, fetch_table
 
 
 ADMIN_DATASETS = [
@@ -24,6 +34,43 @@ ADMIN_DATASETS = [
 def _is_admin() -> bool:
     profile = get_current_profile()
     return bool(profile and profile.get("status") == "Ativo" and profile.get("role") == "admin")
+
+
+def _safe(value: object) -> str:
+    if value is None or pd.isna(value):
+        return ""
+    return str(value).strip()
+
+
+def _row_by_id(dataframe: pd.DataFrame, record_id: str) -> dict:
+    if dataframe.empty or not record_id or "id" not in dataframe.columns:
+        return {}
+    matches = dataframe[dataframe["id"].astype(str) == str(record_id)]
+    return matches.iloc[0].to_dict() if not matches.empty else {}
+
+
+def _options(dataframe: pd.DataFrame, label_columns: tuple[str, ...]) -> tuple[list[str], dict[str, str]]:
+    if dataframe.empty:
+        return [], {}
+
+    ids: list[str] = []
+    labels: dict[str, str] = {}
+    for _, row in dataframe.iterrows():
+        record_id = _safe(row.get("id"))
+        if not record_id:
+            continue
+        label = next((_safe(row.get(column)) for column in label_columns if _safe(row.get(column))), record_id)
+        ids.append(record_id)
+        labels[record_id] = label
+    return ids, labels
+
+
+def _index(options: list[str | None], value: object) -> int:
+    normalized = None if value is None or pd.isna(value) else str(value)
+    try:
+        return options.index(normalized)
+    except ValueError:
+        return 0
 
 
 def _render_overview() -> None:
@@ -52,8 +99,8 @@ def _render_dataset_browser() -> None:
 
     try:
         dataframe = read_dataset(selected)
-    except Exception as error:
-        st.error(f"Não foi possível carregar '{selected}': {error}")
+    except Exception:
+        st.error(f"Não foi possível carregar '{selected}'.")
         return
 
     st.caption(f"Tabela: `{DATASETS[selected]}` · {len(dataframe)} registro(s)")
@@ -67,31 +114,14 @@ def _render_dataset_browser() -> None:
 def _render_users() -> None:
     st.markdown("## Usuários")
     try:
-        dataframe = fetch_table(
-            "profiles",
-            order_by="nome",
-        )
-
+        dataframe = fetch_table("profiles", order_by="nome")
         visible_columns = [
-            "id",
-            "nome",
-            "email",
-            "role",
-            "status",
-            "primeiro_acesso_em",
-            "ultimo_acesso_em",
-            "ultimo_login_em",
+            "id", "nome", "email", "role", "status", "primeiro_acesso_em",
+            "ultimo_acesso_em", "ultimo_login_em",
         ]
-
-        dataframe = dataframe[
-            [
-                column
-                for column in visible_columns
-                if column in dataframe.columns
-            ]
-        ]
-    except Exception as error:
-        st.error(f"Não foi possível carregar os usuários: {error}")
+        dataframe = dataframe[[column for column in visible_columns if column in dataframe.columns]]
+    except Exception:
+        st.error("Não foi possível carregar os usuários.")
         return
 
     if dataframe.empty:
@@ -99,7 +129,254 @@ def _render_users() -> None:
         return
 
     st.dataframe(dataframe, use_container_width=True, hide_index=True)
-    st.caption("A alteração de perfis e permissões será tratada no próximo módulo administrativo.")
+    st.caption("A alteração de perfis e permissões será tratada em módulo administrativo próprio.")
+
+
+def _render_portal_management() -> None:
+    st.markdown("## Portais")
+    st.caption("Cadastre e mantenha os canais digitais utilizados nas rotinas com as operadoras.")
+
+    try:
+        portals = get_all_portals()
+        operators = get_operadoras()
+        plans = get_planos()
+        locations = get_locais_atendimento()
+    except Exception:
+        st.error("Não foi possível carregar os dados necessários para administrar os portais.")
+        return
+
+    portal_ids, portal_labels = _options(portals, ("nome", "codigo"))
+    operator_ids, operator_labels = _options(operators, ("nome_curto", "nome"))
+    plan_ids, plan_labels = _options(plans, ("nome_padronizado", "nome"))
+    location_ids, location_labels = _options(locations, ("nome", "codigo"))
+
+    mode = st.radio(
+        "Ação",
+        ["Editar portal existente", "Cadastrar novo portal"],
+        horizontal=True,
+        key="admin_portal_mode",
+    )
+
+    selected_portal_id = ""
+    current: dict = {}
+    if mode == "Editar portal existente":
+        if not portal_ids:
+            st.info("Nenhum portal cadastrado.")
+            return
+        selected_portal_id = st.selectbox(
+            "Portal",
+            portal_ids,
+            format_func=lambda item: portal_labels.get(item, item),
+            key="admin_portal_selected",
+        )
+        current = _row_by_id(portals, selected_portal_id)
+
+    filtered_plan_ids = plan_ids
+    selected_operator_default = _safe(current.get("operadora_id"))
+
+    with st.form("admin_portal_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            code = st.text_input("Código", value=_safe(current.get("codigo")), placeholder="Ex.: PORTAL_UNIMED")
+            name = st.text_input("Nome do portal *", value=_safe(current.get("nome")))
+            operator_id = st.selectbox(
+                "Operadora *",
+                operator_ids,
+                index=_index(operator_ids, selected_operator_default),
+                format_func=lambda item: operator_labels.get(item, item),
+            ) if operator_ids else ""
+            portal_type = st.text_input("Finalidade / tipo", value=_safe(current.get("tipo")), placeholder="Ex.: Elegibilidade e autorização")
+            url = st.text_input("URL", value=_safe(current.get("url")), placeholder="https://...")
+
+        with col2:
+            plan_options: list[str | None] = [None] + filtered_plan_ids
+            plan_id = st.selectbox(
+                "Plano específico",
+                plan_options,
+                index=_index(plan_options, current.get("plano_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else plan_labels.get(str(item), str(item)),
+            )
+            location_options: list[str | None] = [None] + location_ids
+            location_id = st.selectbox(
+                "Local específico",
+                location_options,
+                index=_index(location_options, current.get("local_id")),
+                format_func=lambda item: "Todos / não específico" if item is None else location_labels.get(str(item), str(item)),
+            )
+            requires_login = st.checkbox("Exige login", value=bool(current.get("exige_login", False)))
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+
+        access_instruction = st.text_area("Como acessar", value=_safe(current.get("instrucao_acesso")), height=100)
+        general_tip = st.text_area("Dica geral de acesso", value=_safe(current.get("dica_geral_acesso")), height=90)
+        observations = st.text_area("Observações", value=_safe(current.get("observacoes")), height=90)
+
+        submitted = st.form_submit_button("Salvar portal", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_portal(
+                portal_id=selected_portal_id or None,
+                code=code,
+                operator_id=operator_id,
+                plan_id=plan_id,
+                location_id=location_id,
+                name=name,
+                portal_type=portal_type,
+                url=url,
+                requires_login=requires_login,
+                access_instruction=access_instruction,
+                general_tip=general_tip,
+                observations=observations,
+                status=status,
+            )
+            st.success("Portal salvo com sucesso.")
+            st.rerun()
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar o portal. Verifique os dados e tente novamente.")
+
+
+def _render_credential_management() -> None:
+    st.markdown("## Credenciais")
+    st.caption("Gerencie logins e senhas institucionais. A senha é criptografada antes de ser gravada no Supabase.")
+
+    try:
+        portals = get_all_portals()
+    except Exception:
+        st.error("Não foi possível carregar os portais.")
+        return
+
+    portal_ids, portal_labels = _options(portals, ("nome", "codigo"))
+    if not portal_ids:
+        st.info("Cadastre um portal antes de criar uma credencial.")
+        return
+
+    selected_portal_id = st.selectbox(
+        "Portal",
+        portal_ids,
+        format_func=lambda item: portal_labels.get(item, item),
+        key="admin_credentials_portal",
+    )
+
+    try:
+        credentials = get_all_credentials(selected_portal_id)
+    except Exception:
+        st.error("Não foi possível carregar as credenciais deste portal.")
+        return
+
+    credential_ids, credential_labels = _options(credentials, ("identificacao", "login"))
+    mode = st.radio(
+        "Ação da credencial",
+        ["Editar credencial existente", "Cadastrar nova credencial"],
+        horizontal=True,
+        key="admin_credential_mode",
+    )
+
+    credential_id = ""
+    current: dict = {}
+    if mode == "Editar credencial existente":
+        if not credential_ids:
+            st.info("Este portal ainda não possui credenciais. Selecione 'Cadastrar nova credencial'.")
+            return
+        credential_id = st.selectbox(
+            "Credencial",
+            credential_ids,
+            format_func=lambda item: credential_labels.get(item, item),
+            key="admin_credential_selected",
+        )
+        current = _row_by_id(credentials, credential_id)
+
+    with st.form("admin_credential_form", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            identification = st.text_input("Identificação *", value=_safe(current.get("identificacao")), placeholder="Ex.: Acesso principal")
+            login = st.text_input("Login / usuário", value=_safe(current.get("login")))
+            new_password = st.text_input(
+                "Nova senha *" if not credential_id else "Nova senha",
+                type="password",
+                help="Ao editar, deixe em branco para manter a senha atual.",
+            )
+            status = st.selectbox(
+                "Status",
+                ["Ativo", "Inativo"],
+                index=0 if _safe(current.get("status")) != "Inativo" else 1,
+            )
+
+        with col2:
+            blocked_count = st.number_input(
+                "Quantidade de senhas anteriores bloqueadas",
+                min_value=0,
+                max_value=50,
+                value=int(current.get("quantidade_senhas_bloqueadas") or 0),
+                step=1,
+            )
+            password_rule = st.text_area("Regra de senha", value=_safe(current.get("regra_senha_observacao")), height=90)
+            access_tip = st.text_area("Dica de acesso", value=_safe(current.get("dica_acesso")), height=90)
+
+        observations = st.text_area("Observações da credencial", value=_safe(current.get("observacoes")), height=80)
+        change_reason = st.text_input(
+            "Motivo da troca de senha" if credential_id else "Motivo / referência do cadastro",
+            placeholder="Ex.: Expiração periódica da senha",
+        )
+
+        submitted = st.form_submit_button("Salvar credencial", type="primary", use_container_width=True)
+
+    if submitted:
+        try:
+            save_credential(
+                credential_id=credential_id or None,
+                portal_id=selected_portal_id,
+                identification=identification,
+                login=login,
+                new_password=new_password,
+                access_tip=access_tip,
+                observations=observations,
+                blocked_password_count=int(blocked_count),
+                password_rule=password_rule,
+                status=status,
+                change_reason=change_reason,
+            )
+            st.success("Credencial salva com segurança.")
+            st.rerun()
+        except RuntimeError as error:
+            st.warning(str(error))
+        except ValueError as error:
+            st.warning(str(error))
+        except Exception:
+            st.error("Não foi possível salvar a credencial. Nenhuma senha foi exibida nos detalhes do erro.")
+
+    if credential_id:
+        changed_at = current.get("senha_alterada_em") or current.get("updated_at")
+        st.caption(f"Última atualização: {format_timestamp(changed_at)}")
+        try:
+            history = get_credential_history(credential_id)
+        except Exception:
+            history = pd.DataFrame()
+        if not history.empty:
+            with st.expander(f"Histórico de alterações ({len(history)})"):
+                for _, row in history.iterrows():
+                    st.write(f"**{format_timestamp(row.get('alterado_em'))}** — {_safe(row.get('motivo_alteracao')) or 'Sem motivo informado'}")
+                    if _safe(row.get("login")):
+                        st.caption(f"Login anterior: {_safe(row.get('login'))}")
+                st.caption("Por segurança, senhas históricas não são exibidas no backoffice.")
+
+
+def _render_portals_backoffice() -> None:
+    st.markdown("## Portais e credenciais")
+    st.info(
+        "Somente administradores podem alterar estes dados. Senhas nunca são armazenadas em texto puro nem registradas nos logs de auditoria.",
+        icon="🔐",
+    )
+    tab_portals, tab_credentials = st.tabs(["🌐 Portais", "🔐 Credenciais"])
+    with tab_portals:
+        _render_portal_management()
+    with tab_credentials:
+        _render_credential_management()
 
 
 def render_admin() -> None:
@@ -110,11 +387,10 @@ def render_admin() -> None:
     render_hero(
         eyebrow="Gestão do Portal",
         title="Administração",
-        description="Acompanhe a base Supabase, os módulos do portal e os usuários autorizados.",
+        description="Gerencie a base do Portal Comercial, portais, credenciais e usuários autorizados.",
     )
 
     connected, connection_message = check_supabase_connection()
-
     if connected:
         st.success("Supabase conectado e operacional.", icon="✅")
     else:
@@ -126,12 +402,14 @@ def render_admin() -> None:
         st.success("Cache atualizado.")
         st.rerun()
 
-    tab_overview, tab_data, tab_users = st.tabs([
-        "📊 Visão geral", "🗃️ Dados", "👥 Usuários"
+    tab_overview, tab_portals, tab_data, tab_users = st.tabs([
+        "📊 Visão geral", "🔐 Portais e credenciais", "🗃️ Dados", "👥 Usuários"
     ])
 
     with tab_overview:
         _render_overview()
+    with tab_portals:
+        _render_portals_backoffice()
     with tab_data:
         _render_dataset_browser()
     with tab_users:
