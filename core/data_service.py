@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from config.settings import CACHE_SETTINGS, DATASETS
-from core.supabase_repository import get_supabase_client
+from core.supabase_repository import fetch_table
 
 logger = logging.getLogger(__name__)
 
@@ -157,14 +157,18 @@ def read_dataset(dataset: str, ttl: int = 600) -> pd.DataFrame:
     key = _key_for_table(table_name)
 
     try:
-        response = get_supabase_client().table(table_name).select("*").execute()
+        dataframe = _clean_dataframe(
+            fetch_table(table_name)
+        )
     except Exception as error:
-        logger.exception("Erro ao ler o conjunto %s no Supabase.", table_name)
+        logger.exception(
+            "Erro ao ler o conjunto %s no Supabase.",
+            table_name,
+        )
         raise RuntimeError(
-            f"Erro ao carregar '{table_name}' no Supabase: {type(error).__name__}: {error}"
+            f"Erro ao carregar '{table_name}' no Supabase: "
+            f"{type(error).__name__}: {error}"
         ) from error
-
-    dataframe = _clean_dataframe(pd.DataFrame(response.data or []))
     aliases = COLUMN_ALIASES.get(key, {})
     if not dataframe.empty:
         dataframe = dataframe.rename(columns={c: aliases[c] for c in dataframe.columns if c in aliases})
