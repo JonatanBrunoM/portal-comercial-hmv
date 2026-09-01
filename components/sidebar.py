@@ -89,6 +89,27 @@ def _resolve_page_from_query() -> str | None:
     return SLUG_PAGES.get(str(slug))
 
 
+def _handle_logout_query() -> None:
+    """Permite que o botão visual de sair pertença ao painel HTML da sidebar."""
+    try:
+        logout_value = st.query_params.get("logout")
+    except Exception:
+        return
+
+    if isinstance(logout_value, list):
+        logout_value = logout_value[0] if logout_value else None
+
+    if str(logout_value or "").strip() != "1":
+        return
+
+    try:
+        del st.query_params["logout"]
+    except Exception:
+        pass
+
+    logout()
+
+
 def _user_data() -> dict[str, str] | None:
     profile = get_current_profile()
     google_user = get_google_user()
@@ -172,6 +193,7 @@ def _navigation_links(
 def render_sidebar(
     on_change: Callable[[], None] | None = None,
 ) -> str:
+    _handle_logout_query()
     navigation_items = get_available_navigation_items()
 
     query_page = _resolve_page_from_query()
@@ -273,6 +295,17 @@ def render_sidebar(
 
                     {expanded_account}
 
+                    <div class="portal-sidebar-expanded-actions">
+                        <a class="portal-sidebar-logout"
+                           href="?page={PAGE_SLUGS.get(current_page, 'inicio')}&logout=1"
+                           target="_self">
+                            <span class="portal-sidebar-logout-icon">
+                                {icon("logout")}
+                            </span>
+                            <span>Sair da conta</span>
+                        </a>
+                    </div>
+
                     <div class="portal-sidebar-expanded-footer">
                         Base Comercial HMV
                     </div>
@@ -281,12 +314,5 @@ def render_sidebar(
             </div>
             """
         )
-
-        if user and st.button(
-            "Sair da conta",
-            key="sidebar_logout",
-            use_container_width=True,
-        ):
-            logout()
 
     return current_page
