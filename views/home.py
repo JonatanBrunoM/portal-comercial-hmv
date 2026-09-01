@@ -4,7 +4,7 @@ import streamlit as st
 
 from components.search_results import render_search_results
 from core.dashboard_service import get_dashboard_summary
-from core.search_service import search_global
+from core.search_service import analyze_search_query, search_global
 from ui.icons import icon
 
 
@@ -425,9 +425,13 @@ def render_home() -> None:
                 limit=12,
             )
 
+        query_analysis = analyze_search_query(search_query)
+
         render_search_results(
             results=search_results,
             key_prefix="home_search",
+            query=search_query,
+            query_analysis=query_analysis,
         )
 
     _render_primary_actions()
