@@ -114,12 +114,13 @@ def _render_search() -> str:
         """
     )
 
-    return st.text_input(
-        label="Pesquisa global",
-        placeholder="Ex.: Como faço a autorização do plano? Qual o telefone da operadora? Onde acesso o portal?",
-        label_visibility="collapsed",
-        key="home_search",
-    )
+    with st.container(key="home_search_shell"):
+        return st.text_input(
+            label="Pesquisa global",
+            placeholder="Ex.: Como faço a autorização do plano? Qual o telefone da operadora? Onde acesso o portal?",
+            label_visibility="collapsed",
+            key="home_search",
+        )
 
 
 def _nav_href(page: str) -> str:
