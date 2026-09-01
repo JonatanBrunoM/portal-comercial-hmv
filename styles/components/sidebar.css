@@ -189,6 +189,11 @@ section[data-testid="stSidebar"] button[kind="header"] {
     display: flex;
     flex-direction: column;
     background: #FFFFFF;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #C8D6DE transparent;
     border-right: 1px solid var(--portal-border);
     box-shadow: 18px 0 44px rgba(14, 42, 58, 0.14);
     z-index: 100003;
@@ -323,8 +328,8 @@ section[data-testid="stSidebar"] button[kind="header"] {
 }
 
 .portal-sidebar-expanded-spacer {
-    flex: 1 1 auto;
-    min-height: 10px;
+    flex: 1 0 18px;
+    min-height: 18px;
 }
 
 .portal-sidebar-expanded-separator {
@@ -392,32 +397,64 @@ section[data-testid="stSidebar"] button[kind="header"] {
     font-size: 0.62rem;
 }
 
-/* Logout: pertence apenas ao estado expandido. */
+/* Logout faz parte do fluxo interno do painel expandido. */
+.portal-sidebar-expanded-actions {
+    flex: 0 0 auto;
+    padding: 8px 14px 0;
+}
+
+.portal-sidebar-logout {
+    width: 100%;
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+    padding: 0 12px;
+    border: 1px solid #D3DEE5;
+    border-radius: 11px;
+    background: #FFFFFF;
+    color: #334A59 !important;
+    text-decoration: none !important;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    font-weight: 720;
+    transition:
+        background var(--portal-motion-fast) ease,
+        border-color var(--portal-motion-fast) ease,
+        color var(--portal-motion-fast) ease;
+}
+
+.portal-sidebar-logout:hover {
+    background: #F4F8FA;
+    border-color: #BFD0DA;
+    color: var(--portal-primary-dark) !important;
+}
+
+.portal-sidebar-logout-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: currentColor !important;
+}
+
+.portal-sidebar-logout-icon .portal-icon {
+    width: 18px;
+    height: 18px;
+    color: currentColor !important;
+}
+
+.portal-sidebar-expanded-footer {
+    flex: 0 0 auto;
+    margin: 8px 14px 16px;
+    color: var(--portal-text-muted) !important;
+    font-size: 0.62rem;
+}
+
+/* O botão Streamlit antigo não é mais usado na sidebar. */
 section[data-testid="stSidebar"] .stButton {
-    position: fixed;
-    left: 14px;
-    bottom: 20px;
-    width: 264px !important;
-    z-index: 100005;
-
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 80ms ease;
-}
-
-@media (hover: hover) and (pointer: fine) and (min-width: 901px) {
-    section[data-testid="stSidebar"]:hover .stButton,
-    section[data-testid="stSidebar"]:focus-within .stButton {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-    }
-}
-
-section[data-testid="stSidebar"] .stButton > button {
-    width: 264px !important;
-    min-height: 42px !important;
+    display: none !important;
 }
 
 /* =========================================================
@@ -469,5 +506,47 @@ section[data-testid="stSidebar"] .stButton > button {
 
     .portal-sidebar-expanded-label {
         margin-top: 8px;
+    }
+}
+
+
+.portal-sidebar-expanded::-webkit-scrollbar {
+    width: 7px;
+}
+
+.portal-sidebar-expanded::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portal-sidebar-expanded::-webkit-scrollbar-thumb {
+    background: #C8D6DE;
+    border-radius: 999px;
+    border: 2px solid #FFFFFF;
+}
+
+@media (max-height: 760px) {
+    .portal-sidebar-expanded-brand {
+        flex-basis: 66px;
+    }
+
+    .portal-sidebar-expanded-label {
+        margin-top: 8px;
+    }
+
+    .portal-sidebar-expanded-item {
+        min-height: 40px;
+    }
+
+    .portal-sidebar-expanded-spacer {
+        min-height: 8px;
+        flex-basis: 8px;
+    }
+
+    .portal-sidebar-expanded-account {
+        min-height: 48px;
+    }
+
+    .portal-sidebar-expanded-actions {
+        padding-top: 5px;
     }
 }
