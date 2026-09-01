@@ -163,7 +163,8 @@ def render_sidebar(
             <a class="portal-sidebar-nav-item{active_class}"
                href="?page={slug}"
                target="_self"
-               aria-label="{_safe(page)}">
+               aria-label="{_safe(page)}"
+               title="{_safe(page)}">
                 <span class="portal-sidebar-nav-icon">{icon_svg}</span>
                 <span class="portal-sidebar-nav-text">{_safe(page)}</span>
             </a>
