@@ -1,7 +1,7 @@
 /*
- * Sidebar responsiva e previsível.
- * A rail tem largura fixa; o painel interno abre por cima do conteúdo.
- * Todos os elementos usam o mesmo eixo calculado por tokens.
+ * Sidebar é um componente isolado.
+ * A rail ocupa uma largura fixa previsível; a expansão acontece apenas no painel
+ * interno e não altera o layout principal.
  */
 
 section[data-testid="stSidebar"] {
@@ -11,7 +11,7 @@ section[data-testid="stSidebar"] {
     overflow: visible !important;
     background: transparent !important;
     border: 0 !important;
-    z-index: 100000 !important;
+    z-index: 99999 !important;
 }
 
 section[data-testid="stSidebar"] > div:first-child {
@@ -21,32 +21,14 @@ section[data-testid="stSidebar"] > div:first-child {
     height: 100% !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
     background: var(--portal-surface) !important;
     border-right: 1px solid var(--portal-border) !important;
-    box-shadow: 5px 0 20px rgba(14, 42, 58, 0.05);
+    box-shadow: 5px 0 16px rgba(13, 38, 56, 0.045);
     transition:
-        width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        min-width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        max-width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        box-shadow var(--portal-motion-base) ease !important;
-}
-
-/* Remove o padding nativo que deslocava a rail para a direita. */
-section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
-    width: var(--portal-sidebar-open) !important;
-    min-width: var(--portal-sidebar-open) !important;
-    padding: 0 !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-    gap: 0 !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
-section[data-testid="stSidebar"] button[kind="header"] {
-    display: none !important;
+        width var(--portal-motion-fast) ease-out,
+        min-width var(--portal-motion-fast) ease-out,
+        max-width var(--portal-motion-fast) ease-out,
+        box-shadow var(--portal-motion-fast) ease-out !important;
 }
 
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
@@ -55,43 +37,50 @@ section[data-testid="stSidebar"] button[kind="header"] {
         width: var(--portal-sidebar-open) !important;
         min-width: var(--portal-sidebar-open) !important;
         max-width: var(--portal-sidebar-open) !important;
-        box-shadow: 16px 0 42px rgba(14, 42, 58, 0.14);
+        box-shadow: 14px 0 34px rgba(13, 38, 56, 0.13);
     }
+}
+
+section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+section[data-testid="stSidebar"] button[kind="header"] {
+    display: none !important;
 }
 
 .portal-sidebar-shell {
     width: var(--portal-sidebar-open);
-    min-width: var(--portal-sidebar-open);
 }
 
 .portal-sidebar-header {
     width: var(--portal-sidebar-open);
-    min-height: 76px;
-    display: grid;
+    height: 74px;
+    display: flex;
     align-items: center;
-    padding-inline: var(--portal-sidebar-pad-x);
+    padding: 0 15px;
     border-bottom: 1px solid var(--portal-border);
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .portal-sidebar-brandmark {
     display: grid;
-    grid-template-columns: var(--portal-sidebar-icon-box) minmax(0, 1fr);
+    grid-template-columns: 46px minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--portal-sidebar-gap);
-    min-width: 0;
+    gap: 14px;
+    width: 100%;
 }
 
 .portal-sidebar-brand-icon {
-    width: var(--portal-sidebar-icon-box);
-    height: var(--portal-sidebar-icon-box);
-    display: grid;
-    place-items: center;
-    border-radius: 14px;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
     background: linear-gradient(145deg, var(--portal-primary), var(--portal-primary-dark));
     color: #FFFFFF !important;
     font-size: 1rem;
     font-weight: 850;
-    box-shadow: 0 7px 18px rgba(0, 86, 145, 0.2);
+    box-shadow: 0 6px 15px rgba(0, 86, 145, 0.18);
 }
 
 .portal-sidebar-brand-copy,
@@ -102,7 +91,7 @@ section[data-testid="stSidebar"] button[kind="header"] {
 .portal-sidebar-nav-text {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 80ms linear;
+    transition: opacity 50ms linear;
 }
 
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
@@ -125,73 +114,72 @@ section[data-testid="stSidebar"] button[kind="header"] {
 
 .portal-sidebar-organization {
     color: var(--portal-primary) !important;
-    font-size: 0.59rem;
+    font-size: 0.60rem;
     font-weight: 850;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.075em;
     text-transform: uppercase;
 }
 
 .portal-sidebar-title {
     margin-top: 2px;
     color: var(--portal-text) !important;
-    font-size: 0.98rem;
+    font-size: 0.97rem;
     font-weight: 800;
 }
 
 .portal-sidebar-section-label,
 .portal-sidebar-account-label {
-    margin: 14px var(--portal-sidebar-pad-x) 5px;
+    width: calc(var(--portal-sidebar-open) - 2rem);
+    margin: 13px 0 5px 18px;
     color: var(--portal-text-muted) !important;
-    font-size: 0.57rem;
+    font-size: 0.59rem;
     font-weight: 850;
-    letter-spacing: 0.11em;
+    letter-spacing: 0.105em;
 }
 
 .portal-sidebar-nav {
+    width: var(--portal-sidebar-open);
     display: flex;
     flex-direction: column;
     gap: 2px;
-    width: var(--portal-sidebar-open);
-    padding-inline: var(--portal-sidebar-pad-x);
+    padding-inline: 7px;
 }
 
 .portal-sidebar-nav-item {
-    width: calc(var(--portal-sidebar-open) - (var(--portal-sidebar-pad-x) * 2));
-    height: var(--portal-sidebar-row);
+    width: calc(var(--portal-sidebar-open) - 14px);
+    min-height: 44px;
     display: grid;
-    grid-template-columns: var(--portal-sidebar-icon-box) minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--portal-sidebar-gap);
     padding: 0;
     border: 1px solid transparent;
-    border-radius: 12px;
-    background: transparent;
-    color: #49606F !important;
+    border-radius: 11px;
     text-decoration: none !important;
+    color: #425765 !important;
+    background: transparent;
     overflow: hidden;
-    white-space: nowrap;
-    transition:
-        background var(--portal-motion-fast) ease,
-        color var(--portal-motion-fast) ease,
-        border-color var(--portal-motion-fast) ease;
+    box-sizing: border-box;
+    transition: background 80ms linear, color 80ms linear, border-color 80ms linear;
 }
 
 .portal-sidebar-nav-item:hover {
-    background: var(--portal-primary-soft);
+    background: #EFF7FB;
     color: var(--portal-primary-dark) !important;
 }
 
 .portal-sidebar-nav-item.is-active {
     background: #E2F1FA;
     color: var(--portal-primary-dark) !important;
-    border-color: #C4E1F1;
+    border-color: #C7E1F0;
+    box-shadow: inset 3px 0 0 var(--portal-primary);
 }
 
 .portal-sidebar-nav-icon {
-    width: var(--portal-sidebar-icon-box);
-    height: var(--portal-sidebar-row);
-    display: grid;
-    place-items: center;
+    width: 48px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: currentColor !important;
 }
 
@@ -200,9 +188,10 @@ section[data-testid="stSidebar"] button[kind="header"] {
     height: 21px;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.85;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+    overflow: visible;
 }
 
 .portal-sidebar-nav-text {
@@ -211,44 +200,46 @@ section[data-testid="stSidebar"] button[kind="header"] {
     text-overflow: ellipsis;
     color: inherit !important;
     font-size: 0.84rem;
-    font-weight: 700;
+    font-weight: 680;
+    white-space: nowrap;
 }
 
 .portal-sidebar-separator {
-    width: calc(var(--portal-sidebar-open) - (var(--portal-sidebar-pad-x) * 2));
+    width: calc(var(--portal-sidebar-open) - 14px);
     height: 1px;
-    margin: 14px var(--portal-sidebar-pad-x) 4px;
+    margin: 12px 7px 3px;
     background: var(--portal-border);
 }
 
 .portal-sidebar-user-compact {
-    width: calc(var(--portal-sidebar-open) - (var(--portal-sidebar-pad-x) * 2));
-    min-height: 54px;
+    width: calc(var(--portal-sidebar-open) - 14px);
+    min-height: 52px;
     display: grid;
-    grid-template-columns: var(--portal-sidebar-icon-box) minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--portal-sidebar-gap);
-    margin-inline: var(--portal-sidebar-pad-x);
+    margin: 0 7px 4px;
+    overflow: hidden;
 }
 
 .portal-sidebar-avatar,
 .portal-sidebar-avatar-fallback {
-    width: 42px !important;
-    min-width: 42px !important;
-    height: 42px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
     justify-self: center;
     border-radius: 50% !important;
 }
 
 .portal-sidebar-avatar {
     object-fit: cover !important;
-    border: 2px solid #E0EBF1;
+    border: 2px solid #E0EAF0;
 }
 
 .portal-sidebar-avatar-fallback {
-    display: grid;
-    place-items: center;
-    background: var(--portal-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #DDEEF8;
     color: var(--portal-primary-dark) !important;
     font-weight: 850;
 }
@@ -258,7 +249,7 @@ section[data-testid="stSidebar"] button[kind="header"] {
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--portal-text) !important;
-    font-size: 0.77rem;
+    font-size: 0.78rem;
     font-weight: 760;
     white-space: nowrap;
 }
@@ -269,51 +260,23 @@ section[data-testid="stSidebar"] button[kind="header"] {
     font-size: 0.66rem;
 }
 
-/* Logout continua nativo do Streamlit, mas segue o mesmo eixo. */
 section[data-testid="stSidebar"] .stButton {
     width: var(--portal-sidebar-open) !important;
-    padding-inline: var(--portal-sidebar-pad-x) !important;
 }
 
 section[data-testid="stSidebar"] .stButton > button {
-    width: calc(var(--portal-sidebar-open) - (var(--portal-sidebar-pad-x) * 2)) !important;
-    min-height: 42px !important;
+    width: calc(var(--portal-sidebar-open) - 14px) !important;
+    margin-inline: 7px !important;
 }
 
 .portal-sidebar-footer {
-    margin: 10px var(--portal-sidebar-pad-x) 18px;
-    color: var(--portal-text-muted) !important;
-    font-size: 0.62rem;
+    width: calc(var(--portal-sidebar-open) - 2rem);
+    margin: 10px 0 20px 20px;
+    color: #8B99A3 !important;
+    font-size: 0.63rem;
 }
 
-/* Notebook baixo: sidebar ganha scroll sem perder opções. */
-@media (max-height: 720px) {
-    .portal-sidebar-header {
-        min-height: 64px;
-    }
-
-    .portal-sidebar-section-label,
-    .portal-sidebar-account-label {
-        margin-top: 8px;
-    }
-
-    .portal-sidebar-nav-item {
-        height: 42px;
-    }
-
-    .portal-sidebar-nav-icon {
-        height: 42px;
-    }
-}
-
-/* Tablet/mobile: não há hover confiável; mantém rail navegável e rolável. */
 @media (max-width: 900px) {
-    :root {
-        --portal-sidebar-rail: 64px;
-        --portal-sidebar-pad-x: 9px;
-        --portal-sidebar-icon-box: 44px;
-    }
-
     section[data-testid="stSidebar"],
     section[data-testid="stSidebar"] > div:first-child {
         width: var(--portal-sidebar-rail) !important;
@@ -324,8 +287,40 @@ section[data-testid="stSidebar"] .stButton > button {
     section[data-testid="stSidebar"] > div:first-child {
         overflow-y: auto !important;
     }
+}
 
-    .portal-sidebar-header {
-        padding-inline: var(--portal-sidebar-pad-x);
+/* --- Correção estrutural: ícones centralizados e rail persistente em telas menores --- */
+.portal-sidebar-nav-icon .portal-icon {
+    width: 21px;
+    height: 21px;
+}
+
+@media (max-width: 900px) {
+    /* O Streamlit tenta recolher/remover a sidebar em viewport estreita.
+       No Portal Comercial mantemos a rail compacta sempre disponível. */
+    section[data-testid="stSidebar"] {
+        display: block !important;
+        visibility: visible !important;
+        transform: none !important;
+        translate: none !important;
+        left: 0 !important;
+        flex: 0 0 var(--portal-sidebar-rail) !important;
+    }
+
+    section[data-testid="stSidebar"] > div:first-child {
+        display: block !important;
+        visibility: visible !important;
+        transform: none !important;
+        translate: none !important;
+    }
+
+    .portal-sidebar-brand-copy,
+    .portal-sidebar-section-label,
+    .portal-sidebar-account-label,
+    .portal-sidebar-user-copy,
+    .portal-sidebar-footer,
+    .portal-sidebar-nav-text {
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 }
