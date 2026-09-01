@@ -252,11 +252,25 @@
     min-height: 64px !important;
     display: flex !important;
     align-items: center !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     border: 1px solid #C6D8E2 !important;
     border-radius: 20px !important;
     background: #FFFFFF !important;
     box-shadow: 0 14px 34px rgba(14,42,58,.09) !important;
+}
+
+/* BaseWeb cria uma camada interna própria dentro do input.
+   Ela estava herdando o fundo escuro apesar do wrapper externo estar branco. */
+.st-key-home_search_shell [data-testid="stTextInput"] div[data-baseweb="input"] > div,
+.st-key-home_search_shell [data-testid="stTextInput"] div[data-baseweb="input"] > div > div {
+    min-height: 62px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border: 0 !important;
+    box-shadow: none !important;
 }
 
 .st-key-home_search_shell [data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
@@ -268,15 +282,17 @@
 
 .st-key-home_search_shell [data-testid="stTextInput"] input {
     width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: 19px 21px !important;
+    height: 62px !important;
+    min-height: 62px !important;
+    padding: 0 21px !important;
     margin: 0 !important;
-    line-height: 1.35 !important;
+    line-height: 62px !important;
     font-size: .94rem !important;
-    background: transparent !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
     color: #173447 !important;
     -webkit-text-fill-color: #173447 !important;
+    caret-color: var(--portal-primary) !important;
 }
 
 .st-key-home_search_shell [data-testid="stTextInput"] input::placeholder {
