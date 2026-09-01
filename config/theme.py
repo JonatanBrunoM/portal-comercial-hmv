@@ -14,6 +14,7 @@ STYLE_ORDER = (
     "styles/streamlit.css",
     "styles/components/buttons.css",
     "styles/components/forms.css",
+    "styles/components/icons.css",
     "styles/components/hero.css",
     "styles/components/cards.css",
     "styles/components/search.css",
