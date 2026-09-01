@@ -1,24 +1,28 @@
 :root {
-    /* Brand */
+    /* Marca */
     --portal-primary: #005691;
     --portal-primary-dark: #003D66;
-    --portal-primary-light: #EAF4FA;
-    --portal-primary-soft: #F2F8FC;
+    --portal-primary-deep: #002F50;
+    --portal-primary-light: #DCEEF8;
+    --portal-primary-soft: #F0F7FB;
+    --portal-accent: #4AA6D8;
 
-    /* Surfaces */
-    --portal-background: #F4F7F9;
+    /* Superfícies */
+    --portal-background: #F3F6F8;
     --portal-surface: #FFFFFF;
     --portal-surface-soft: #F8FAFB;
+    --portal-surface-blue: #F4F9FC;
 
-    /* Text */
-    --portal-text: #17212B;
-    --portal-text-secondary: #5B6773;
-    --portal-text-muted: #7C8B96;
+    /* Texto */
+    --portal-text: #162632;
+    --portal-text-secondary: #586B78;
+    --portal-text-muted: #83919B;
+    --portal-text-on-brand: #FFFFFF;
 
-    /* Borders and status */
-    --portal-border: #D7E1E7;
+    /* Linhas e estados */
+    --portal-border: #D9E3E9;
     --portal-border-strong: #C6D5DE;
-    --portal-success: #2E7D32;
+    --portal-success: #27763C;
     --portal-warning: #B86B00;
     --portal-error: #C62828;
 
@@ -27,9 +31,9 @@
     --portal-radius-sm: 10px;
     --portal-radius-md: 14px;
     --portal-radius-lg: 20px;
-    --portal-radius-xl: 25px;
+    --portal-radius-xl: 28px;
 
-    /* Spacing */
+    /* Espaçamento */
     --portal-space-1: 0.25rem;
     --portal-space-2: 0.5rem;
     --portal-space-3: 0.75rem;
@@ -38,18 +42,27 @@
     --portal-space-6: 1.5rem;
     --portal-space-8: 2rem;
     --portal-space-10: 2.5rem;
+    --portal-space-12: 3rem;
 
-    /* Shadows */
-    --portal-shadow-sm: 0 4px 14px rgba(13, 38, 56, 0.05);
-    --portal-shadow-md: 0 12px 30px rgba(13, 38, 56, 0.08);
-    --portal-shadow-brand: 0 18px 44px rgba(0, 61, 102, 0.16);
+    /* Sombras */
+    --portal-shadow-xs: 0 2px 8px rgba(14, 42, 58, 0.04);
+    --portal-shadow-sm: 0 5px 18px rgba(14, 42, 58, 0.055);
+    --portal-shadow-md: 0 14px 34px rgba(14, 42, 58, 0.085);
+    --portal-shadow-brand: 0 22px 55px rgba(0, 61, 102, 0.17);
 
     /* Layout */
-    --portal-content-max: 1320px;
-    --portal-sidebar-rail: 76px;
-    --portal-sidebar-open: 292px;
+    --portal-content-max: 1280px;
+    --portal-page-gutter: clamp(1rem, 2.2vw, 2rem);
+
+    /* Sidebar: todas as posições derivam destes valores */
+    --portal-sidebar-rail: 72px;
+    --portal-sidebar-open: 288px;
+    --portal-sidebar-pad-x: 12px;
+    --portal-sidebar-icon-box: 46px;
+    --portal-sidebar-row: 46px;
+    --portal-sidebar-gap: 12px;
 
     /* Motion */
     --portal-motion-fast: 90ms;
-    --portal-motion-base: 140ms;
+    --portal-motion-base: 150ms;
 }
