@@ -79,112 +79,6 @@ def _set_operator_module(operator_id: str, module: str) -> None:
     st.session_state[f"operator_module_{operator_id}"] = module
 
 
-def _inject_hub_styles() -> None:
-    st.markdown(
-        """
-        <style>
-        .hmv-operator-header {
-            background: linear-gradient(135deg, #005691 0%, #0077a8 100%);
-            border-radius: 18px;
-            padding: 26px 28px;
-            margin: 4px 0 18px 0;
-            color: white;
-            box-shadow: 0 8px 24px rgba(0, 86, 145, .14);
-        }
-        .hmv-operator-kicker {
-            font-size: .78rem;
-            font-weight: 700;
-            letter-spacing: .10em;
-            text-transform: uppercase;
-            opacity: .86;
-            margin-bottom: 7px;
-        }
-        .hmv-operator-title {
-            font-size: 2rem;
-            line-height: 1.08;
-            font-weight: 750;
-            margin: 0 0 8px 0;
-        }
-        .hmv-operator-meta {
-            font-size: .94rem;
-            opacity: .94;
-        }
-        .hmv-stat {
-            background: #ffffff;
-            border: 1px solid #dfe7ed;
-            border-radius: 14px;
-            padding: 15px 16px;
-            min-height: 88px;
-            box-shadow: 0 2px 8px rgba(22, 46, 68, .04);
-        }
-        .hmv-stat-label {
-            color: #5d6b78;
-            font-size: .79rem;
-            font-weight: 650;
-            margin-bottom: 5px;
-        }
-        .hmv-stat-value {
-            color: #0d2638;
-            font-size: 1.55rem;
-            font-weight: 760;
-            line-height: 1;
-        }
-        .hmv-section-label {
-            color: #0d2638;
-            font-size: 1.18rem;
-            font-weight: 750;
-            margin: 22px 0 3px 0;
-        }
-        .hmv-section-help {
-            color: #697987;
-            font-size: .88rem;
-            margin-bottom: 12px;
-        }
-        .hmv-alert-danger, .hmv-alert-info, .hmv-panel {
-            border-radius: 14px;
-            padding: 17px 18px;
-            min-height: 132px;
-        }
-        .hmv-alert-danger {
-            background: #fff4f2;
-            border: 1px solid #f0b5aa;
-        }
-        .hmv-alert-info {
-            background: #eef7fc;
-            border: 1px solid #b7d9ec;
-        }
-        .hmv-panel {
-            background: #ffffff;
-            border: 1px solid #dfe7ed;
-        }
-        .hmv-card-eyebrow {
-            color: #5c6b77;
-            font-size: .75rem;
-            font-weight: 750;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        .hmv-card-title {
-            color: #102b3d;
-            font-size: 1rem;
-            font-weight: 750;
-            margin-bottom: 7px;
-        }
-        .hmv-card-body {
-            color: #425463;
-            font-size: .89rem;
-            line-height: 1.45;
-        }
-        div[data-testid="stButton"] > button {
-            border-radius: 10px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def _html_escape(value: object) -> str:
     import html
     return html.escape(str(value or ""))
@@ -886,8 +780,6 @@ def render_operadora_detail(operator_id: str) -> None:
             st.session_state.pop("selected_operator_id", None)
             st.rerun()
         return
-
-    _inject_hub_styles()
 
     back_col, spacer = st.columns([1.2, 5])
     with back_col:
