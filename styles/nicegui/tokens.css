@@ -1,0 +1,68 @@
+:root {
+    /* Marca */
+    --portal-primary-950: #002c49;
+    --portal-primary-900: #003d66;
+    --portal-primary-800: #004b7d;
+    --portal-primary-700: #005691;
+    --portal-primary-600: #0870ad;
+    --portal-primary-100: #e5f2f8;
+    --portal-primary-50: #f2f8fb;
+
+    /* Neutros */
+    --portal-ink-950: #102b3b;
+    --portal-ink-800: #294654;
+    --portal-ink-600: #607a88;
+    --portal-ink-500: #78909c;
+    --portal-ink-300: #b9c9d1;
+    --portal-ink-200: #d7e2e7;
+    --portal-ink-100: #eaf0f3;
+    --portal-ink-50: #f6f9fa;
+    --portal-white: #ffffff;
+
+    /* Estados */
+    --portal-success: #26855d;
+    --portal-warning: #b87519;
+    --portal-danger: #b64b4b;
+
+    /* Superfícies */
+    --portal-bg: #f3f7f9;
+    --portal-surface: #ffffff;
+    --portal-surface-muted: #f8fafb;
+    --portal-sidebar: #073b5c;
+
+    /* Tipografia */
+    --portal-font:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+
+    /* Raios */
+    --portal-radius-xs: 8px;
+    --portal-radius-sm: 12px;
+    --portal-radius-md: 16px;
+    --portal-radius-lg: 22px;
+    --portal-radius-xl: 30px;
+    --portal-radius-pill: 999px;
+
+    /* Sombras */
+    --portal-shadow-xs: 0 1px 2px rgba(16, 43, 59, 0.04);
+    --portal-shadow-sm: 0 8px 24px rgba(16, 43, 59, 0.07);
+    --portal-shadow-md: 0 18px 50px rgba(16, 43, 59, 0.10);
+    --portal-shadow-lg: 0 30px 80px rgba(16, 43, 59, 0.14);
+
+    /* Espaçamento */
+    --portal-space-1: 4px;
+    --portal-space-2: 8px;
+    --portal-space-3: 12px;
+    --portal-space-4: 16px;
+    --portal-space-5: 20px;
+    --portal-space-6: 24px;
+    --portal-space-7: 32px;
+    --portal-space-8: 40px;
+    --portal-space-9: 48px;
+    --portal-space-10: 64px;
+
+    /* Layout */
+    --portal-sidebar-width: 268px;
+    --portal-topbar-height: 76px;
+    --portal-content-max: 1500px;
+}
