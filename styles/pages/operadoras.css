@@ -66,7 +66,7 @@
 /* Cards do diretório */
 .portal-operadora-card {
     position: relative;
-    min-height: 222px;
+    min-height: 156px;
     padding: .28rem .1rem 0;
     color: var(--portal-text);
 }
@@ -114,7 +114,7 @@
 }
 
 .portal-operadora-name {
-    margin-top: .95rem;
+    margin-top: .72rem;
     color: var(--portal-text) !important;
     font-size: 1.08rem;
     font-weight: 850;
@@ -122,7 +122,7 @@
 }
 
 .portal-operadora-full-name {
-    min-height: 2.3em;
+    min-height: 1.5em;
     margin-top: .28rem;
     color: var(--portal-text-secondary) !important;
     font-size: .76rem;
@@ -131,7 +131,7 @@
 
 .portal-operadora-card-divider {
     height: 1px;
-    margin: .85rem 0 .72rem;
+    margin: .62rem 0 .58rem;
     background: var(--portal-border);
 }
 
@@ -523,5 +523,184 @@ main [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
 
     .hmv-operator-header-main {
         gap: .75rem;
+    }
+}
+
+
+/* =========================================================
+   AJUSTES DE APROVAÇÃO — RODADA 2
+   ========================================================= */
+
+/* O marcador limita estes ajustes à página Operadoras. */
+.operator-page-marker {
+    display: none;
+}
+
+/* Botões locais: corrige a camada visual do Streamlit sem alterar o portal inteiro. */
+main:has(.operator-page-marker) .stButton > button,
+main:has(.operator-page-marker) .stLinkButton > a {
+    border: 1px solid #B9D3E1 !important;
+    background: #FFFFFF !important;
+    color: var(--portal-primary-dark) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+    box-shadow: 0 3px 10px rgba(14,42,58,.045) !important;
+}
+
+main:has(.operator-page-marker) .stButton > button *,
+main:has(.operator-page-marker) .stButton > button p,
+main:has(.operator-page-marker) .stButton > button span,
+main:has(.operator-page-marker) .stLinkButton > a * {
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+main:has(.operator-page-marker) .stButton > button:hover,
+main:has(.operator-page-marker) .stLinkButton > a:hover {
+    border-color: #8CBBD2 !important;
+    background: var(--portal-primary-soft) !important;
+    color: var(--portal-primary-dark) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+}
+
+main:has(.operator-page-marker) .stButton > button[kind="primary"] {
+    border-color: var(--portal-primary) !important;
+    background: linear-gradient(
+        135deg,
+        var(--portal-primary-dark),
+        var(--portal-primary)
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    box-shadow: 0 7px 16px rgba(0,86,145,.15) !important;
+}
+
+main:has(.operator-page-marker) .stButton > button[kind="primary"]:hover {
+    border-color: var(--portal-primary-dark) !important;
+    background: linear-gradient(
+        135deg,
+        #002F50,
+        var(--portal-primary-dark)
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* Diretório mais compacto: conteúdo e CTA passam a formar um único bloco. */
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card) {
+    padding-top: .8rem !important;
+    padding-bottom: .8rem !important;
+}
+
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    gap: .55rem !important;
+}
+
+/* Resumo compacto: informa disponibilidade sem parecer painel de BI. */
+.operator-overview-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--portal-border);
+    border-radius: 15px;
+    background: var(--portal-surface);
+    box-shadow: var(--portal-shadow-xs);
+}
+
+.operator-overview-item {
+    display: flex;
+    align-items: center;
+    gap: .72rem;
+    min-width: 0;
+    min-height: 72px;
+    padding: .82rem .9rem;
+    border-right: 1px solid var(--portal-border);
+}
+
+.operator-overview-item:last-child {
+    border-right: 0;
+}
+
+.operator-overview-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--portal-primary-soft);
+    color: var(--portal-primary);
+}
+
+.operator-overview-icon .portal-icon {
+    width: 17px;
+    height: 17px;
+}
+
+.operator-overview-copy {
+    display: grid;
+    min-width: 0;
+}
+
+.operator-overview-copy strong {
+    color: var(--portal-primary-dark) !important;
+    font-size: 1.08rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.operator-overview-copy small {
+    margin-top: .24rem;
+    overflow: hidden;
+    color: var(--portal-text-secondary) !important;
+    font-size: .69rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Acessos rápidos permanecem funcionais, mas sem símbolos/emoji no rótulo. */
+main:has(.operator-page-marker) .stButton button p {
+    letter-spacing: 0 !important;
+}
+
+/* Evita altura artificial nos cards do diretório. */
+.portal-operadora-card {
+    min-height: 0;
+}
+
+.portal-operadora-full-name {
+    min-height: 0;
+}
+
+@media (max-width: 860px) {
+    .operator-overview-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .operator-overview-item:nth-child(2) {
+        border-right: 0;
+    }
+
+    .operator-overview-item:nth-child(-n+2) {
+        border-bottom: 1px solid var(--portal-border);
+    }
+}
+
+@media (max-width: 520px) {
+    .operator-overview-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .operator-overview-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--portal-border);
+    }
+
+    .operator-overview-item:last-child {
+        border-bottom: 0;
     }
 }
