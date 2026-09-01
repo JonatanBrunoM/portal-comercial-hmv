@@ -1,0 +1,6 @@
+.forum-pagination-status {
+    padding: 0.65rem;
+    text-align: center;
+    color: var(--portal-text-secondary) !important;
+    font-size: 0.82rem;
+}
