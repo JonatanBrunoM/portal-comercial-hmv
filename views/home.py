@@ -1,8 +1,7 @@
-import html
+
 
 import streamlit as st
 
-from components.sidebar import navigate_to
 from components.search_results import render_search_results
 from core.dashboard_service import get_dashboard_summary
 from core.search_service import search_global
@@ -11,116 +10,6 @@ from ui.icons import icon
 
 def _safe(value) -> str:
     return html.escape(str(value or ""))
-
-
-def _priority_icon(priority: str) -> str:
-    normalized = (priority or "").strip().casefold()
-    return {
-        "alta": "●",
-        "média": "●",
-        "media": "●",
-        "baixa": "●",
-        "crítica": "●",
-        "critica": "●",
-    }.get(normalized, "●")
-
-
-def _section_header(kicker: str, title: str, description: str = "") -> None:
-    description_html = (
-        f'<div class="portal-home-section-description">{_safe(description)}</div>'
-        if description
-        else ""
-    )
-
-    st.html(
-        f"""
-        <div class="portal-home-section-head">
-            <div class="portal-home-section-eyebrow">{_safe(kicker)}</div>
-            <div class="portal-home-section-title">{_safe(title)}</div>
-            {description_html}
-        </div>
-        """
-    )
-
-
-def _go(page: str) -> None:
-    navigate_to(page)
-
-
-def _render_hero(summary) -> None:
-    operators = summary.operadoras if summary else "—"
-    plans = summary.planos if summary else "—"
-    notices = summary.comunicados if summary else "—"
-    contingencies = summary.contingencias if summary else "—"
-
-    st.html(
-        f"""
-        <section class="portal-home-hero portal-home-hero-v3">
-            <div class="portal-home-hero-copy">
-                <div class="portal-home-kicker">HOSPITAL MOINHOS DE VENTO · COMERCIAL</div>
-                <h1 class="portal-home-title">
-                    Tudo que a operação precisa,
-                    <span>em um único lugar.</span>
-                </h1>
-                <p class="portal-home-description">
-                    Consulte convênios com rapidez, encontre o caminho correto
-                    para cada atendimento e reduza dúvidas no dia a dia.
-                </p>
-                <div class="portal-home-hero-tags">
-                    <span>Planos</span>
-                    <span>Portais</span>
-                    <span>Autorizações</span>
-                    <span>Documentos</span>
-                    <span>Contatos</span>
-                </div>
-            </div>
-
-            <div class="portal-home-pulse">
-                <div class="portal-home-pulse-label">VISÃO DA BASE</div>
-                <div class="portal-home-pulse-main">
-                    <div>
-                        <strong>{_safe(operators)}</strong>
-                        <span>operadoras</span>
-                    </div>
-                    <div>
-                        <strong>{_safe(plans)}</strong>
-                        <span>planos</span>
-                    </div>
-                </div>
-                <div class="portal-home-pulse-row">
-                    <span><b>{_safe(notices)}</b> comunicados ativos</span>
-                    <span><b>{_safe(contingencies)}</b> contingências</span>
-                </div>
-                <div class="portal-home-pulse-foot">
-                    Base institucional de consulta comercial
-                </div>
-            </div>
-        </section>
-        """
-    )
-
-
-def _render_search() -> str:
-    st.html(
-        """
-        <div class="portal-command-heading">
-            <div class="portal-command-eyebrow">CENTRAL DE CONSULTA</div>
-            <div class="portal-command-title">Como podemos ajudar?</div>
-            <div class="portal-command-subtitle">
-                Pesquise na base agora. Este espaço será a interface principal
-                do agente do Portal Comercial.
-            </div>
-        </div>
-        """
-    )
-
-    with st.container(key="home_search_shell"):
-        return st.text_input(
-            label="Pesquisa global",
-            placeholder="Ex.: Como faço a autorização do plano? Qual o telefone da operadora? Onde acesso o portal?",
-            label_visibility="collapsed",
-            key="home_search",
-        )
 
 
 def _nav_href(page: str) -> str:
@@ -139,217 +28,378 @@ def _nav_href(page: str) -> str:
     return f"?page={slugs.get(page, 'inicio')}"
 
 
-QUICK_ICON_NAMES = {
-    "Operadoras": "building",
-    "Portais": "globe",
-    "Documentos": "file",
-    "Contatos": "phone",
-    "Contingências": "warning",
-}
-
-
-
-def _render_quick_dock() -> None:
-    actions = [
-        ("Operadoras", "Convênios e planos"),
-        ("Portais", "Acessos operacionais"),
-        ("Documentos", "Regras e documentos"),
-        ("Contatos", "Centrais e responsáveis"),
-        ("Contingências", "Situações ativas"),
-    ]
-
-    cards = []
-    for page, subtitle in actions:
-        cards.append(
-            f"""
-            <a class="portal-quick-card" href="{_nav_href(page)}" target="_self">
-                <span class="portal-quick-icon">{icon(QUICK_ICON_NAMES[page])}</span>
-                <span class="portal-quick-copy">
-                    <strong>{_safe(page)}</strong>
-                    <small>{_safe(subtitle)}</small>
-                </span>
-                <span class="portal-quick-arrow">→</span>
-            </a>
-            """
-        )
+def _render_hero(summary) -> None:
+    operators = summary.operadoras if summary else "—"
+    plans = summary.planos if summary else "—"
+    notices = summary.comunicados if summary else "—"
+    contingencies = summary.contingencias if summary else "—"
 
     st.html(
         f"""
-        <div class="portal-home-quick-wrap">
-            <div class="portal-home-dock-label">ATALHOS RÁPIDOS</div>
-            <div class="portal-home-quick-grid">
-                {''.join(cards)}
+        <section class="home-hero">
+            <div class="home-hero-grid">
+                <div class="home-hero-copy">
+                    <div class="home-kicker">
+                        HOSPITAL MOINHOS DE VENTO · COMERCIAL
+                    </div>
+
+                    <h1 class="home-title">
+                        O ponto de partida
+                        <span>da operação comercial.</span>
+                    </h1>
+
+                    <p class="home-description">
+                        Encontre rapidamente a informação certa sobre convênios,
+                        planos, acessos, regras, documentos e contatos para cada atendimento.
+                    </p>
+
+                    <div class="home-hero-context">
+                        <span>Base institucional</span>
+                        <span>Consulta rápida</span>
+                        <span>Informação centralizada</span>
+                    </div>
+                </div>
+
+                <div class="home-hero-status">
+                    <div class="home-status-header">
+                        <div>
+                            <span class="home-status-eyebrow">BASE COMERCIAL</span>
+                            <strong>Visão rápida</strong>
+                        </div>
+                        <span class="home-status-live">
+                            <i></i> Atualizada
+                        </span>
+                    </div>
+
+                    <div class="home-status-grid">
+                        <div class="home-status-metric">
+                            <strong>{_safe(operators)}</strong>
+                            <span>Operadoras</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(plans)}</strong>
+                            <span>Planos</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(notices)}</strong>
+                            <span>Comunicados</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(contingencies)}</strong>
+                            <span>Contingências</span>
+                        </div>
+                    </div>
+
+                    <div class="home-status-foot">
+                        Um único lugar para consultar a operação.
+                    </div>
+                </div>
+            </div>
+        </section>
+        """
+    )
+
+
+def _render_search() -> str:
+    st.html(
+        f"""
+        <div class="home-command-card">
+            <div class="home-command-icon">
+                {icon("search")}
+            </div>
+            <div class="home-command-copy">
+                <span>ENCONTRE O QUE PRECISA</span>
+                <strong>Como podemos ajudar?</strong>
+                <small>
+                    Digite uma dúvida, operadora, plano, documento, portal ou contato.
+                </small>
             </div>
         </div>
         """
     )
 
-
-def _notice_html(notice, compact: bool = False) -> str:
-    period = notice.start_date or ""
-    if notice.end_date:
-        period = f"{period} até {notice.end_date}" if period else f"Até {notice.end_date}"
-
-    compact_class = " portal-feed-card-compact" if compact else ""
-
-    return f"""
-    <article class="portal-feed-card{compact_class}">
-        <div class="portal-feed-topline">
-            <span class="portal-feed-dot portal-feed-dot-notice"></span>
-            <span>COMUNICADO</span>
-            <span class="portal-feed-priority">{_safe(notice.priority)}</span>
-        </div>
-        <div class="portal-feed-title">{_safe(notice.title)}</div>
-        <div class="portal-feed-meta">
-            {_safe(notice.operator_name)} · {_safe(notice.category)}
-        </div>
-        <div class="portal-feed-body">{_safe(notice.summary)}</div>
-        <div class="portal-feed-footer">
-            <span>{_safe(period or "Vigência não informada")}</span>
-        </div>
-    </article>
-    """
-
-
-def _contingency_html(item, featured: bool = False) -> str:
-    feature_class = " portal-feed-card-featured" if featured else ""
-
-    return f"""
-    <article class="portal-feed-card portal-feed-card-alert{feature_class}">
-        <div class="portal-feed-topline">
-            <span class="portal-feed-dot portal-feed-dot-alert"></span>
-            <span>CONTINGÊNCIA</span>
-            <span class="portal-feed-priority">{_safe(item.priority)}</span>
-        </div>
-        <div class="portal-feed-title">{_safe(item.event)}</div>
-        <div class="portal-feed-meta">
-            {_safe(item.operator_name)} · {_safe(item.unit)}
-        </div>
-        <div class="portal-feed-body">{_safe(item.guidance)}</div>
-        <div class="portal-feed-footer">
-            <span>Status: {_safe(item.status)}</span>
-        </div>
-    </article>
-    """
-
-
-def _render_radar(summary) -> None:
-    _section_header(
-        "AGORA NO PORTAL",
-        "Radar operacional",
-        "O que merece atenção antes de iniciar um atendimento.",
-    )
-
-    left, right = st.columns([1.05, 0.95], gap="large")
-
-    with left:
-        if summary and summary.contingency_items:
-            st.html(
-                _contingency_html(
-                    summary.contingency_items[0],
-                    featured=True,
-                )
-            )
-
-            for item in summary.contingency_items[1:3]:
-                st.html(_contingency_html(item))
-        else:
-            st.html(
-                """
-                <div class="portal-empty-state">
-                    <div class="portal-empty-icon">✓</div>
-                    <div>
-                        <strong>Operação sem contingências ativas</strong>
-                        <span>Nenhum fluxo alternativo precisa de atenção agora.</span>
-                    </div>
-                </div>
-                """
-            )
-
-        st.html(
-            f"""
-            <a class="portal-section-link"
-               href="{_nav_href('Contingências')}"
-               target="_self">
-                Ver todas as contingências
-                <span>→</span>
-            </a>
-            """
-        )
-
-    with right:
-        if summary and summary.notices:
-            for notice in summary.notices[:3]:
-                st.html(_notice_html(notice, compact=True))
-        else:
-            st.html(
-                """
-                <div class="portal-empty-state">
-                    <div class="portal-empty-icon">✓</div>
-                    <div>
-                        <strong>Sem novos comunicados</strong>
-                        <span>Não há atualizações publicadas para este momento.</span>
-                    </div>
-                </div>
-                """
-            )
-
-        st.html(
-            f"""
-            <a class="portal-section-link"
-               href="{_nav_href('Comunicados')}"
-               target="_self">
-                Ver todos os comunicados
-                <span>→</span>
-            </a>
-            """
+    with st.container(key="home_search_shell"):
+        return st.text_input(
+            label="Pesquisa global",
+            placeholder="Ex.: Como faço uma autorização? Onde acesso o portal da operadora?",
+            label_visibility="collapsed",
+            key="home_search",
         )
 
 
-def _render_explore() -> None:
-    _section_header(
-        "EXPLORE",
-        "Encontre pelo assunto",
-        "Entre pelo caminho que melhor representa a sua necessidade.",
-    )
-
-    items = [
-        ("CONVÊNIOS", "Operadoras e planos", "Consulte o panorama completo de cada convênio.", "Operadoras"),
-        ("ACESSO", "Portais e acessos", "Encontre os sistemas utilizados na operação.", "Portais"),
-        ("REGRAS", "Documentação", "Confira documentos, validade e orientações.", "Documentos"),
-        ("SUPORTE", "Contatos", "Localize centrais, e-mails e responsáveis.", "Contatos"),
-        ("RELAÇÃO", "Relacionamento", "Consulte consultores e carteiras.", "Consultores"),
-        ("NOVIDADES", "Atualizações", "Veja comunicados e mudanças recentes.", "Comunicados"),
+def _render_primary_actions() -> None:
+    actions = [
+        (
+            "Operadoras",
+            "building",
+            "Convênios e planos",
+            "Consulte regras, coberturas, documentos e informações por operadora.",
+        ),
+        (
+            "Portais",
+            "globe",
+            "Portais e acessos",
+            "Acesse rapidamente os sistemas usados na rotina operacional.",
+        ),
+        (
+            "Documentos",
+            "file",
+            "Documentação",
+            "Confira exigências, validade e orientações documentais.",
+        ),
+        (
+            "Contatos",
+            "phone",
+            "Centrais e responsáveis",
+            "Encontre telefones, e-mails e canais corretos de atendimento.",
+        ),
     ]
 
     cards = []
-    for eyebrow, title, description, page in items:
+
+    for page, icon_name, title, description in actions:
         cards.append(
             f"""
-            <a class="portal-explore-link"
+            <a class="home-action-card"
                href="{_nav_href(page)}"
                target="_self">
-                <span class="portal-explore-eyebrow">{_safe(eyebrow)}</span>
-                <strong class="portal-explore-title">{_safe(title)}</strong>
-                <span class="portal-explore-description">{_safe(description)}</span>
-                <span class="portal-explore-action">
-                    Acessar <span>→</span>
-                </span>
+                <div class="home-action-icon">
+                    {icon(icon_name)}
+                </div>
+                <div class="home-action-copy">
+                    <span>{_safe(page).upper()}</span>
+                    <strong>{_safe(title)}</strong>
+                    <p>{_safe(description)}</p>
+                </div>
+                <div class="home-action-go">→</div>
             </a>
             """
         )
 
     st.html(
         f"""
-        <div class="portal-explore-grid">
-            {''.join(cards)}
-        </div>
+        <section class="home-actions-section">
+            <div class="home-section-heading">
+                <div>
+                    <span>ACESSO DIRETO</span>
+                    <h2>O que você precisa fazer agora?</h2>
+                </div>
+                <p>
+                    Entre pelos caminhos mais usados no dia a dia.
+                </p>
+            </div>
+
+            <div class="home-action-grid">
+                {''.join(cards)}
+            </div>
+        </section>
+        """
+    )
+
+
+def _notice_card(notice) -> str:
+    period = notice.start_date or ""
+    if notice.end_date:
+        period = (
+            f"{period} até {notice.end_date}"
+            if period
+            else f"Até {notice.end_date}"
+        )
+
+    return f"""
+        <article class="home-radar-card home-radar-card-notice">
+            <div class="home-radar-top">
+                <span class="home-radar-type">
+                    {icon("megaphone")} COMUNICADO
+                </span>
+                <span class="home-radar-badge">{_safe(notice.priority)}</span>
+            </div>
+
+            <h3>{_safe(notice.title)}</h3>
+
+            <div class="home-radar-meta">
+                {_safe(notice.operator_name)} · {_safe(notice.category)}
+            </div>
+
+            <p>{_safe(notice.summary)}</p>
+
+            <div class="home-radar-footer">
+                {_safe(period or "Vigência não informada")}
+            </div>
+        </article>
+    """
+
+
+def _contingency_card(item, featured: bool = False) -> str:
+    featured_class = " is-featured" if featured else ""
+
+    return f"""
+        <article class="home-radar-card home-radar-card-alert{featured_class}">
+            <div class="home-radar-top">
+                <span class="home-radar-type">
+                    {icon("warning")} CONTINGÊNCIA
+                </span>
+                <span class="home-radar-badge">{_safe(item.priority)}</span>
+            </div>
+
+            <h3>{_safe(item.event)}</h3>
+
+            <div class="home-radar-meta">
+                {_safe(item.operator_name)} · {_safe(item.unit)}
+            </div>
+
+            <p>{_safe(item.guidance)}</p>
+
+            <div class="home-radar-footer">
+                Status: {_safe(item.status)}
+            </div>
+        </article>
+    """
+
+
+def _render_radar(summary) -> None:
+    contingency_cards = ""
+    notice_cards = ""
+
+    if summary and summary.contingency_items:
+        contingency_cards = "".join(
+            _contingency_card(
+                item,
+                featured=index == 0,
+            )
+            for index, item in enumerate(summary.contingency_items[:3])
+        )
+    else:
+        contingency_cards = f"""
+            <div class="home-radar-empty">
+                <div class="home-radar-empty-icon">{icon("check")}</div>
+                <div>
+                    <strong>Operação sem contingências ativas</strong>
+                    <span>Nenhum fluxo alternativo exige atenção neste momento.</span>
+                </div>
+            </div>
+        """
+
+    if summary and summary.notices:
+        notice_cards = "".join(
+            _notice_card(notice)
+            for notice in summary.notices[:3]
+        )
+    else:
+        notice_cards = f"""
+            <div class="home-radar-empty">
+                <div class="home-radar-empty-icon">{icon("check")}</div>
+                <div>
+                    <strong>Sem novos comunicados</strong>
+                    <span>Não há atualizações publicadas neste momento.</span>
+                </div>
+            </div>
+        """
+
+    st.html(
+        f"""
+        <section class="home-radar-section">
+            <div class="home-section-heading">
+                <div>
+                    <span>RADAR OPERACIONAL</span>
+                    <h2>O que merece atenção agora</h2>
+                </div>
+                <p>
+                    Informações relevantes antes de iniciar ou continuar um atendimento.
+                </p>
+            </div>
+
+            <div class="home-radar-grid">
+                <div class="home-radar-column">
+                    <div class="home-radar-column-head">
+                        <div>
+                            <span>OPERAÇÃO</span>
+                            <strong>Contingências</strong>
+                        </div>
+                        <a href="{_nav_href('Contingências')}" target="_self">
+                            Ver todas →
+                        </a>
+                    </div>
+                    {contingency_cards}
+                </div>
+
+                <div class="home-radar-column">
+                    <div class="home-radar-column-head">
+                        <div>
+                            <span>ATUALIZAÇÕES</span>
+                            <strong>Comunicados</strong>
+                        </div>
+                        <a href="{_nav_href('Comunicados')}" target="_self">
+                            Ver todos →
+                        </a>
+                    </div>
+                    {notice_cards}
+                </div>
+            </div>
+        </section>
+        """
+    )
+
+
+def _render_secondary_paths() -> None:
+    items = [
+        (
+            "Consultores",
+            "users",
+            "Relacionamento comercial",
+            "Consulte consultores e carteiras de atendimento.",
+        ),
+        (
+            "Comunicados",
+            "megaphone",
+            "Atualizações",
+            "Veja mudanças e orientações publicadas recentemente.",
+        ),
+        (
+            "Contingências",
+            "warning",
+            "Fluxos alternativos",
+            "Confira indisponibilidades e orientações de contingência.",
+        ),
+    ]
+
+    cards = "".join(
+        f"""
+        <a class="home-secondary-card"
+           href="{_nav_href(page)}"
+           target="_self">
+            <span class="home-secondary-icon">{icon(icon_name)}</span>
+            <span class="home-secondary-copy">
+                <small>{_safe(page).upper()}</small>
+                <strong>{_safe(title)}</strong>
+                <p>{_safe(description)}</p>
+            </span>
+            <span class="home-secondary-arrow">→</span>
+        </a>
+        """
+        for page, icon_name, title, description in items
+    )
+
+    st.html(
+        f"""
+        <section class="home-secondary-section">
+            <div class="home-section-heading home-section-heading-compact">
+                <div>
+                    <span>OUTROS CAMINHOS</span>
+                    <h2>Continue explorando</h2>
+                </div>
+            </div>
+
+            <div class="home-secondary-grid">
+                {cards}
+            </div>
+        </section>
         """
     )
 
 
 def render_home() -> None:
-    """Renderiza a Home como hall institucional e operacional."""
+    """Renderiza a Home como hall institucional do Portal Comercial."""
 
     try:
         summary = get_dashboard_summary()
@@ -361,7 +411,6 @@ def render_home() -> None:
     _render_hero(summary)
 
     search_query = _render_search()
-    _render_quick_dock()
 
     if data_error:
         st.warning(
@@ -381,7 +430,6 @@ def render_home() -> None:
             key_prefix="home_search",
         )
 
-        st.divider()
-
+    _render_primary_actions()
     _render_radar(summary)
-    _render_explore()
+    _render_secondary_paths()
