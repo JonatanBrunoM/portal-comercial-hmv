@@ -3,17 +3,21 @@
 }
 
 .block-container {
-    width: 100% !important;
+    width: min(100%, var(--portal-content-max)) !important;
     max-width: var(--portal-content-max) !important;
     margin-inline: auto !important;
     padding:
-        1.25rem
-        clamp(1rem, 2vw, 1.65rem)
-        3rem !important;
+        clamp(1rem, 2vw, 1.4rem)
+        var(--portal-page-gutter)
+        clamp(2.4rem, 5vw, 4rem) !important;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 760px) {
+    :root {
+        --portal-page-gutter: 0.9rem;
+    }
+
     .block-container {
-        padding-inline: 1rem !important;
+        padding-top: 0.9rem !important;
     }
 }
