@@ -1,0 +1,57 @@
+.portal-search-result {
+    padding: 0.2rem 0;
+}
+
+.portal-search-result-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.portal-search-result-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--portal-primary) !important;
+}
+
+.portal-search-result-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.portal-search-result-category,
+.portal-search-result-operator {
+    padding: 0.2rem 0.42rem;
+    border-radius: 999px;
+    background: var(--portal-primary-soft);
+    color: var(--portal-primary-dark) !important;
+    font-size: 0.62rem;
+    font-weight: 800;
+}
+
+.portal-search-result-operator {
+    background: #F1F3F5;
+    color: var(--portal-text-secondary) !important;
+}
+
+.portal-search-result-title {
+    margin-top: 0.7rem;
+    color: var(--portal-text) !important;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.portal-search-result-subtitle,
+.portal-search-result-description {
+    margin-top: 0.25rem;
+    color: var(--portal-text-secondary) !important;
+    font-size: 0.79rem;
+    line-height: 1.45;
+}
