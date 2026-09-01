@@ -1,54 +1,139 @@
-main .stButton > button,
-main .stLinkButton > a {
-    min-height: 44px !important;
-    padding: 0.68rem 1rem !important;
-    border-radius: 12px !important;
+/*
+ * Sistema global de botões do Portal Comercial.
+ *
+ * Regra arquitetural:
+ * - estilos estruturais de botões ficam aqui;
+ * - páginas não devem redefinir cor/base de botões nativos do Streamlit;
+ * - seletores usam data-testid para acompanhar o DOM atual do Streamlit.
+ */
+
+/* =========================================================
+   BOTÃO SECUNDÁRIO / PADRÃO
+   ========================================================= */
+
+main [data-testid="stButton"] button,
+main [data-testid="stButton"] [data-testid^="stBaseButton"],
+main [data-testid="stLinkButton"] a {
+    min-height: 42px !important;
+    padding: 0.62rem 1rem !important;
     border: 1px solid var(--portal-border-strong) !important;
-    background: var(--portal-surface) !important;
-    color: var(--portal-text) !important;
+    border-radius: 11px !important;
+
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+
+    color: var(--portal-primary-dark) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+
     font-size: 0.84rem !important;
     font-weight: 720 !important;
     line-height: 1.15 !important;
-    box-shadow: var(--portal-shadow-xs) !important;
+
+    box-shadow: 0 2px 8px rgba(14, 42, 58, 0.04) !important;
+
     transition:
         transform var(--portal-motion-fast) ease,
         border-color var(--portal-motion-fast) ease,
-        background var(--portal-motion-fast) ease,
+        background-color var(--portal-motion-fast) ease,
         box-shadow var(--portal-motion-fast) ease !important;
 }
 
-main .stButton > button *,
-main .stButton > button p,
-main .stButton > button span,
-main .stLinkButton > a * {
+/* Streamlit cria elementos internos com cor própria. */
+main [data-testid="stButton"] button *,
+main [data-testid="stButton"] button p,
+main [data-testid="stButton"] button span,
+main [data-testid="stButton"] [data-testid^="stBaseButton"] *,
+main [data-testid="stLinkButton"] a * {
     color: inherit !important;
     -webkit-text-fill-color: currentColor !important;
 }
 
-main .stButton > button:hover,
-main .stLinkButton > a:hover {
+/* Hover do botão padrão. */
+main [data-testid="stButton"] button:hover,
+main [data-testid="stButton"] [data-testid^="stBaseButton"]:hover,
+main [data-testid="stLinkButton"] a:hover {
     transform: translateY(-1px);
-    border-color: #A7CADC !important;
+
+    border-color: #97BDD1 !important;
+
     background: var(--portal-primary-soft) !important;
+    background-color: var(--portal-primary-soft) !important;
+
     color: var(--portal-primary-dark) !important;
-    box-shadow: 0 7px 17px rgba(0, 86, 145, 0.08) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+
+    box-shadow: 0 6px 16px rgba(0, 86, 145, 0.08) !important;
 }
 
-main .stButton > button[kind="primary"] {
+/* =========================================================
+   BOTÃO PRIMÁRIO
+   Streamlit 1.56 pode identificar o primary tanto por
+   kind="primary" quanto por stBaseButton-primary.
+   ========================================================= */
+
+main [data-testid="stButton"] button[kind="primary"],
+main [data-testid="stButton"] [data-testid="stBaseButton-primary"] {
     border-color: var(--portal-primary) !important;
-    background: linear-gradient(135deg, var(--portal-primary), #0068A9) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--portal-primary-dark) 0%,
+            var(--portal-primary) 100%
+        ) !important;
+    background-color: var(--portal-primary) !important;
+
     color: #FFFFFF !important;
-    box-shadow: 0 7px 17px rgba(0, 86, 145, 0.16) !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+
+    box-shadow: 0 7px 17px rgba(0, 86, 145, 0.15) !important;
 }
 
-main .stButton > button[kind="primary"]:hover {
-    border-color: var(--portal-primary-dark) !important;
-    background: linear-gradient(135deg, var(--portal-primary-dark), var(--portal-primary)) !important;
+main [data-testid="stButton"] button[kind="primary"] *,
+main [data-testid="stButton"] [data-testid="stBaseButton-primary"] * {
     color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
 }
 
-main .stButton > button:focus-visible,
-main .stLinkButton > a:focus-visible {
+main [data-testid="stButton"] button[kind="primary"]:hover,
+main [data-testid="stButton"] [data-testid="stBaseButton-primary"]:hover {
+    border-color: var(--portal-primary-deep) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--portal-primary-deep) 0%,
+            var(--portal-primary-dark) 100%
+        ) !important;
+    background-color: var(--portal-primary-dark) !important;
+
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* =========================================================
+   LINK BUTTON
+   Mantém aparência de botão secundário por padrão.
+   ========================================================= */
+
+main [data-testid="stLinkButton"] a {
+    text-decoration: none !important;
+}
+
+/* =========================================================
+   ESTADOS
+   ========================================================= */
+
+main [data-testid="stButton"] button:focus-visible,
+main [data-testid="stButton"] [data-testid^="stBaseButton"]:focus-visible,
+main [data-testid="stLinkButton"] a:focus-visible {
     outline: 3px solid rgba(0, 86, 145, 0.16) !important;
     outline-offset: 2px !important;
+}
+
+main [data-testid="stButton"] button:disabled,
+main [data-testid="stButton"] [data-testid^="stBaseButton"]:disabled {
+    opacity: 0.52 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
 }
