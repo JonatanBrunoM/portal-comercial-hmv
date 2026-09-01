@@ -54,5 +54,4 @@ def render_operadora_card(
             "Acessar central da operadora",
             key=f"open_operator_{operadora.operator_id}",
             use_container_width=True,
-            type="primary",
         )
