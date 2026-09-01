@@ -1,0 +1,44 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#q-app {
+    min-height: 100%;
+    margin: 0;
+}
+
+html {
+    background: var(--portal-bg);
+}
+
+body {
+    overflow-x: hidden;
+    background:
+        radial-gradient(
+            circle at 92% -5%,
+            rgba(8, 112, 173, 0.06),
+            transparent 28rem
+        ),
+        var(--portal-bg);
+    color: var(--portal-ink-950);
+    font-family: var(--portal-font);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+.q-focus-helper {
+    display: none !important;
+}
+
+.portal-app-shell .q-btn::before {
+    box-shadow: none !important;
+}
