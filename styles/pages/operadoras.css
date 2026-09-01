@@ -1,0 +1,113 @@
+.hmv-operator-header {
+    background: linear-gradient(135deg, var(--portal-primary) 0%, #0077A8 100%);
+    border-radius: 18px;
+    padding: 26px 28px;
+    margin: 4px 0 18px;
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(0, 86, 145, 0.14);
+}
+
+.hmv-operator-kicker {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    opacity: 0.86;
+    margin-bottom: 7px;
+    color: #FFFFFF !important;
+}
+
+.hmv-operator-title {
+    font-size: 2rem;
+    line-height: 1.08;
+    font-weight: 750;
+    margin: 0 0 8px;
+    color: #FFFFFF !important;
+}
+
+.hmv-operator-meta {
+    font-size: 0.94rem;
+    opacity: 0.94;
+    color: #FFFFFF !important;
+}
+
+.hmv-stat {
+    background: #FFFFFF;
+    border: 1px solid #DFE7ED;
+    border-radius: 14px;
+    padding: 15px 16px;
+    min-height: 88px;
+    box-shadow: 0 2px 8px rgba(22, 46, 68, 0.04);
+}
+
+.hmv-stat-label {
+    color: #5D6B78 !important;
+    font-size: 0.79rem;
+    font-weight: 650;
+    margin-bottom: 5px;
+}
+
+.hmv-stat-value {
+    color: #0D2638 !important;
+    font-size: 1.55rem;
+    font-weight: 760;
+    line-height: 1;
+}
+
+.hmv-section-label {
+    color: #0D2638 !important;
+    font-size: 1.18rem;
+    font-weight: 750;
+    margin: 22px 0 3px;
+}
+
+.hmv-section-help {
+    color: #697987 !important;
+    font-size: 0.88rem;
+    margin-bottom: 12px;
+}
+
+.hmv-alert-danger,
+.hmv-alert-info,
+.hmv-panel {
+    border-radius: 14px;
+    padding: 17px 18px;
+    min-height: 132px;
+}
+
+.hmv-alert-danger {
+    background: #FFF4F2;
+    border: 1px solid #F0B5AA;
+}
+
+.hmv-alert-info {
+    background: #EEF7FC;
+    border: 1px solid #B7D9EC;
+}
+
+.hmv-panel {
+    background: #FFFFFF;
+    border: 1px solid #DFE7ED;
+}
+
+.hmv-card-eyebrow {
+    color: #5C6B77 !important;
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.hmv-card-title {
+    color: #102B3D !important;
+    font-size: 1rem;
+    font-weight: 750;
+    margin-bottom: 7px;
+}
+
+.hmv-card-body {
+    color: #425463 !important;
+    font-size: 0.89rem;
+    line-height: 1.45;
+}
