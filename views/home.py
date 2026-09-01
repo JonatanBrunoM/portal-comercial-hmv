@@ -1,4 +1,4 @@
-
+from html import escape as html_escape
 
 import streamlit as st
 
@@ -9,7 +9,7 @@ from ui.icons import icon
 
 
 def _safe(value) -> str:
-    return html.escape(str(value or ""))
+    return html_escape(str(value or ""))
 
 
 def _nav_href(page: str) -> str:
