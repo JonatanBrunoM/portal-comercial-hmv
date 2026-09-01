@@ -5,7 +5,6 @@ COLORS = {
     "primary": "#005691",
     "primary_dark": "#003D66",
     "primary_light": "#EAF4FA",
-    "primary_soft": "#F2F8FC",
     "background": "#F4F7F9",
     "surface": "#FFFFFF",
     "surface_soft": "#F8FAFB",
@@ -14,22 +13,16 @@ COLORS = {
     "text_muted": "#7C8B96",
     "border": "#D7E1E7",
     "border_strong": "#C6D5DE",
-    "success": "#2E7D32",
-    "warning": "#B86B00",
-    "error": "#C62828",
 }
 
 
 def apply_theme() -> None:
-    """Aplica um único sistema visual global ao Portal Comercial."""
-
     css = f"""
     <style>
         :root {{
             --portal-primary: {COLORS["primary"]};
             --portal-primary-dark: {COLORS["primary_dark"]};
             --portal-primary-light: {COLORS["primary_light"]};
-            --portal-primary-soft: {COLORS["primary_soft"]};
             --portal-background: {COLORS["background"]};
             --portal-surface: {COLORS["surface"]};
             --portal-surface-soft: {COLORS["surface_soft"]};
@@ -38,22 +31,15 @@ def apply_theme() -> None:
             --portal-text-muted: {COLORS["text_muted"]};
             --portal-border: {COLORS["border"]};
             --portal-border-strong: {COLORS["border_strong"]};
-            --portal-success: {COLORS["success"]};
-            --portal-warning: {COLORS["warning"]};
-            --portal-error: {COLORS["error"]};
 
-            --portal-radius-sm: 10px;
-            --portal-radius-md: 14px;
-            --portal-radius-lg: 20px;
-            --portal-shadow-sm: 0 4px 14px rgba(13, 38, 56, 0.05);
-            --portal-shadow-md: 0 12px 30px rgba(13, 38, 56, 0.08);
-            --portal-content-max: 1320px;
-            --portal-sidebar-rail: 76px;
-            --portal-sidebar-open: 292px;
+            --sidebar-rail: clamp(64px, 5vw, 76px);
+            --sidebar-open: min(290px, 88vw);
+            --content-max: 1320px;
+            --page-pad: clamp(0.9rem, 2vw, 1.65rem);
         }}
 
         /* =========================================================
-           RESET / ESTRUTURA
+           BASE
            ========================================================= */
 
         html,
@@ -79,7 +65,6 @@ def apply_theme() -> None:
                 sans-serif !important;
         }}
 
-        /* Remove a barra visual do Streamlit no topo do portal. */
         header[data-testid="stHeader"],
         [data-testid="stToolbar"],
         [data-testid="stDecoration"] {{
@@ -91,12 +76,12 @@ def apply_theme() -> None:
         }}
 
         .block-container {{
-            width: 100% !important;
-            max-width: var(--portal-content-max) !important;
-            padding-top: 1.25rem !important;
-            padding-bottom: 3rem !important;
-            padding-left: 1.65rem !important;
-            padding-right: 1.65rem !important;
+            width: min(100%, var(--content-max)) !important;
+            max-width: var(--content-max) !important;
+            padding:
+                clamp(1rem, 2vw, 1.35rem)
+                var(--page-pad)
+                clamp(2rem, 4vw, 3rem) !important;
         }}
 
         h1, h2, h3, h4, h5, h6 {{
@@ -104,24 +89,21 @@ def apply_theme() -> None:
             letter-spacing: -0.025em;
         }}
 
-        p, label, span {{
-            text-rendering: geometricPrecision;
-        }}
-
         /* =========================================================
-           BOTÕES GLOBAIS
+           BOTÕES GERAIS
            ========================================================= */
 
         main .stButton > button {{
             min-height: 44px !important;
-            border-radius: 12px !important;
+            border-radius: clamp(10px, 1vw, 12px) !important;
             border: 1px solid var(--portal-border-strong) !important;
             background: var(--portal-surface) !important;
             color: var(--portal-text) !important;
-            font-size: 0.86rem !important;
+            font-size: clamp(.8rem, .75vw, .88rem) !important;
             font-weight: 700 !important;
             line-height: 1.2 !important;
             box-shadow: none !important;
+            white-space: normal !important;
             transition:
                 transform .10s ease,
                 border-color .10s ease,
@@ -150,19 +132,8 @@ def apply_theme() -> None:
             color: #FFFFFF !important;
         }}
 
-        main .stButton > button[kind="primary"]:hover {{
-            border-color: var(--portal-primary-dark) !important;
-            background: var(--portal-primary-dark) !important;
-            color: #FFFFFF !important;
-        }}
-
-        main .stButton > button:focus-visible {{
-            outline: 3px solid rgba(0, 86, 145, .16) !important;
-            outline-offset: 2px !important;
-        }}
-
         /* =========================================================
-           INPUTS / SELECTS / TEXTAREAS
+           CAMPOS
            ========================================================= */
 
         [data-testid="stTextInput"] div[data-baseweb="input"],
@@ -178,29 +149,16 @@ def apply_theme() -> None:
             box-shadow: none !important;
         }}
 
-        [data-testid="stTextInput"] input,
-        [data-testid="stNumberInput"] input,
-        [data-testid="stDateInput"] input,
-        [data-testid="stTextArea"] textarea {{
-            color: var(--portal-text) !important;
-            -webkit-text-fill-color: var(--portal-text) !important;
-        }}
-
-        [data-testid="stTextInput"] input::placeholder,
-        [data-testid="stTextArea"] textarea::placeholder {{
-            color: #8796A1 !important;
-            -webkit-text-fill-color: #8796A1 !important;
-            opacity: 1 !important;
-        }}
-
         /* =========================================================
-           SIDEBAR — RAIL FIXO + OVERLAY INSTANTÂNEO
+           SIDEBAR
+           Desktop: rail compacta que abre em overlay.
+           Tablet/mobile: rail compacta e rolável; não fica expandida fixa.
            ========================================================= */
 
         section[data-testid="stSidebar"] {{
-            width: var(--portal-sidebar-rail) !important;
-            min-width: var(--portal-sidebar-rail) !important;
-            max-width: var(--portal-sidebar-rail) !important;
+            width: var(--sidebar-rail) !important;
+            min-width: var(--sidebar-rail) !important;
+            max-width: var(--sidebar-rail) !important;
             overflow: visible !important;
             background: transparent !important;
             border: 0 !important;
@@ -208,27 +166,32 @@ def apply_theme() -> None:
         }}
 
         section[data-testid="stSidebar"] > div:first-child {{
-            width: var(--portal-sidebar-rail) !important;
-            min-width: var(--portal-sidebar-rail) !important;
-            max-width: var(--portal-sidebar-rail) !important;
+            width: var(--sidebar-rail) !important;
+            min-width: var(--sidebar-rail) !important;
+            max-width: var(--sidebar-rail) !important;
             height: 100% !important;
-            overflow: hidden !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
             background: var(--portal-surface) !important;
             border-right: 1px solid var(--portal-border) !important;
-            box-shadow: 5px 0 16px rgba(13, 38, 56, .045);
+            box-shadow: 5px 0 16px rgba(13,38,56,.045);
             transition:
-                width .08s linear,
-                min-width .08s linear,
-                max-width .08s linear,
-                box-shadow .08s linear !important;
+                width .09s ease-out,
+                min-width .09s ease-out,
+                max-width .09s ease-out,
+                box-shadow .09s ease-out !important;
         }}
 
-        section[data-testid="stSidebar"]:hover > div:first-child,
-        section[data-testid="stSidebar"]:focus-within > div:first-child {{
-            width: var(--portal-sidebar-open) !important;
-            min-width: var(--portal-sidebar-open) !important;
-            max-width: var(--portal-sidebar-open) !important;
-            box-shadow: 14px 0 34px rgba(13, 38, 56, .13);
+        @media (hover: hover) and (pointer: fine) and (min-width: 901px) {{
+            section[data-testid="stSidebar"]:hover > div:first-child,
+            section[data-testid="stSidebar"]:focus-within > div:first-child {{
+                width: var(--sidebar-open) !important;
+                min-width: var(--sidebar-open) !important;
+                max-width: var(--sidebar-open) !important;
+                box-shadow: 14px 0 34px rgba(13,38,56,.13);
+            }}
         }}
 
         section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
@@ -236,68 +199,75 @@ def apply_theme() -> None:
             display: none !important;
         }}
 
+        .portal-sidebar-shell {{
+            width: var(--sidebar-open);
+            min-width: var(--sidebar-open);
+        }}
+
         .portal-sidebar-header {{
-            width: 276px;
-            height: 72px;
-            display: flex;
-            align-items: center;
-            padding: 0 0 0 15px;
-            margin: 0;
+            width: var(--sidebar-open) !important;
+            min-height: clamp(66px, 7vw, 74px) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding-inline: clamp(10px, 1vw, 15px) !important;
             border-bottom: 1px solid var(--portal-border);
-            overflow: hidden;
-            white-space: nowrap;
+            box-sizing: border-box;
         }}
 
         .portal-sidebar-brandmark {{
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: clamp(10px, 1vw, 14px);
+            min-width: 0;
         }}
 
         .portal-sidebar-brand-icon {{
-            width: 46px;
-            min-width: 46px;
-            height: 46px;
+            width: clamp(40px, 3vw, 46px) !important;
+            min-width: clamp(40px, 3vw, 46px) !important;
+            height: clamp(40px, 3vw, 46px) !important;
+            flex: 0 0 clamp(40px, 3vw, 46px) !important;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 13px;
-            background: linear-gradient(
-                145deg,
-                var(--portal-primary),
-                var(--portal-primary-dark)
-            );
+            border-radius: clamp(10px, 1vw, 13px);
+            background: linear-gradient(145deg, var(--portal-primary), var(--portal-primary-dark));
             color: #FFFFFF !important;
-            font-size: 1rem;
             font-weight: 850;
-            box-shadow: 0 6px 15px rgba(0, 86, 145, .18);
+            box-shadow: 0 6px 15px rgba(0,86,145,.18);
         }}
 
         .portal-sidebar-brand-copy,
         .portal-sidebar-section-label,
         .portal-sidebar-account-label,
         .portal-sidebar-user-copy,
-        .portal-sidebar-footer {{
+        .portal-sidebar-footer,
+        .portal-sidebar-nav-text {{
             opacity: 0;
+            pointer-events: none;
             transition: opacity .05s linear !important;
         }}
 
-        section[data-testid="stSidebar"]:hover .portal-sidebar-brand-copy,
-        section[data-testid="stSidebar"]:hover .portal-sidebar-section-label,
-        section[data-testid="stSidebar"]:hover .portal-sidebar-account-label,
-        section[data-testid="stSidebar"]:hover .portal-sidebar-user-copy,
-        section[data-testid="stSidebar"]:hover .portal-sidebar-footer,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-brand-copy,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-section-label,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-account-label,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-user-copy,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-footer {{
-            opacity: 1;
+        @media (hover: hover) and (pointer: fine) and (min-width: 901px) {{
+            section[data-testid="stSidebar"]:hover .portal-sidebar-brand-copy,
+            section[data-testid="stSidebar"]:hover .portal-sidebar-section-label,
+            section[data-testid="stSidebar"]:hover .portal-sidebar-account-label,
+            section[data-testid="stSidebar"]:hover .portal-sidebar-user-copy,
+            section[data-testid="stSidebar"]:hover .portal-sidebar-footer,
+            section[data-testid="stSidebar"]:hover .portal-sidebar-nav-text,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-brand-copy,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-section-label,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-account-label,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-user-copy,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-footer,
+            section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-text {{
+                opacity: 1;
+                pointer-events: auto;
+            }}
         }}
 
         .portal-sidebar-organization {{
             color: var(--portal-primary) !important;
-            font-size: .60rem;
+            font-size: clamp(.56rem, .55vw, .62rem);
             font-weight: 850;
             letter-spacing: .075em;
             text-transform: uppercase;
@@ -306,102 +276,117 @@ def apply_theme() -> None:
         .portal-sidebar-title {{
             margin-top: 2px;
             color: var(--portal-text) !important;
-            font-size: .97rem;
+            font-size: clamp(.86rem, .9vw, .98rem);
             font-weight: 800;
         }}
 
         .portal-sidebar-section-label,
         .portal-sidebar-account-label {{
-            width: 260px;
-            margin: 13px 0 5px 18px;
+            width: calc(var(--sidebar-open) - 2rem);
+            margin:
+                clamp(10px, 1vw, 13px)
+                0
+                5px
+                clamp(12px, 1.25vw, 18px);
             color: var(--portal-text-muted) !important;
-            font-size: .59rem;
+            font-size: .58rem;
             font-weight: 850;
             letter-spacing: .105em;
         }}
 
-        section[data-testid="stSidebar"] .stButton {{
-            width: 276px !important;
-            margin: 1px 0 !important;
+        .portal-sidebar-nav {{
+            width: var(--sidebar-open);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-inline: clamp(5px, .5vw, 7px);
+            box-sizing: border-box;
         }}
 
-        section[data-testid="stSidebar"] .stButton > button {{
-            width: 260px !important;
-            height: 44px !important;
-            min-height: 44px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 13px !important;
-            margin: 0 0 0 7px !important;
-            padding: 0 14px !important;
-            border: 1px solid transparent !important;
-            border-radius: 11px !important;
-            background: transparent !important;
+        .portal-sidebar-nav-item {{
+            width: calc(var(--sidebar-open) - clamp(10px, 1vw, 14px));
+            min-height: 44px;
+            display: grid;
+            grid-template-columns: clamp(42px, 4vw, 48px) minmax(0, 1fr);
+            align-items: center;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            text-decoration: none !important;
             color: #425765 !important;
-            box-shadow: none !important;
-            overflow: hidden !important;
-            white-space: nowrap !important;
-            font-size: .84rem !important;
-            font-weight: 680 !important;
-            line-height: 1 !important;
-            transition: background .07s linear, color .07s linear !important;
+            background: transparent;
+            overflow: hidden;
+            box-sizing: border-box;
+            transition: background .08s linear, color .08s linear, border-color .08s linear;
         }}
 
-        section[data-testid="stSidebar"] .stButton > button *,
-        section[data-testid="stSidebar"] .stButton > button p,
-        section[data-testid="stSidebar"] .stButton > button span {{
-            color: inherit !important;
-            -webkit-text-fill-color: currentColor !important;
+        .portal-sidebar-nav-item:hover {{
+            background: #EFF7FB;
+            color: var(--portal-primary-dark) !important;
         }}
 
-        section[data-testid="stSidebar"] .stButton > button svg {{
-            width: 22px !important;
-            min-width: 22px !important;
-            height: 22px !important;
+        .portal-sidebar-nav-item.is-active {{
+            background: #E2F1FA;
+            color: var(--portal-primary-dark) !important;
+            border-color: #C7E1F0;
+            box-shadow: inset 3px 0 0 var(--portal-primary);
+        }}
+
+        .portal-sidebar-nav-icon {{
+            width: 100%;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: currentColor !important;
-            fill: currentColor !important;
         }}
 
-        section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {{
-            background: #EFF7FB !important;
-            color: var(--portal-primary-dark) !important;
+        .portal-sidebar-nav-icon svg {{
+            width: clamp(19px, 1.5vw, 21px);
+            height: clamp(19px, 1.5vw, 21px);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            overflow: visible;
         }}
 
-        section[data-testid="stSidebar"] .stButton > button[kind="primary"] {{
-            background: #E2F1FA !important;
-            color: var(--portal-primary-dark) !important;
-            border-color: #C7E1F0 !important;
-            box-shadow: inset 3px 0 0 var(--portal-primary) !important;
-            font-weight: 800 !important;
+        .portal-sidebar-nav-text {{
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: inherit !important;
+            font-size: clamp(.78rem, .8vw, .85rem);
+            font-weight: 680;
+            white-space: nowrap;
         }}
 
         .portal-sidebar-separator {{
-            width: 260px;
+            width: calc(var(--sidebar-open) - 14px);
             height: 1px;
             margin: 12px 7px 3px;
             background: var(--portal-border);
         }}
 
         .portal-sidebar-user-compact {{
-            width: 260px;
+            width: calc(var(--sidebar-open) - 14px);
             min-height: 52px;
-            display: flex;
+            display: grid;
+            grid-template-columns: clamp(42px, 4vw, 48px) minmax(0, 1fr);
             align-items: center;
-            gap: 14px;
-            margin: 0 0 4px 7px;
-            padding: 4px 8px;
+            margin: 0 7px 4px;
+            padding: 0;
             overflow: hidden;
-            white-space: nowrap;
         }}
 
         .portal-sidebar-avatar,
         .portal-sidebar-avatar-fallback {{
-            width: 44px !important;
-            min-width: 44px !important;
-            height: 44px !important;
+            width: clamp(38px, 3vw, 44px) !important;
+            min-width: clamp(38px, 3vw, 44px) !important;
+            height: clamp(38px, 3vw, 44px) !important;
+            justify-self: center;
             border-radius: 50% !important;
-            flex: 0 0 44px !important;
         }}
 
         .portal-sidebar-avatar {{
@@ -419,12 +404,13 @@ def apply_theme() -> None:
         }}
 
         .portal-sidebar-user-name {{
-            max-width: 185px;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             color: var(--portal-text) !important;
-            font-size: .78rem;
+            font-size: .77rem;
             font-weight: 760;
+            white-space: nowrap;
         }}
 
         .portal-sidebar-user-role {{
@@ -433,46 +419,20 @@ def apply_theme() -> None:
             font-size: .66rem;
         }}
 
+        section[data-testid="stSidebar"] .stButton {{
+            width: var(--sidebar-open) !important;
+        }}
+
+        section[data-testid="stSidebar"] .stButton > button {{
+            width: calc(var(--sidebar-open) - 14px) !important;
+            margin-inline: 7px !important;
+        }}
+
         .portal-sidebar-footer {{
-            width: 245px;
+            width: calc(var(--sidebar-open) - 2rem);
             margin: 10px 0 20px 20px;
             color: #8B99A3 !important;
             font-size: .63rem;
-        }}
-
-        /* =========================================================
-           HERO GENÉRICO DAS DEMAIS PÁGINAS
-           ========================================================= */
-
-        .portal-hero {{
-            padding: 1.8rem 2rem;
-            margin-bottom: 1.35rem;
-            border: 1px solid #DCE7EE;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #FFFFFF 0%, #F4F9FC 100%);
-            box-shadow: var(--portal-shadow-sm);
-        }}
-
-        .portal-hero-eyebrow {{
-            color: var(--portal-primary) !important;
-            font-size: .70rem;
-            font-weight: 800;
-            letter-spacing: .09em;
-            text-transform: uppercase;
-        }}
-
-        .portal-hero-title {{
-            margin: .35rem 0 0;
-            color: var(--portal-text) !important;
-            font-size: clamp(1.75rem, 3vw, 2.45rem);
-            line-height: 1.08;
-        }}
-
-        .portal-hero-description {{
-            max-width: 780px;
-            margin: .7rem 0 0;
-            color: var(--portal-text-secondary) !important;
-            line-height: 1.55;
         }}
 
         /* =========================================================
@@ -480,38 +440,26 @@ def apply_theme() -> None:
            ========================================================= */
 
         .portal-home-hero-v3 {{
-            min-height: 306px;
+            min-height: clamp(250px, 28vw, 306px);
             display: grid;
-            grid-template-columns: minmax(0, 1.55fr) minmax(285px, .72fr);
-            gap: 2.2rem;
+            grid-template-columns: minmax(0, 1.55fr) minmax(min(285px, 100%), .72fr);
+            gap: clamp(1.25rem, 3vw, 2.2rem);
             align-items: center;
-            padding: 2.75rem 3rem;
-            position: relative;
-            overflow: hidden;
-            border-radius: 25px;
+            padding: clamp(1.5rem, 3vw, 2.75rem) clamp(1.4rem, 3.3vw, 3rem);
+            border-radius: clamp(18px, 2vw, 25px);
             background:
                 radial-gradient(circle at 75% 12%, rgba(38,146,205,.26), transparent 24%),
                 radial-gradient(circle at 98% 92%, rgba(255,255,255,.09), transparent 29%),
                 linear-gradient(135deg, #005691 0%, #004B7E 47%, #003D66 100%);
             box-shadow: 0 20px 48px rgba(0,61,102,.16);
-        }}
-
-        .portal-home-hero-copy {{
-            min-width: 0;
-        }}
-
-        .portal-home-kicker {{
-            color: #C9E7F7 !important;
-            font-size: .67rem;
-            font-weight: 850;
-            letter-spacing: .105em;
+            overflow: hidden;
         }}
 
         .portal-home-title {{
-            max-width: 790px;
             margin: .52rem 0 0;
+            max-width: 18ch;
             color: #FFFFFF !important;
-            font-size: clamp(2.25rem, 4vw, 3.55rem);
+            font-size: clamp(2rem, 4.1vw, 3.55rem);
             line-height: 1.02;
             letter-spacing: -.052em;
         }}
@@ -522,401 +470,172 @@ def apply_theme() -> None:
         }}
 
         .portal-home-description {{
-            max-width: 650px;
+            max-width: 62ch;
             margin: .95rem 0 0;
             color: #E8F4FA !important;
-            font-size: .98rem;
+            font-size: clamp(.86rem, 1vw, .98rem);
             line-height: 1.58;
         }}
 
-        .portal-home-hero-tags {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: .42rem;
-            margin-top: 1.15rem;
-        }}
-
-        .portal-home-hero-tags span {{
-            padding: .34rem .59rem;
-            border: 1px solid rgba(255,255,255,.19);
-            border-radius: 999px;
-            background: rgba(255,255,255,.08);
-            color: #F3FAFD !important;
-            font-size: .67rem;
-            font-weight: 650;
-        }}
-
         .portal-home-pulse {{
-            padding: 1.25rem;
+            min-width: 0;
+            padding: clamp(1rem, 1.4vw, 1.25rem);
             border: 1px solid rgba(255,255,255,.18);
             border-radius: 20px;
             background: rgba(255,255,255,.10);
-            backdrop-filter: blur(8px);
-        }}
-
-        .portal-home-pulse-label {{
-            color: #C7E7F8 !important;
-            font-size: .60rem;
-            font-weight: 850;
-            letter-spacing: .11em;
-        }}
-
-        .portal-home-pulse-main {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .65rem;
-            margin-top: .72rem;
-        }}
-
-        .portal-home-pulse-main > div {{
-            padding: .78rem;
-            border-radius: 13px;
-            background: rgba(0,35,60,.22);
-        }}
-
-        .portal-home-pulse-main strong {{
-            display: block;
-            color: #FFFFFF !important;
-            font-size: 1.72rem;
-            line-height: 1;
-        }}
-
-        .portal-home-pulse-main span,
-        .portal-home-pulse-row span,
-        .portal-home-pulse-foot {{
-            color: #DDEFF8 !important;
-            font-size: .68rem;
-        }}
-
-        .portal-home-pulse-row {{
-            display: grid;
-            gap: .32rem;
-            margin-top: .75rem;
-        }}
-
-        .portal-home-pulse-row b {{
-            color: #FFFFFF !important;
-        }}
-
-        .portal-home-pulse-foot {{
-            margin-top: .9rem;
-            padding-top: .75rem;
-            border-top: 1px solid rgba(255,255,255,.14);
         }}
 
         .portal-command-heading {{
-            margin: 1.8rem auto .72rem;
+            margin: clamp(1.35rem, 2.5vw, 1.8rem) auto .72rem;
             text-align: center;
-        }}
-
-        .portal-command-eyebrow,
-        .portal-home-section-eyebrow {{
-            color: var(--portal-primary) !important;
-            font-size: .63rem;
-            font-weight: 850;
-            letter-spacing: .11em;
         }}
 
         .portal-command-title {{
             margin-top: .15rem;
             color: var(--portal-text) !important;
-            font-size: clamp(1.55rem, 2.8vw, 2.15rem);
+            font-size: clamp(1.45rem, 2.8vw, 2.15rem);
             font-weight: 820;
             letter-spacing: -.035em;
         }}
 
         .portal-command-subtitle {{
-            max-width: 680px;
+            width: min(100%, 680px);
             margin: .25rem auto 0;
+            padding-inline: .5rem;
             color: var(--portal-text-secondary) !important;
-            font-size: .81rem;
+            font-size: clamp(.75rem, .9vw, .82rem);
         }}
 
-        /* Pesquisa da Home: sem altura forçada no input interno.
-           Isso evita o corte vertical do texto observado no Streamlit. */
         [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) {{
-            width: 100%;
-            max-width: 1040px;
+            width: min(100%, 1040px);
             margin: 0 auto .72rem;
         }}
 
         [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"])
         div[data-baseweb="input"] {{
-            min-height: 62px !important;
+            min-height: clamp(54px, 5.5vw, 62px) !important;
             display: flex !important;
             align-items: center !important;
             overflow: visible !important;
             border: 1px solid #C5D5DF !important;
-            border-radius: 18px !important;
+            border-radius: clamp(14px, 1.5vw, 18px) !important;
             background: var(--portal-surface) !important;
             box-shadow: 0 12px 30px rgba(13,38,56,.085) !important;
         }}
 
         [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"]) input {{
+            width: 100% !important;
             height: auto !important;
             min-height: 0 !important;
-            padding: 18px 18px !important;
+            padding:
+                clamp(15px, 1.5vw, 18px)
+                clamp(14px, 1.5vw, 18px) !important;
             margin: 0 !important;
-            line-height: 1.3 !important;
-            font-size: .96rem !important;
+            line-height: 1.35 !important;
+            font-size: clamp(.85rem, 1vw, .96rem) !important;
             color: #173447 !important;
             -webkit-text-fill-color: #173447 !important;
-            overflow: visible !important;
         }}
 
-        [data-testid="stTextInput"]:has(input[aria-label="Pesquisa global"])
-        div[data-baseweb="input"]:focus-within {{
-            border-color: var(--portal-primary) !important;
-            box-shadow:
-                0 0 0 4px rgba(0,86,145,.09),
-                0 14px 34px rgba(13,38,56,.10) !important;
+        .portal-home-quick-wrap {{
+            width: min(100%, 1040px);
+            margin: 0 auto 1.25rem;
         }}
 
-        .portal-home-dock-label {{
-            margin: .72rem 0 .36rem;
-            color: var(--portal-text-muted) !important;
-            font-size: .59rem;
-            font-weight: 850;
-            letter-spacing: .11em;
+        .portal-home-quick-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+            gap: clamp(.5rem, 1vw, .72rem);
         }}
 
-        .st-key-home_quick_actions {{
-            max-width: 1040px;
-            margin: 0 auto 1.15rem;
-        }}
-
-        .st-key-home_quick_actions [data-testid="stButton"] > button {{
-            min-height: 74px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 11px !important;
-            padding: 0 18px !important;
-            border: 1px solid #D4E1E8 !important;
-            border-radius: 16px !important;
-            background:
-                linear-gradient(180deg, #FFFFFF 0%, #F7FBFD 100%) !important;
+        .portal-quick-card {{
+            min-width: 0;
+            min-height: clamp(76px, 7vw, 88px);
+            display: grid;
+            grid-template-columns: clamp(34px, 3.5vw, 40px) minmax(0, 1fr) auto;
+            align-items: center;
+            gap: clamp(.5rem, 1vw, .75rem);
+            padding: clamp(.7rem, 1vw, .9rem);
+            border: 1px solid #D4E1E8;
+            border-radius: clamp(13px, 1.3vw, 16px);
+            background: linear-gradient(180deg, #FFFFFF 0%, #F7FBFD 100%);
+            box-shadow: 0 5px 16px rgba(13,38,56,.05);
             color: #173447 !important;
-            box-shadow: 0 5px 16px rgba(13,38,56,.05) !important;
-            font-size: .86rem !important;
-            font-weight: 760 !important;
+            text-decoration: none !important;
         }}
 
-        .st-key-home_quick_actions [data-testid="stButton"] > button svg {{
-            width: 23px !important;
-            height: 23px !important;
-            color: var(--portal-primary) !important;
-            fill: var(--portal-primary) !important;
+        .portal-quick-copy strong {{
+            color: inherit !important;
+            font-size: clamp(.74rem, .8vw, .81rem);
+            font-weight: 790;
         }}
 
-        .st-key-home_quick_actions [data-testid="stButton"] > button:hover {{
-            transform: translateY(-2px);
-            border-color: #9CC5DC !important;
-            background: #F2F9FD !important;
-            color: var(--portal-primary-dark) !important;
-            box-shadow: 0 10px 24px rgba(0,86,145,.095) !important;
-        }}
-
-        .portal-home-section-head {{
-            margin: 2.05rem 0 .8rem;
+        .portal-quick-copy small {{
+            color: #71818D !important;
+            font-size: clamp(.58rem, .65vw, .65rem);
+            line-height: 1.25;
         }}
 
         .portal-home-section-title {{
             margin-top: .12rem;
             color: var(--portal-text) !important;
-            font-size: 1.58rem;
+            font-size: clamp(1.35rem, 2vw, 1.58rem);
             font-weight: 810;
-            letter-spacing: -.035em;
         }}
 
-        .portal-home-section-description {{
-            margin-top: .18rem;
-            color: var(--portal-text-secondary) !important;
-            font-size: .81rem;
+        .portal-explore-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+            gap: clamp(.65rem, 1vw, .9rem);
         }}
 
-        .portal-feed-card {{
-            padding: 1.05rem 1.1rem;
-            margin-bottom: .68rem;
-            border: 1px solid #D9E3E9;
-            border-radius: 15px;
-            background: var(--portal-surface);
-            box-shadow: 0 3px 13px rgba(13,38,56,.045);
-        }}
-
-        .portal-feed-card-featured {{
-            padding: 1.28rem;
-            border-color: #BFD9E8;
-            background: linear-gradient(145deg, #FFFFFF 0%, #F3F9FC 100%);
-            box-shadow: 0 11px 27px rgba(0,86,145,.075);
-        }}
-
-        .portal-feed-card-alert {{
-            border-left: 4px solid #B26B0B;
-        }}
-
-        .portal-feed-topline {{
+        .portal-explore-link {{
+            min-height: clamp(148px, 14vw, 168px);
             display: flex;
-            align-items: center;
-            gap: .42rem;
-            color: #6C7C88 !important;
-            font-size: .59rem;
-            font-weight: 850;
-            letter-spacing: .08em;
-        }}
-
-        .portal-feed-dot {{
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            flex: 0 0 auto;
-        }}
-
-        .portal-feed-dot-alert {{ background: #C47A13; }}
-        .portal-feed-dot-notice {{ background: var(--portal-primary); }}
-
-        .portal-feed-priority {{
-            margin-left: auto;
-            padding: .22rem .46rem;
-            border-radius: 999px;
-            background: #F2F5F7;
-            color: #50616E !important;
-            letter-spacing: 0;
-        }}
-
-        .portal-feed-title {{
-            margin-top: .56rem;
-            color: var(--portal-text) !important;
-            font-size: 1.01rem;
-            font-weight: 790;
-            line-height: 1.3;
-        }}
-
-        .portal-feed-card-featured .portal-feed-title {{
-            font-size: 1.22rem;
-        }}
-
-        .portal-feed-meta {{
-            margin-top: .24rem;
-            color: var(--portal-text-muted) !important;
-            font-size: .71rem;
-        }}
-
-        .portal-feed-body {{
-            margin-top: .58rem;
-            color: var(--portal-text-secondary) !important;
-            font-size: .81rem;
-            line-height: 1.5;
-        }}
-
-        .portal-feed-footer {{
-            margin-top: .7rem;
-            padding-top: .58rem;
-            border-top: 1px solid #EDF1F4;
-            color: #6B7A86 !important;
-            font-size: .68rem;
-        }}
-
-        .portal-empty-state {{
-            display: flex;
-            gap: .75rem;
-            align-items: center;
-            padding: 1.12rem;
-            border: 1px dashed #C7D6DF;
-            border-radius: 15px;
-            background: rgba(255,255,255,.55);
-        }}
-
-        .portal-empty-icon {{
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: #EAF6ED;
-            color: #237A3B !important;
-            font-weight: 850;
-        }}
-
-        .portal-empty-state strong {{
-            display: block;
-            color: var(--portal-text) !important;
-            font-size: .85rem;
-        }}
-
-        .portal-empty-state span {{
-            display: block;
-            margin-top: .14rem;
-            color: var(--portal-text-secondary) !important;
-            font-size: .72rem;
-        }}
-
-        .portal-explore-card {{
-            min-height: 136px;
-            margin-top: .12rem;
-            padding: 1.08rem 1.1rem;
-            border: 1px solid #DAE4EA;
-            border-bottom: 0;
-            border-radius: 16px 16px 0 0;
-            background: var(--portal-surface);
-        }}
-
-        .portal-explore-eyebrow {{
-            color: var(--portal-primary) !important;
-            font-size: .59rem;
-            font-weight: 850;
-            letter-spacing: .09em;
-        }}
-
-        .portal-explore-title {{
-            margin-top: .48rem;
-            color: var(--portal-text) !important;
-            font-size: .94rem;
-            font-weight: 790;
-        }}
-
-        .portal-explore-description {{
-            margin-top: .28rem;
-            color: var(--portal-text-secondary) !important;
-            font-size: .74rem;
-            line-height: 1.45;
+            flex-direction: column;
+            padding: clamp(.95rem, 1.2vw, 1.18rem);
+            border: 1px solid #D8E3E9;
+            border-radius: clamp(13px, 1.3vw, 16px);
+            background: #FFFFFF;
+            color: #17212B !important;
+            text-decoration: none !important;
+            box-shadow: 0 4px 14px rgba(13,38,56,.045);
         }}
 
         /* =========================================================
-           COMPONENTES GERAIS DO STREAMLIT
+           BREAKPOINTS
            ========================================================= */
 
-        [data-testid="stMetric"] {{
-            padding: .9rem 1rem;
-            border: 1px solid var(--portal-border);
-            border-radius: var(--portal-radius-md);
-            background: var(--portal-surface);
-        }}
-
-        [data-testid="stExpander"] {{
-            border-color: var(--portal-border) !important;
-            border-radius: 12px !important;
-            background: var(--portal-surface) !important;
-        }}
-
-        [data-testid="stDataFrame"] {{
-            border: 1px solid var(--portal-border);
-            border-radius: 12px;
-            overflow: hidden;
-        }}
-
-        [data-testid="stAlert"] {{
-            border-radius: 12px !important;
-        }}
-
-        /* =========================================================
-           RESPONSIVIDADE
-           ========================================================= */
-
-        @media (max-width: 1050px) {{
+        @media (max-width: 1100px) {{
             .portal-home-hero-v3 {{
                 grid-template-columns: 1fr;
+            }}
+
+            .portal-home-pulse {{
+                display: grid;
+                grid-template-columns: 1fr;
+            }}
+        }}
+
+        @media (max-width: 900px) {{
+            /* Em telas menores não existe hover confiável.
+               A sidebar continua como rail e pode ser rolada verticalmente. */
+            section[data-testid="stSidebar"] {{
+                width: var(--sidebar-rail) !important;
+                min-width: var(--sidebar-rail) !important;
+                max-width: var(--sidebar-rail) !important;
+            }}
+
+            section[data-testid="stSidebar"] > div:first-child {{
+                width: var(--sidebar-rail) !important;
+                min-width: var(--sidebar-rail) !important;
+                max-width: var(--sidebar-rail) !important;
+                overflow-y: auto !important;
+            }}
+
+            .block-container {{
+                padding-left: clamp(.8rem, 2vw, 1rem) !important;
+                padding-right: clamp(.8rem, 2vw, 1rem) !important;
             }}
 
             .portal-home-pulse {{
@@ -924,360 +643,41 @@ def apply_theme() -> None:
             }}
         }}
 
-        @media (max-width: 900px) {{
-            section[data-testid="stSidebar"] {{
-                width: var(--portal-sidebar-open) !important;
-                min-width: var(--portal-sidebar-open) !important;
-                max-width: var(--portal-sidebar-open) !important;
+        @media (max-width: 640px) {{
+            :root {{
+                --sidebar-rail: 60px;
             }}
 
-            section[data-testid="stSidebar"] > div:first-child {{
-                width: var(--portal-sidebar-open) !important;
-                min-width: var(--portal-sidebar-open) !important;
-                max-width: var(--portal-sidebar-open) !important;
+            .portal-sidebar-header {{
+                padding-inline: 8px !important;
             }}
 
-            .portal-sidebar-brand-copy,
-            .portal-sidebar-section-label,
-            .portal-sidebar-account-label,
-            .portal-sidebar-user-copy,
-            .portal-sidebar-footer {{
-                opacity: 1 !important;
+            .portal-sidebar-brand-icon {{
+                width: 40px !important;
+                min-width: 40px !important;
+                height: 40px !important;
+                flex-basis: 40px !important;
             }}
 
-            .block-container {{
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-            }}
-        }}
-
-        @media (max-width: 700px) {{
             .portal-home-hero-v3 {{
                 min-height: 0;
-                padding: 1.6rem 1.25rem;
-                border-radius: 19px;
+                padding: 1.4rem 1.15rem;
             }}
 
             .portal-home-title {{
-                font-size: 2rem;
+                max-width: 100%;
+                font-size: clamp(1.8rem, 8vw, 2.25rem);
             }}
 
             .portal-home-hero-tags {{
                 display: none;
             }}
 
-            .st-key-home_quick_actions [data-testid="stButton"] > button {{
-                min-height: 58px !important;
-                padding: 0 12px !important;
-            }}
-        }}
-
-        /* =========================================================
-           SIDEBAR HTML/SVG — rail real, alinhamento fixo
-           ========================================================= */
-
-        .portal-sidebar-shell {{
-            width: 276px;
-        }}
-
-        .portal-sidebar-header {{
-            width: 276px !important;
-            height: 74px !important;
-            padding: 0 0 0 15px !important;
-            display: flex !important;
-            align-items: center !important;
-        }}
-
-        .portal-sidebar-brand-icon {{
-            width: 46px !important;
-            min-width: 46px !important;
-            height: 46px !important;
-            flex: 0 0 46px !important;
-        }}
-
-        .portal-sidebar-nav {{
-            width: 276px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            padding: 0 7px;
-        }}
-
-        .portal-sidebar-nav-item {{
-            width: 260px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 0 14px;
-            border: 1px solid transparent;
-            border-radius: 11px;
-            text-decoration: none !important;
-            color: #425765 !important;
-            background: transparent;
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            transition: background .08s linear, color .08s linear, border-color .08s linear;
-        }}
-
-        .portal-sidebar-nav-item:hover {{
-            background: #EFF7FB;
-            color: #003D66 !important;
-        }}
-
-        .portal-sidebar-nav-item.is-active {{
-            background: #E2F1FA;
-            color: #003D66 !important;
-            border-color: #C7E1F0;
-            box-shadow: inset 3px 0 0 #005691;
-        }}
-
-        .portal-sidebar-nav-icon {{
-            width: 32px;
-            min-width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 0;
-            color: currentColor !important;
-        }}
-
-        .portal-sidebar-nav-icon svg {{
-            width: 21px;
-            height: 21px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.8;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            overflow: visible;
-        }}
-
-        .portal-sidebar-nav-text {{
-            color: inherit !important;
-            font-size: .84rem;
-            font-weight: 680;
-            opacity: 0;
-            transition: opacity .04s linear;
-        }}
-
-        section[data-testid="stSidebar"]:hover .portal-sidebar-nav-text,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-text {{
-            opacity: 1;
-        }}
-
-        /* A rail tem 76px: 7px margem + 46px área visual + respiro.
-           Assim ícone da marca, navegação e avatar compartilham o mesmo eixo. */
-        .portal-sidebar-nav-item {{
-            padding-left: 12px;
-        }}
-
-        .portal-sidebar-user-compact {{
-            margin-left: 7px !important;
-            padding-left: 8px !important;
-        }}
-
-        .portal-sidebar-avatar,
-        .portal-sidebar-avatar-fallback {{
-            width: 44px !important;
-            min-width: 44px !important;
-            height: 44px !important;
-            flex: 0 0 44px !important;
-        }}
-
-        section[data-testid="stSidebar"] .stButton {{
-            width: 276px !important;
-        }}
-
-        section[data-testid="stSidebar"] .stButton > button {{
-            width: 260px !important;
-            margin-left: 7px !important;
-        }}
-
-        /* =========================================================
-           HOME — atalhos e CTAs sem aparência de botão padrão
-           ========================================================= */
-
-        .portal-home-quick-wrap {{
-            max-width: 1040px;
-            margin: 0 auto 1.25rem;
-        }}
-
-        .portal-home-quick-grid {{
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: .62rem;
-        }}
-
-        .portal-quick-card {{
-            min-width: 0;
-            min-height: 84px;
-            display: grid;
-            grid-template-columns: 38px minmax(0, 1fr) 18px;
-            align-items: center;
-            gap: .7rem;
-            padding: .85rem .9rem;
-            border: 1px solid #D4E1E8;
-            border-radius: 16px;
-            background: linear-gradient(180deg, #FFFFFF 0%, #F7FBFD 100%);
-            box-shadow: 0 5px 16px rgba(13,38,56,.05);
-            color: #173447 !important;
-            text-decoration: none !important;
-            transition:
-                transform .11s ease,
-                border-color .11s ease,
-                box-shadow .11s ease,
-                background .11s ease;
-        }}
-
-        .portal-quick-card:hover {{
-            transform: translateY(-2px);
-            border-color: #99C4DD;
-            background: #F1F9FD;
-            box-shadow: 0 11px 24px rgba(0,86,145,.10);
-            color: #003D66 !important;
-        }}
-
-        .portal-quick-icon {{
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 11px;
-            background: #E5F2F9;
-            color: #005691 !important;
-        }}
-
-        .portal-quick-icon svg {{
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.8;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }}
-
-        .portal-quick-copy {{
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: .13rem;
-        }}
-
-        .portal-quick-copy strong {{
-            color: inherit !important;
-            font-size: .80rem;
-            font-weight: 790;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }}
-
-        .portal-quick-copy small {{
-            color: #71818D !important;
-            font-size: .64rem;
-            line-height: 1.25;
-        }}
-
-        .portal-quick-arrow {{
-            color: #6E8796 !important;
-            font-size: 1rem;
-        }}
-
-        .portal-section-link {{
-            width: fit-content;
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-            margin-top: .25rem;
-            padding: .58rem .82rem;
-            border: 1px solid #CCDCE5;
-            border-radius: 11px;
-            background: #FFFFFF;
-            color: #17425D !important;
-            text-decoration: none !important;
-            font-size: .76rem;
-            font-weight: 740;
-            transition: background .1s ease, border-color .1s ease, transform .1s ease;
-        }}
-
-        .portal-section-link:hover {{
-            transform: translateY(-1px);
-            border-color: #9EC6DD;
-            background: #F2F9FD;
-            color: #003D66 !important;
-        }}
-
-        .portal-section-link span {{
-            color: inherit !important;
-            font-size: .92rem;
-        }}
-
-        .portal-explore-grid {{
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: .85rem;
-        }}
-
-        .portal-explore-link {{
-            min-height: 164px;
-            display: flex;
-            flex-direction: column;
-            padding: 1.15rem 1.18rem 1rem;
-            border: 1px solid #D8E3E9;
-            border-radius: 16px;
-            background: #FFFFFF;
-            color: #17212B !important;
-            text-decoration: none !important;
-            box-shadow: 0 4px 14px rgba(13,38,56,.045);
-            transition:
-                transform .11s ease,
-                border-color .11s ease,
-                box-shadow .11s ease;
-        }}
-
-        .portal-explore-link:hover {{
-            transform: translateY(-2px);
-            border-color: #A4CADF;
-            box-shadow: 0 11px 24px rgba(0,86,145,.085);
-        }}
-
-        .portal-explore-link .portal-explore-title {{
-            color: #17212B !important;
-        }}
-
-        .portal-explore-action {{
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: auto;
-            padding-top: .9rem;
-            color: #005691 !important;
-            font-size: .73rem;
-            font-weight: 780;
-        }}
-
-        .portal-explore-action span {{
-            color: inherit !important;
-            font-size: 1rem;
-        }}
-
-        @media (max-width: 1050px) {{
-            .portal-home-quick-grid {{
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }}
-        }}
-
-        @media (max-width: 760px) {{
             .portal-home-quick-grid,
             .portal-explore-grid {{
                 grid-template-columns: 1fr;
             }}
         }}
-
     </style>
     """
 
