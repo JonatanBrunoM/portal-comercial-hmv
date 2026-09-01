@@ -37,19 +37,24 @@ CATEGORY_ICON_NAMES = {
 
 
 def icon(name: str, *, css_class: str = "", title: str | None = None) -> str:
-    """Retorna um SVG inline padronizado e acessível."""
+    """Retorna um ícone do design system sem SVG inline.
 
-    body = _ICONS.get(name, _ICONS["search"])
-    class_attr = f' class="{css_class}"' if css_class else ""
+    Os desenhos vivem em styles/components/icons.css como máscaras CSS.
+    Isso evita a sanitização de SVG inline pelo HTML do Streamlit e mantém
+    todos os ícones centralizados em uma única biblioteca visual.
+    """
+
+    resolved = name if name in _ICONS else "search"
+    classes = "portal-icon portal-icon-" + resolved
+    if css_class:
+        classes += " " + css_class.strip()
 
     if title:
-        accessible = f'<title>{title}</title>'
-        aria = f' role="img" aria-label="{title}"'
-    else:
-        accessible = ""
-        aria = ' aria-hidden="true"'
+        import html as _html
+        safe_title = _html.escape(title, quote=True)
+        return f'<span class="{classes}" role="img" aria-label="{safe_title}" title="{safe_title}"></span>'
 
-    return f'<svg viewBox="0 0 24 24"{class_attr}{aria}>{accessible}{body}</svg>'
+    return f'<span class="{classes}" aria-hidden="true"></span>'
 
 
 def category_icon(category: str) -> str:
