@@ -704,3 +704,152 @@ main:has(.operator-page-marker) .stButton button p {
         border-bottom: 0;
     }
 }
+
+
+/* =========================================================
+   CORREÇÃO DE CONTROLES NATIVOS — RODADA 3
+   O Streamlit/BaseWeb possui camadas internas próprias.
+   Estes seletores atuam apenas quando a página Operadoras
+   está renderizada e não alteram Home/Admin/demais páginas.
+   ========================================================= */
+
+/* Campo de pesquisa do diretório */
+main:has(.operator-page-marker) [data-testid="stTextInput"] div[data-baseweb="input"],
+main:has(.operator-page-marker) [data-testid="stTextInput"] div[data-baseweb="input"] > div,
+main:has(.operator-page-marker) [data-testid="stTextInput"] div[data-baseweb="input"] > div > div {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border-color: var(--portal-border-strong) !important;
+    color: var(--portal-text) !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stTextInput"] input {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--portal-text) !important;
+    -webkit-text-fill-color: var(--portal-text) !important;
+    caret-color: var(--portal-primary) !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stTextInput"] input::placeholder {
+    color: #748795 !important;
+    -webkit-text-fill-color: #748795 !important;
+    opacity: 1 !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
+    border-color: var(--portal-primary) !important;
+    box-shadow: 0 0 0 3px rgba(0,86,145,.09) !important;
+}
+
+/* Select "Consultar outra informação" e todas as camadas BaseWeb internas */
+main:has(.operator-page-marker) [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+main:has(.operator-page-marker) [data-testid="stSelectbox"] div[data-baseweb="select"] > div > div {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    color: var(--portal-text) !important;
+    -webkit-text-fill-color: var(--portal-text) !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stSelectbox"] span,
+main:has(.operator-page-marker) [data-testid="stSelectbox"] svg {
+    color: var(--portal-text-secondary) !important;
+    fill: currentColor !important;
+}
+
+/* Todos os botões da central ficam claros e coerentes com a marca. */
+main:has(.operator-page-marker) [data-testid="stButton"] > button,
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a {
+    min-height: 42px !important;
+    border: 1px solid #B9D3E1 !important;
+    border-radius: 11px !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    color: var(--portal-primary-dark) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+    box-shadow: 0 2px 8px rgba(14,42,58,.04) !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stButton"] > button *,
+main:has(.operator-page-marker) [data-testid="stButton"] > button p,
+main:has(.operator-page-marker) [data-testid="stButton"] > button span,
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a * {
+    color: var(--portal-primary-dark) !important;
+    -webkit-text-fill-color: var(--portal-primary-dark) !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stButton"] > button:hover,
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a:hover {
+    transform: translateY(-1px);
+    border-color: #8CBBD2 !important;
+    background: var(--portal-primary-soft) !important;
+    background-color: var(--portal-primary-soft) !important;
+    color: var(--portal-primary-dark) !important;
+}
+
+/* CTA do diretório: identificamos pelo container que contém o card.
+   Assim não dependemos do "primary" do tema do Streamlit. */
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] > button {
+    border-color: var(--portal-primary) !important;
+    background: linear-gradient(
+        135deg,
+        var(--portal-primary-dark) 0%,
+        var(--portal-primary) 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    box-shadow: 0 7px 16px rgba(0,86,145,.14) !important;
+}
+
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] > button *,
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] > button p,
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] > button span {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+main:has(.operator-page-marker)
+[data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card)
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] > button:hover {
+    border-color: var(--portal-primary-dark) !important;
+    background: linear-gradient(
+        135deg,
+        var(--portal-primary-deep) 0%,
+        var(--portal-primary-dark) 100%
+    ) !important;
+}
+
+/* Ações rápidas recebem leve superfície azul em vez de blocos escuros. */
+main:has(.operator-page-marker) .hmv-quick-actions + div [data-testid="stButton"] > button {
+    background: #F7FBFD !important;
+    border-color: #C9DDE8 !important;
+}
+
+/* Links externos como "Abrir portal" seguem o azul institucional. */
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a {
+    background: var(--portal-primary) !important;
+    background-color: var(--portal-primary) !important;
+    border-color: var(--portal-primary) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+main:has(.operator-page-marker) [data-testid="stLinkButton"] > a:hover {
+    background: var(--portal-primary-dark) !important;
+    background-color: var(--portal-primary-dark) !important;
+    border-color: var(--portal-primary-dark) !important;
+    color: #FFFFFF !important;
+}
