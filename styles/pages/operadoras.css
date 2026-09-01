@@ -1,113 +1,527 @@
+/* =========================================================
+   OPERADORAS — DIRETÓRIO
+   ========================================================= */
+
+.operator-directory-head {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    margin: 1.35rem 0 .75rem;
+    padding: 1rem 1.05rem;
+    border: 1px solid var(--portal-border);
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, rgba(0,86,145,.055), rgba(255,255,255,.92) 58%),
+        var(--portal-surface);
+    box-shadow: var(--portal-shadow-xs);
+}
+
+.operator-directory-icon,
+.operator-module-heading-icon,
+.hmv-operator-brand-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: var(--portal-primary);
+}
+
+.operator-directory-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--portal-primary-soft);
+}
+
+.operator-directory-icon .portal-icon,
+.operator-module-heading-icon .portal-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.operator-directory-title {
+    color: var(--portal-text);
+    font-size: .98rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.operator-directory-copy {
+    margin-top: .22rem;
+    color: var(--portal-text-secondary);
+    font-size: .81rem;
+    line-height: 1.45;
+}
+
+.operator-directory-count {
+    margin: .58rem 0 .95rem;
+    color: var(--portal-text-secondary);
+    font-size: .8rem;
+}
+
+.operator-directory-count strong {
+    color: var(--portal-primary-dark);
+    font-weight: 850;
+}
+
+/* Cards do diretório */
+.portal-operadora-card {
+    position: relative;
+    min-height: 222px;
+    padding: .28rem .1rem 0;
+    color: var(--portal-text);
+}
+
+.portal-operadora-card::before {
+    content: "";
+    position: absolute;
+    top: -.82rem;
+    left: -.82rem;
+    right: -.82rem;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(90deg, var(--portal-primary), #4FAAD5);
+}
+
+.portal-operadora-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.portal-operadora-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--portal-primary-soft);
+    color: var(--portal-primary);
+}
+
+.portal-operadora-icon .portal-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.portal-operadora-status {
+    padding: .25rem .58rem;
+    border: 1px solid rgba(0,86,145,.1);
+    border-radius: 999px;
+    background: var(--portal-primary-soft);
+    color: var(--portal-primary-dark) !important;
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
+.portal-operadora-name {
+    margin-top: .95rem;
+    color: var(--portal-text) !important;
+    font-size: 1.08rem;
+    font-weight: 850;
+    line-height: 1.2;
+}
+
+.portal-operadora-full-name {
+    min-height: 2.3em;
+    margin-top: .28rem;
+    color: var(--portal-text-secondary) !important;
+    font-size: .76rem;
+    line-height: 1.42;
+}
+
+.portal-operadora-card-divider {
+    height: 1px;
+    margin: .85rem 0 .72rem;
+    background: var(--portal-border);
+}
+
+.portal-operadora-card-meta {
+    display: grid;
+    gap: .48rem;
+}
+
+.portal-operadora-meta-item {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    min-width: 0;
+    color: var(--portal-text-secondary);
+    font-size: .74rem;
+    line-height: 1.35;
+}
+
+.portal-operadora-meta-item strong {
+    color: var(--portal-text);
+    font-weight: 800;
+}
+
+.portal-operadora-meta-icon {
+    display: inline-flex;
+    color: var(--portal-primary);
+}
+
+.portal-operadora-meta-icon .portal-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.portal-operadora-meta-consultant span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* O container Streamlit continua sendo a superfície clicável/funcional. */
+main [data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card) {
+    border-color: var(--portal-border) !important;
+    border-radius: 16px !important;
+    background: var(--portal-surface) !important;
+    box-shadow: var(--portal-shadow-sm) !important;
+    transition:
+        transform var(--portal-motion-fast) ease,
+        border-color var(--portal-motion-fast) ease,
+        box-shadow var(--portal-motion-fast) ease !important;
+}
+
+main [data-testid="stVerticalBlockBorderWrapper"]:has(.portal-operadora-card):hover {
+    transform: translateY(-2px);
+    border-color: #B9D5E4 !important;
+    box-shadow: 0 12px 28px rgba(14,42,58,.08) !important;
+}
+
+/* =========================================================
+   CENTRAL DA OPERADORA
+   ========================================================= */
+
 .hmv-operator-header {
-    background: linear-gradient(135deg, var(--portal-primary) 0%, #0077A8 100%);
-    border-radius: 18px;
-    padding: 26px 28px;
-    margin: 4px 0 18px;
+    position: relative;
+    overflow: hidden;
+    margin: .3rem 0 1rem;
+    padding: clamp(1.45rem, 2.6vw, 2rem);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 88% 18%, rgba(255,255,255,.17), transparent 24%),
+        linear-gradient(135deg, var(--portal-primary-dark) 0%, var(--portal-primary) 58%, #0876A7 100%);
     color: #FFFFFF;
-    box-shadow: 0 8px 24px rgba(0, 86, 145, 0.14);
+    box-shadow: 0 16px 38px rgba(0,61,102,.16);
+}
+
+.hmv-operator-header::after {
+    content: "";
+    position: absolute;
+    right: -54px;
+    bottom: -74px;
+    width: 190px;
+    height: 190px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 50%;
+}
+
+.hmv-operator-header-main {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hmv-operator-brand-icon {
+    width: 54px;
+    height: 54px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 15px;
+    background: rgba(255,255,255,.12);
+    color: #FFFFFF;
+    backdrop-filter: blur(8px);
+}
+
+.hmv-operator-brand-icon .portal-icon {
+    width: 26px;
+    height: 26px;
+}
+
+.hmv-operator-brand-copy {
+    min-width: 0;
 }
 
 .hmv-operator-kicker {
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.10em;
+    color: rgba(255,255,255,.78) !important;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .12em;
     text-transform: uppercase;
-    opacity: 0.86;
-    margin-bottom: 7px;
-    color: #FFFFFF !important;
 }
 
 .hmv-operator-title {
-    font-size: 2rem;
-    line-height: 1.08;
-    font-weight: 750;
-    margin: 0 0 8px;
+    margin-top: .24rem;
     color: #FFFFFF !important;
+    font-size: clamp(1.8rem, 3vw, 2.45rem);
+    font-weight: 850;
+    line-height: 1.06;
 }
 
-.hmv-operator-meta {
-    font-size: 0.94rem;
-    opacity: 0.94;
-    color: #FFFFFF !important;
+.hmv-operator-full-name {
+    margin-top: .32rem;
+    color: rgba(255,255,255,.82) !important;
+    font-size: .84rem;
+    line-height: 1.4;
 }
+
+.hmv-operator-meta-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin-top: 1.15rem;
+}
+
+.hmv-operator-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 32px;
+    padding: .42rem .66rem;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px;
+    background: rgba(255,255,255,.1);
+    color: #FFFFFF !important;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.hmv-operator-meta-chip .portal-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.operator-module-nav-head {
+    margin: 1.15rem 0 .5rem;
+}
+
+.operator-module-nav-title {
+    color: var(--portal-text);
+    font-size: .95rem;
+    font-weight: 820;
+}
+
+.operator-module-nav-copy {
+    margin-top: .18rem;
+    color: var(--portal-text-secondary);
+    font-size: .78rem;
+}
+
+.operator-module-heading {
+    display: flex;
+    align-items: center;
+    gap: .78rem;
+    margin: 1.35rem 0 .85rem;
+    padding-bottom: .78rem;
+    border-bottom: 1px solid var(--portal-border);
+}
+
+.operator-module-heading-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--portal-primary-soft);
+}
+
+.operator-module-heading-title {
+    color: var(--portal-text);
+    font-size: 1.03rem;
+    font-weight: 830;
+    line-height: 1.2;
+}
+
+.operator-module-heading-copy {
+    margin-top: .18rem;
+    color: var(--portal-text-secondary);
+    font-size: .78rem;
+    line-height: 1.45;
+}
+
+/* =========================================================
+   VISÃO GERAL
+   ========================================================= */
 
 .hmv-stat {
-    background: #FFFFFF;
-    border: 1px solid #DFE7ED;
+    min-height: 92px;
+    padding: .9rem .95rem;
+    border: 1px solid var(--portal-border);
     border-radius: 14px;
-    padding: 15px 16px;
-    min-height: 88px;
-    box-shadow: 0 2px 8px rgba(22, 46, 68, 0.04);
+    background: var(--portal-surface);
+    box-shadow: var(--portal-shadow-xs);
 }
 
 .hmv-stat-label {
-    color: #5D6B78 !important;
-    font-size: 0.79rem;
-    font-weight: 650;
-    margin-bottom: 5px;
+    color: var(--portal-text-secondary) !important;
+    font-size: .7rem;
+    font-weight: 760;
+    letter-spacing: .02em;
 }
 
 .hmv-stat-value {
-    color: #0D2638 !important;
+    margin-top: .34rem;
+    color: var(--portal-primary-dark) !important;
     font-size: 1.55rem;
-    font-weight: 760;
+    font-weight: 850;
     line-height: 1;
 }
 
 .hmv-section-label {
-    color: #0D2638 !important;
-    font-size: 1.18rem;
-    font-weight: 750;
-    margin: 22px 0 3px;
+    margin: 1.6rem 0 .18rem;
+    color: var(--portal-text) !important;
+    font-size: 1rem;
+    font-weight: 830;
 }
 
 .hmv-section-help {
-    color: #697987 !important;
-    font-size: 0.88rem;
-    margin-bottom: 12px;
+    margin-bottom: .75rem;
+    color: var(--portal-text-secondary) !important;
+    font-size: .78rem;
+    line-height: 1.45;
 }
 
 .hmv-alert-danger,
 .hmv-alert-info,
 .hmv-panel {
-    border-radius: 14px;
-    padding: 17px 18px;
     min-height: 132px;
+    padding: 1rem;
+    border-radius: 14px;
 }
 
 .hmv-alert-danger {
-    background: #FFF4F2;
-    border: 1px solid #F0B5AA;
+    border: 1px solid #F0C2B9;
+    background: #FFF7F5;
 }
 
 .hmv-alert-info {
-    background: #EEF7FC;
-    border: 1px solid #B7D9EC;
+    border: 1px solid #C6DEEA;
+    background: #F3F9FC;
 }
 
 .hmv-panel {
-    background: #FFFFFF;
-    border: 1px solid #DFE7ED;
+    border: 1px solid var(--portal-border);
+    background: var(--portal-surface);
+    box-shadow: var(--portal-shadow-xs);
 }
 
 .hmv-card-eyebrow {
-    color: #5C6B77 !important;
-    font-size: 0.75rem;
-    font-weight: 750;
-    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: .42rem;
+    margin-bottom: .5rem;
+    color: var(--portal-text-secondary) !important;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .06em;
     text-transform: uppercase;
-    margin-bottom: 6px;
+}
+
+.hmv-card-eyebrow .portal-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--portal-primary);
+}
+
+.hmv-alert-danger .hmv-card-eyebrow .portal-icon {
+    color: #B84C38;
 }
 
 .hmv-card-title {
-    color: #102B3D !important;
-    font-size: 1rem;
-    font-weight: 750;
-    margin-bottom: 7px;
+    margin-bottom: .42rem;
+    color: var(--portal-text) !important;
+    font-size: .94rem;
+    font-weight: 800;
 }
 
 .hmv-card-body {
-    color: #425463 !important;
-    font-size: 0.89rem;
-    line-height: 1.45;
+    color: var(--portal-text-secondary) !important;
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+/* Melhor acabamento para os containers de conteúdo dos módulos. */
+main [data-testid="stVerticalBlockBorderWrapper"]:not(:has(.portal-operadora-card)) {
+    border-color: var(--portal-border) !important;
+    border-radius: 14px !important;
+}
+
+/* Select da navegação da central: mantém o componente nativo, mas o integra ao layout. */
+main [data-testid="stSelectbox"] {
+    margin-bottom: .25rem;
+}
+
+main [data-testid="stSelectbox"] label {
+    font-size: .72rem !important;
+    font-weight: 750 !important;
+    color: var(--portal-text-secondary) !important;
+}
+
+main [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    min-height: 48px !important;
+    border-color: #BDD5E2 !important;
+    border-radius: 13px !important;
+    background: var(--portal-surface) !important;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .hmv-operator-header {
+        padding: 1.35rem;
+    }
+
+    .portal-operadora-full-name {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 700px) {
+    .operator-directory-head,
+    .operator-module-heading,
+    .hmv-operator-header-main {
+        align-items: flex-start;
+    }
+
+    .hmv-operator-brand-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+    }
+
+    .hmv-operator-title {
+        font-size: 1.75rem;
+    }
+
+    .hmv-operator-meta-row {
+        gap: .42rem;
+    }
+
+    .hmv-operator-meta-chip {
+        font-size: .68rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .operator-directory-head {
+        padding: .88rem;
+    }
+
+    .operator-directory-copy {
+        font-size: .76rem;
+    }
+
+    .hmv-operator-header {
+        border-radius: 16px;
+        padding: 1.15rem;
+    }
+
+    .hmv-operator-header-main {
+        gap: .75rem;
+    }
 }
