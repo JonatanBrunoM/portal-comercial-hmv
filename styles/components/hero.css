@@ -1,0 +1,30 @@
+.portal-hero {
+    padding: 1.8rem 2rem;
+    margin-bottom: 1.35rem;
+    border: 1px solid #DCE7EE;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F4F9FC 100%);
+    box-shadow: var(--portal-shadow-sm);
+}
+
+.portal-hero-eyebrow {
+    color: var(--portal-primary) !important;
+    font-size: 0.70rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.portal-hero-title {
+    margin: 0.35rem 0 0;
+    color: var(--portal-text) !important;
+    font-size: clamp(1.75rem, 3vw, 2.45rem);
+    line-height: 1.08;
+}
+
+.portal-hero-description {
+    max-width: 780px;
+    margin: 0.7rem 0 0;
+    color: var(--portal-text-secondary) !important;
+    line-height: 1.55;
+}
