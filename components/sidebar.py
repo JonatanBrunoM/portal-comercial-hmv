@@ -4,6 +4,8 @@ import html
 import streamlit as st
 
 from config.constants import APP_CONFIG
+from ui.icons import icon
+
 from core.auth_service import (
     get_current_profile,
     get_google_user,
@@ -20,7 +22,7 @@ NAVIGATION_ITEMS = {
     "Contatos": "phone",
     "Consultores": "users",
     "Comunicados": "megaphone",
-    "Contingências": "triangle",
+    "Contingências": "warning",
     "Administração": "settings",
 }
 
@@ -39,64 +41,6 @@ PAGE_SLUGS = {
 
 SLUG_PAGES = {slug: page for page, slug in PAGE_SLUGS.items()}
 
-
-ICON_SVGS = {
-    "home": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>
-        </svg>
-    """,
-    "search": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5"/>
-            <path d="m16 16 5 5"/>
-        </svg>
-    """,
-    "building": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 21V5l8-3v19M12 8h8v13M8 7v2M8 12v2M8 17v2M16 11v2M16 16v2"/>
-        </svg>
-    """,
-    "globe": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>
-        </svg>
-    """,
-    "file": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6"/>
-        </svg>
-    """,
-    "phone": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 3 4 5.5c.5 7 7 13.5 14 14l2.5-3-4-3-2 2c-2.5-1-5-3.5-6-6l2-2z"/>
-        </svg>
-    """,
-    "users": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="9" cy="8" r="3"/>
-            <circle cx="17" cy="9" r="2.5"/>
-            <path d="M3 20c0-4 2.5-6 6-6s6 2 6 6M14 15c4 0 7 1.5 7 5"/>
-        </svg>
-    """,
-    "megaphone": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 11v4h4l8 4V7l-8 4zM15 10l5-2v10l-5-2M7 15l1 5h3l-1-4"/>
-        </svg>
-    """,
-    "triangle": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 2.8 20h18.4zM12 9v5M12 17.5h.01"/>
-        </svg>
-    """,
-    "settings": """
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.2 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2.4v-4h.1A1.7 1.7 0 0 0 4.2 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.66 3.8l.06.06A1.7 1.7 0 0 0 8.6 4.2a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 10 2.5v-.1h4v.1a1.7 1.7 0 0 0 1 1.7 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 8.6a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1a1.7 1.7 0 0 0-1.7 1z"/>
-        </svg>
-    """,
-}
 
 
 def get_available_navigation_items() -> dict[str, str]:
@@ -212,7 +156,7 @@ def render_sidebar(
     for page, icon_name in navigation_items.items():
         slug = PAGE_SLUGS[page]
         active_class = " is-active" if page == current_page else ""
-        icon_svg = ICON_SVGS[icon_name]
+        icon_svg = icon(icon_name)
 
         navigation_html.append(
             f"""
