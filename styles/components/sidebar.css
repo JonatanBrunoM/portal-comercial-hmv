@@ -41,10 +41,22 @@ section[data-testid="stSidebar"] > div:first-child {
 }
 
 /* O padding nativo do Streamlit era a principal causa do recorte lateral. */
+/* Streamlit 1.56 mantém espaçamento também em stSidebarContent.
+   Os DOIS wrappers precisam ser neutralizados; caso contrário a rail fica
+   visualmente deslocada para a direita e parece "cortada". */
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"],
 section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
     width: var(--portal-sidebar-open) !important;
     min-width: var(--portal-sidebar-open) !important;
+    margin: 0 !important;
     padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"] > div,
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 
 section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
@@ -86,8 +98,8 @@ section[data-testid="stSidebar"] button[kind="header"] {
 }
 
 .portal-sidebar-brand-icon {
-    width: var(--portal-sidebar-icon-box);
-    height: var(--portal-sidebar-icon-box);
+    width: 40px;
+    height: 40px;
     display: grid;
     place-items: center;
     border-radius: 14px;
@@ -130,8 +142,8 @@ section[data-testid="stSidebar"] button[kind="header"] {
 }
 
 .portal-sidebar-nav-item {
-    width: 48px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     display: grid;
     grid-template-columns: 1fr;
     place-items: center;
@@ -163,8 +175,8 @@ section[data-testid="stSidebar"] button[kind="header"] {
 }
 
 .portal-sidebar-nav-icon {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
     color: currentColor !important;
@@ -201,9 +213,9 @@ section[data-testid="stSidebar"] button[kind="header"] {
 
 .portal-sidebar-avatar,
 .portal-sidebar-avatar-fallback {
-    width: 42px !important;
-    min-width: 42px !important;
-    height: 42px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
     justify-self: center;
     border-radius: 50% !important;
     box-sizing: border-box;
