@@ -1,0 +1,55 @@
+:root {
+    /* Brand */
+    --portal-primary: #005691;
+    --portal-primary-dark: #003D66;
+    --portal-primary-light: #EAF4FA;
+    --portal-primary-soft: #F2F8FC;
+
+    /* Surfaces */
+    --portal-background: #F4F7F9;
+    --portal-surface: #FFFFFF;
+    --portal-surface-soft: #F8FAFB;
+
+    /* Text */
+    --portal-text: #17212B;
+    --portal-text-secondary: #5B6773;
+    --portal-text-muted: #7C8B96;
+
+    /* Borders and status */
+    --portal-border: #D7E1E7;
+    --portal-border-strong: #C6D5DE;
+    --portal-success: #2E7D32;
+    --portal-warning: #B86B00;
+    --portal-error: #C62828;
+
+    /* Radius */
+    --portal-radius-xs: 8px;
+    --portal-radius-sm: 10px;
+    --portal-radius-md: 14px;
+    --portal-radius-lg: 20px;
+    --portal-radius-xl: 25px;
+
+    /* Spacing */
+    --portal-space-1: 0.25rem;
+    --portal-space-2: 0.5rem;
+    --portal-space-3: 0.75rem;
+    --portal-space-4: 1rem;
+    --portal-space-5: 1.25rem;
+    --portal-space-6: 1.5rem;
+    --portal-space-8: 2rem;
+    --portal-space-10: 2.5rem;
+
+    /* Shadows */
+    --portal-shadow-sm: 0 4px 14px rgba(13, 38, 56, 0.05);
+    --portal-shadow-md: 0 12px 30px rgba(13, 38, 56, 0.08);
+    --portal-shadow-brand: 0 18px 44px rgba(0, 61, 102, 0.16);
+
+    /* Layout */
+    --portal-content-max: 1320px;
+    --portal-sidebar-rail: 76px;
+    --portal-sidebar-open: 292px;
+
+    /* Motion */
+    --portal-motion-fast: 90ms;
+    --portal-motion-base: 140ms;
+}
