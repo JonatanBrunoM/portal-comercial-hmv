@@ -667,8 +667,7 @@ def _render_pagination(
     with page_col:
         st.markdown(
             (
-                "<div style='text-align:center;"
-                "padding:0.65rem;'>"
+                '<div class="forum-pagination-status">'
                 f"Página {current_page} "
                 f"de {total_pages}"
                 "</div>"
