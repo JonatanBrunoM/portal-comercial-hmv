@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
 
+from ui.icons import icon
 from components.hero import render_hero
 from components.operadora_cards import render_operadora_card
 from components.portal_cards import render_portal_card
@@ -70,9 +71,18 @@ def _render_empty_module(message: str) -> None:
     st.info(message)
 
 
-def _section_intro(title: str, description: str) -> None:
-    st.markdown(f"### {title}")
-    st.caption(description)
+def _section_intro(title: str, description: str, icon_name: str = "clipboard") -> None:
+    st.html(
+        f"""
+        <section class="operator-module-heading">
+            <div class="operator-module-heading-icon">{icon(icon_name)}</div>
+            <div>
+                <div class="operator-module-heading-title">{_html_escape(title)}</div>
+                <div class="operator-module-heading-copy">{_html_escape(description)}</div>
+            </div>
+        </section>
+        """
+    )
 
 
 def _set_operator_module(operator_id: str, module: str) -> None:
@@ -130,8 +140,8 @@ def _render_overview(operator_id: str, operadora) -> None:
     )
 
     st.markdown(
-        '<div class="hmv-section-label">Resumo da operadora</div>'
-        '<div class="hmv-section-help">As informações mais consultadas, sem precisar procurar em cada módulo.</div>',
+        '<div class="hmv-section-label">Visão operacional</div>'
+        '<div class="hmv-section-help">Os pontos mais consultados desta operadora reunidos em um único lugar.</div>',
         unsafe_allow_html=True,
     )
 
@@ -165,7 +175,7 @@ def _render_overview(operator_id: str, operadora) -> None:
                 st.markdown(
                     f"""
                     <div class="hmv-alert-danger">
-                        <div class="hmv-card-eyebrow">⚠ Contingência • {_html_escape(priority)}</div>
+                        <div class="hmv-card-eyebrow">{icon("warning")} Contingência • {_html_escape(priority)}</div>
                         <div class="hmv-card-title">{_html_escape(title)}</div>
                         <div class="hmv-card-body">{_html_escape(description)}</div>
                     </div>
@@ -181,9 +191,9 @@ def _render_overview(operator_id: str, operadora) -> None:
                 )
             else:
                 st.markdown(
-                    """
+                    f"""
                     <div class="hmv-panel">
-                        <div class="hmv-card-eyebrow">✓ Operação</div>
+                        <div class="hmv-card-eyebrow">{icon("check")} Operação</div>
                         <div class="hmv-card-title">Sem contingências vigentes</div>
                         <div class="hmv-card-body">Nenhuma contingência ativa foi cadastrada para esta operadora.</div>
                     </div>
@@ -200,7 +210,7 @@ def _render_overview(operator_id: str, operadora) -> None:
                 st.markdown(
                     f"""
                     <div class="hmv-alert-info">
-                        <div class="hmv-card-eyebrow">📢 Comunicado • {_html_escape(priority)}</div>
+                        <div class="hmv-card-eyebrow">{icon("megaphone")} Comunicado • {_html_escape(priority)}</div>
                         <div class="hmv-card-title">{_html_escape(title)}</div>
                         <div class="hmv-card-body">{_html_escape(summary)}</div>
                     </div>
@@ -216,9 +226,9 @@ def _render_overview(operator_id: str, operadora) -> None:
                 )
             else:
                 st.markdown(
-                    """
+                    f"""
                     <div class="hmv-panel">
-                        <div class="hmv-card-eyebrow">📢 Comunicados</div>
+                        <div class="hmv-card-eyebrow">{icon("megaphone")} Comunicados</div>
                         <div class="hmv-card-title">Nenhum comunicado vigente</div>
                         <div class="hmv-card-body">Não há atualizações publicadas para esta operadora neste momento.</div>
                     </div>
@@ -233,18 +243,18 @@ def _render_overview(operator_id: str, operadora) -> None:
     )
 
     quick = [
-        ("🌐", "Portais", "Portais e acessos", len(portais)),
-        ("🔑", "Autorizações", "Autorizações", len(autorizacoes)),
-        ("✅", "Elegibilidade", "Elegibilidade", len(elegibilidade)),
-        ("🩺", "Coberturas", "Coberturas", len(coberturas)),
-        ("📄", "Documentos", "Documentos", len(documentos)),
-        ("📞", "Contatos", "Contatos", len(contatos)),
+        ("Portais", "Portais e acessos", len(portais)),
+        ("Autorizações", "Autorizações", len(autorizacoes)),
+        ("Elegibilidade", "Elegibilidade", len(elegibilidade)),
+        ("Coberturas", "Coberturas", len(coberturas)),
+        ("Documentos", "Documentos", len(documentos)),
+        ("Contatos", "Contatos", len(contatos)),
     ]
     quick_cols = st.columns(3)
-    for index, (icon, label, module, amount) in enumerate(quick):
+    for index, (label, module, amount) in enumerate(quick):
         with quick_cols[index % 3]:
             st.button(
-                f"{icon}  {label}  ·  {amount}",
+                f"{label}  ·  {amount}",
                 key=f"quick_{operator_id}_{module}",
                 use_container_width=True,
                 on_click=_set_operator_module,
@@ -270,7 +280,7 @@ def _render_overview(operator_id: str, operadora) -> None:
             with st.container(border=True):
                 left, right = st.columns([4, 1.4])
                 with left:
-                    st.markdown(f"**🌐 {name}**")
+                    st.markdown(f"**{name}**")
                     st.caption(portal_type)
                     st.write(
                         f"**Login necessário:** {'Sim' if requires_login else 'Não'}"
@@ -302,28 +312,28 @@ def _render_overview(operator_id: str, operadora) -> None:
     orientation_specs = [
         (
             "Elegibilidade",
-            "✅",
+            "check",
             elegibilidade,
             "orientacao",
             "Nenhuma orientação cadastrada.",
         ),
         (
             "Autorizações",
-            "🔑",
+            "key",
             autorizacoes,
             "orientacao",
             "Nenhuma orientação cadastrada.",
         ),
         (
             "Coberturas",
-            "🩺",
+            "shield",
             coberturas,
             "restricoes_cobertura",
             "Nenhuma restrição cadastrada.",
         ),
     ]
 
-    for col, (label, icon, dataframe, field, empty_text) in zip(
+    for col, (label, icon_name, dataframe, field, empty_text) in zip(
         orientation_cols, orientation_specs
     ):
         with col:
@@ -333,7 +343,7 @@ def _render_overview(operator_id: str, operadora) -> None:
             st.markdown(
                 f"""
                 <div class="hmv-panel">
-                    <div class="hmv-card-eyebrow">{icon} {label}</div>
+                    <div class="hmv-card-eyebrow">{icon(icon_name)} {label}</div>
                     <div class="hmv-card-body">{_html_escape(body)}</div>
                 </div>
                 """,
@@ -360,7 +370,7 @@ def _render_overview(operator_id: str, operadora) -> None:
             st.markdown(
                 f"""
                 <div class="hmv-panel">
-                    <div class="hmv-card-eyebrow">👤 Consultor de relacionamento</div>
+                    <div class="hmv-card-eyebrow">{icon("user")} Consultor de relacionamento</div>
                     <div class="hmv-card-title">{_html_escape(_safe_text(consultant, "nome"))}</div>
                     <div class="hmv-card-body">{_html_escape(_safe_text(consultant, "cargo"))}<br>
                     {_html_escape(_safe_text(consultant, "email"))}</div>
@@ -384,7 +394,7 @@ def _render_overview(operator_id: str, operadora) -> None:
             st.markdown(
                 f"""
                 <div class="hmv-panel">
-                    <div class="hmv-card-eyebrow">💡 Dica operacional</div>
+                    <div class="hmv-card-eyebrow">{icon("lightbulb")} Dica operacional</div>
                     <div class="hmv-card-title">{_html_escape(_safe_text(tip, "titulo"))}</div>
                     <div class="hmv-card-body">{_html_escape(_safe_text(tip, "dica"))}</div>
                 </div>
@@ -407,7 +417,7 @@ def _render_overview(operator_id: str, operadora) -> None:
 
 def _render_planos(operator_id: str) -> None:
     planos = get_operadora_planos(operator_id)
-    _section_intro("Planos", "Planos ativos vinculados à operadora.")
+    _section_intro("Planos", "Planos ativos vinculados à operadora.", "clipboard")
 
     if planos.empty:
         _render_empty_module("Nenhum plano ativo foi encontrado.")
@@ -442,6 +452,7 @@ def _render_portais(operator_id: str) -> None:
     _section_intro(
         "Portais e acessos",
         "Canais digitais, orientações e credenciais institucionais da operadora.",
+        "globe",
     )
 
     if portais.empty:
@@ -464,6 +475,7 @@ def _render_elegibilidade(operator_id: str) -> None:
     _section_intro(
         "Elegibilidade",
         "Orientações para confirmar a situação do beneficiário antes do atendimento.",
+        "check",
     )
 
     if dataframe.empty:
@@ -489,6 +501,7 @@ def _render_documentos(operator_id: str) -> None:
     _section_intro(
         "Documentos",
         "Documentos e requisitos associados aos fluxos da operadora.",
+        "file",
     )
 
     if dataframe.empty:
@@ -499,7 +512,7 @@ def _render_documentos(operator_id: str) -> None:
         document = _safe_text(item, "nome") or "Documento sem identificação"
 
         with st.container(border=True):
-            st.markdown(f"**📄 {document}**")
+            st.markdown(f"**{document}**")
             c1, c2, c3 = st.columns(3)
             c1.caption(
                 f"Obrigatório: {'Sim' if _safe_bool(item.get('obrigatorio')) else 'Não'}"
@@ -522,6 +535,7 @@ def _render_autorizacoes(operator_id: str) -> None:
     _section_intro(
         "Autorizações",
         "Regras e orientações para solicitar autorização à operadora.",
+        "key",
     )
 
     if dataframe.empty:
@@ -562,6 +576,7 @@ def _render_coberturas(operator_id: str) -> None:
     _section_intro(
         "Coberturas",
         "Informações operacionais de cobertura vinculadas à operadora e seus planos.",
+        "shield",
     )
 
     if dataframe.empty:
@@ -595,6 +610,7 @@ def _render_contatos(operator_id: str) -> None:
     _section_intro(
         "Contatos",
         "Canais e responsáveis úteis para as rotinas com a operadora.",
+        "phone",
     )
 
     if dataframe.empty:
@@ -605,7 +621,7 @@ def _render_contatos(operator_id: str) -> None:
         purpose = _safe_text(item, "finalidade") or "Contato geral"
 
         with st.container(border=True):
-            st.markdown(f"**📞 {purpose}**")
+            st.markdown(f"**{purpose}**")
             sector = _safe_text(item, "nome_setor")
             if sector:
                 st.caption(sector)
@@ -632,6 +648,7 @@ def _render_consultores(operator_id: str) -> None:
     _section_intro(
         "Consultores",
         "Consultores de relacionamento vinculados à operadora.",
+        "user",
     )
 
     if dataframe.empty:
@@ -640,7 +657,7 @@ def _render_consultores(operator_id: str) -> None:
 
     for _, item in dataframe.iterrows():
         with st.container(border=True):
-            st.markdown(f"**👤 {_safe_text(item, 'nome') or 'Consultor'}**")
+            st.markdown(f"**{_safe_text(item, 'nome') or 'Consultor'}**")
             role = _safe_text(item, "cargo")
             if role:
                 st.caption(role)
@@ -662,6 +679,7 @@ def _render_comunicados(operator_id: str) -> None:
     _section_intro(
         "Comunicados",
         "Atualizações e orientações publicadas para esta operadora.",
+        "megaphone",
     )
 
     if dataframe.empty:
@@ -688,7 +706,7 @@ def _render_comunicados(operator_id: str) -> None:
         priority = _safe_text(item, "prioridade")
 
         with st.container(border=True):
-            st.markdown(f"**📢 {title}**")
+            st.markdown(f"**{title}**")
             if priority:
                 st.caption(f"Prioridade: {priority}")
 
@@ -709,6 +727,7 @@ def _render_contingencias(operator_id: str) -> None:
     _section_intro(
         "Contingências",
         "Situações temporárias e alternativas operacionais vigentes.",
+        "warning",
     )
 
     if dataframe.empty:
@@ -725,7 +744,7 @@ def _render_contingencias(operator_id: str) -> None:
         priority = _safe_text(item, "prioridade")
 
         with st.container(border=True):
-            st.markdown(f"**⚠️ {title}**")
+            st.markdown(f"**{title}**")
             if priority:
                 st.caption(f"Prioridade: {priority}")
 
@@ -748,6 +767,7 @@ def _render_dicas(operator_id: str) -> None:
     _section_intro(
         "Dicas operacionais",
         "Atalhos e observações úteis para o dia a dia com a operadora.",
+        "lightbulb",
     )
 
     if dataframe.empty:
@@ -764,7 +784,7 @@ def _render_dicas(operator_id: str) -> None:
     for _, item in dataframe.iterrows():
         with st.container(border=True):
             title = _safe_text(item, "titulo") or "Dica operacional"
-            st.markdown(f"**💡 {title}**")
+            st.markdown(f"**{title}**")
             category = _safe_text(item, "categoria")
             if category:
                 st.caption(category)
@@ -793,23 +813,24 @@ def render_operadora_detail(operator_id: str) -> None:
         if operadora.plans_count == 1
         else f"{operadora.plans_count} planos"
     )
-    consultant_meta = (
-        f" • Consultor: {_html_escape(operadora.consultant)}"
-        if operadora.consultant
-        else ""
-    )
-
-    st.markdown(
+    st.html(
         f"""
-        <div class="hmv-operator-header">
-            <div class="hmv-operator-kicker">Central da operadora</div>
-            <div class="hmv-operator-title">{_html_escape(operadora.short_name)}</div>
-            <div class="hmv-operator-meta">
-                {_html_escape(status)} • {_html_escape(plan_label)}{consultant_meta}
+        <section class="hmv-operator-header">
+            <div class="hmv-operator-header-main">
+                <div class="hmv-operator-brand-icon">{icon("building")}</div>
+                <div class="hmv-operator-brand-copy">
+                    <div class="hmv-operator-kicker">Central da operadora</div>
+                    <div class="hmv-operator-title">{_html_escape(operadora.short_name)}</div>
+                    <div class="hmv-operator-full-name">{_html_escape(operadora.name)}</div>
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+            <div class="hmv-operator-meta-row">
+                <span class="hmv-operator-meta-chip">{icon("check")} {_html_escape(status)}</span>
+                <span class="hmv-operator-meta-chip">{icon("clipboard")} {_html_escape(plan_label)}</span>
+                {f'<span class="hmv-operator-meta-chip">{icon("user")} {_html_escape(operadora.consultant)}</span>' if operadora.consultant else ''}
+            </div>
+        </section>
+        """
     )
 
     if operadora.site_url:
@@ -856,6 +877,15 @@ def render_operadora_detail(operator_id: str) -> None:
     if st.session_state.get(state_key) not in module_options:
         st.session_state[state_key] = "Visão geral"
 
+    st.html(
+        """
+        <div class="operator-module-nav-head">
+            <div class="operator-module-nav-title">O que você precisa consultar?</div>
+            <div class="operator-module-nav-copy">Escolha uma área para aprofundar as informações desta operadora.</div>
+        </div>
+        """
+    )
+
     selected_module = st.selectbox(
         "Consultar outra informação",
         module_options,
@@ -891,20 +921,36 @@ def render_operadoras() -> None:
         eyebrow="Convênios e planos",
         title="Operadoras",
         description=(
-            "Escolha uma operadora para acessar sua central completa de informações."
+            "Encontre a operadora e entre na central com planos, acessos, regras, contatos e orientações operacionais."
         ),
+    )
+
+    st.html(
+        f"""
+        <section class="operator-directory-head">
+            <div class="operator-directory-icon">{icon("building")}</div>
+            <div>
+                <div class="operator-directory-title">Diretório de operadoras</div>
+                <div class="operator-directory-copy">Pesquise pelo nome ou navegue pelos convênios disponíveis no portal.</div>
+            </div>
+        </section>
+        """
     )
 
     query = st.text_input(
         label="Pesquisar operadora",
-        placeholder="Digite o nome da operadora...",
+        placeholder="Ex.: Bradesco, CASSI, Unimed...",
         key="operator_search_query",
+        label_visibility="collapsed",
     )
 
     with st.spinner("Carregando operadoras..."):
         operadoras = search_operadoras(query)
 
-    st.caption(f"{len(operadoras)} operadora(s) encontrada(s).")
+    result_label = "operadora encontrada" if len(operadoras) == 1 else "operadoras encontradas"
+    st.html(
+        f'<div class="operator-directory-count"><strong>{len(operadoras)}</strong> {result_label}</div>'
+    )
 
     if not operadoras:
         st.info("Nenhuma operadora foi encontrada para essa pesquisa.")
