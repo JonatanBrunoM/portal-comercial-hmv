@@ -78,17 +78,29 @@ section[data-testid="stMain"] > div,
  * mantém a sidebar compacta e deixa o restante integralmente para a página.
  */
 @media (max-width: 900px) {
+    /*
+     * A partir deste breakpoint o Streamlit deixa a sidebar em overlay.
+     * Portanto ela não reserva mais espaço no fluxo da página.
+     * Reservamos manualmente os 80px da rail e deslocamos o conteúdo.
+     */
     section[data-testid="stMain"],
     [data-testid="stMain"],
     .main {
         width: calc(100dvw - 80px) !important;
+        min-width: 0 !important;
         max-width: calc(100dvw - 80px) !important;
-        flex-basis: calc(100dvw - 80px) !important;
+        flex: 0 0 calc(100dvw - 80px) !important;
+        margin-left: 80px !important;
+        padding-left: 0 !important;
+        transform: none !important;
+        overflow-x: clip !important;
     }
 
+    [data-testid="stMainBlockContainer"],
     .block-container {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 0 !important;
         margin: 0 !important;
         padding:
             0.9rem
@@ -108,8 +120,10 @@ section[data-testid="stMain"] > div,
         width: calc(100dvw - 80px) !important;
         max-width: calc(100dvw - 80px) !important;
         flex-basis: calc(100dvw - 80px) !important;
+        margin-left: 80px !important;
     }
 
+    [data-testid="stMainBlockContainer"],
     .block-container {
         padding:
             0.75rem
