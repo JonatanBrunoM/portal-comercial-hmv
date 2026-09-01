@@ -1,0 +1,27 @@
+/*
+ * Apenas adaptações de componentes internos do Streamlit/BaseWeb.
+ * Nenhuma classe específica de página deve ser adicionada aqui.
+ */
+
+header[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+[data-testid="stMetric"] {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--portal-border);
+    border-radius: var(--portal-radius-md);
+    background: var(--portal-surface);
+}
+
+[data-testid="stExpander"] {
+    border-color: var(--portal-border) !important;
+    border-radius: 12px !important;
+    background: var(--portal-surface) !important;
+}
+
+[data-testid="stAlert"] {
+    border-radius: 12px !important;
+}
