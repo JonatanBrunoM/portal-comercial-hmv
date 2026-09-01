@@ -1,62 +1,37 @@
 /*
- * Sidebar com dois estados reais:
- * - RECOLHIDA: rail compacta desenhada exclusivamente para marca, ícones e avatar.
- * - EXPANDIDA: painel sobreposto com ícones + textos e informações de conta.
+ * Sidebar com dois DOMs independentes:
+ * 1) .portal-sidebar-compact  = rail fechada
+ * 2) .portal-sidebar-expanded = painel completo
  *
- * Nenhum elemento do estado aberto é simplesmente "cortado" para formar o estado
- * compacto. Cada estado possui medidas e composição próprias.
+ * Nada é recortado para simular o estado fechado.
  */
 
 /* =========================================================
-   ESTRUTURA NATIVA DO STREAMLIT
+   STREAMLIT: a sidebar nativa vira apenas o ponto de ancoragem
    ========================================================= */
 
 section[data-testid="stSidebar"] {
-    width: var(--portal-sidebar-rail) !important;
-    min-width: var(--portal-sidebar-rail) !important;
-    max-width: var(--portal-sidebar-rail) !important;
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
     overflow: visible !important;
     background: transparent !important;
     border: 0 !important;
     z-index: 100000 !important;
 }
 
-section[data-testid="stSidebar"] > div:first-child {
-    width: var(--portal-sidebar-rail) !important;
-    min-width: var(--portal-sidebar-rail) !important;
-    max-width: var(--portal-sidebar-rail) !important;
-    height: 100% !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    background: var(--portal-surface) !important;
-    border-right: 1px solid var(--portal-border) !important;
-    box-shadow: 5px 0 20px rgba(14, 42, 58, 0.05);
-    transition:
-        width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        min-width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        max-width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
-        box-shadow var(--portal-motion-base) ease !important;
-}
-
-/* O padding nativo do Streamlit era a principal causa do recorte lateral. */
-/* Streamlit 1.56 mantém espaçamento também em stSidebarContent.
-   Os DOIS wrappers precisam ser neutralizados; caso contrário a rail fica
-   visualmente deslocada para a direita e parece "cortada". */
+section[data-testid="stSidebar"] > div:first-child,
 section[data-testid="stSidebar"] [data-testid="stSidebarContent"],
 section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
-    width: var(--portal-sidebar-open) !important;
-    min-width: var(--portal-sidebar-open) !important;
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
     box-sizing: border-box !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] > div,
-section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
 }
 
 section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
@@ -68,41 +43,41 @@ section[data-testid="stSidebar"] button[kind="header"] {
     display: none !important;
 }
 
-.portal-sidebar-shell {
-    width: var(--portal-sidebar-open);
-    min-width: var(--portal-sidebar-open);
+.portal-sidebar-root {
+    width: 80px;
+    min-width: 80px;
 }
 
 /* =========================================================
-   ESTADO RECOLHIDO — DESENHADO COMO RAIL
+   ESTADO 1 — RAIL COMPACTA
    ========================================================= */
 
-/* Marca: ocupa exatamente a largura da rail e centraliza o símbolo. */
-.portal-sidebar-header {
-    width: var(--portal-sidebar-rail);
-    min-width: var(--portal-sidebar-rail);
-    height: 76px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border-bottom: 1px solid var(--portal-border);
+.portal-sidebar-compact {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border-right: 1px solid var(--portal-border);
+    box-shadow: 5px 0 18px rgba(14, 42, 58, 0.05);
+    z-index: 100001;
     overflow: hidden;
-    transition: width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1);
 }
 
-.portal-sidebar-brandmark {
-    width: 100%;
+.portal-sidebar-compact-brand {
+    flex: 0 0 78px;
     display: grid;
-    grid-template-columns: 1fr;
     place-items: center;
+    border-bottom: 1px solid var(--portal-border);
 }
 
-.portal-sidebar-brand-icon {
-    width: 40px;
-    height: 40px;
+.portal-sidebar-compact-brandmark {
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 13px;
     background: linear-gradient(
         145deg,
         var(--portal-primary),
@@ -114,119 +89,88 @@ section[data-testid="stSidebar"] button[kind="header"] {
     box-shadow: 0 7px 18px rgba(0, 86, 145, 0.20);
 }
 
-.portal-sidebar-brand-copy {
-    display: none;
-}
-
-/* Rótulos não deixam espaço vazio quando a rail está fechada. */
-.portal-sidebar-section-label,
-.portal-sidebar-account-label {
-    width: 0;
-    height: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Navegação compacta: cada item é um botão quadrado centralizado. */
-.portal-sidebar-nav {
-    width: var(--portal-sidebar-rail);
+.portal-sidebar-compact-nav {
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
     padding: 10px 0;
-    transition: width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
 }
 
-.portal-sidebar-nav-item {
-    width: 44px;
-    height: 44px;
+.portal-sidebar-compact-nav::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.portal-sidebar-compact-item {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
     display: grid;
-    grid-template-columns: 1fr;
     place-items: center;
-    padding: 0;
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: 13px;
     background: transparent;
-    color: #49606F !important;
+    color: #4A6170 !important;
     text-decoration: none !important;
-    overflow: hidden;
-    white-space: nowrap;
     transition:
-        width var(--portal-motion-base) cubic-bezier(.2,.8,.2,1),
         background var(--portal-motion-fast) ease,
         color var(--portal-motion-fast) ease,
-        border-color var(--portal-motion-fast) ease;
+        border-color var(--portal-motion-fast) ease,
+        transform var(--portal-motion-fast) ease;
 }
 
-.portal-sidebar-nav-item:hover {
+.portal-sidebar-compact-item:hover {
     background: var(--portal-primary-soft);
     color: var(--portal-primary-dark) !important;
+    transform: translateY(-1px);
 }
 
-.portal-sidebar-nav-item.is-active {
+.portal-sidebar-compact-item.is-active {
     background: #E2F1FA;
     color: var(--portal-primary-dark) !important;
     border-color: #C4E1F1;
     box-shadow: inset 3px 0 0 var(--portal-primary);
 }
 
-.portal-sidebar-nav-icon {
-    width: 44px;
-    height: 44px;
+.portal-sidebar-icon-slot {
+    width: 48px;
+    height: 48px;
     display: grid;
     place-items: center;
     color: currentColor !important;
 }
 
-/* Biblioteca atual de ícones via CSS mask. */
-.portal-sidebar-nav-icon .portal-icon {
+.portal-sidebar-icon-slot .portal-icon {
     width: 21px;
     height: 21px;
     color: currentColor !important;
 }
 
-.portal-sidebar-nav-text {
-    display: none;
-}
-
-/* Conta recolhida: somente avatar, como elemento próprio da rail. */
-.portal-sidebar-separator {
-    width: 42px;
-    height: 1px;
-    margin: 10px auto 8px;
-    background: var(--portal-border);
-}
-
-.portal-sidebar-user-compact {
-    width: var(--portal-sidebar-rail);
-    min-height: 54px;
+.portal-sidebar-compact-account {
+    flex: 0 0 70px;
     display: grid;
-    grid-template-columns: 1fr;
     place-items: center;
-    margin: 0;
-    overflow: hidden;
+    border-top: 1px solid var(--portal-border);
+    background: #FFFFFF;
 }
 
-.portal-sidebar-avatar,
-.portal-sidebar-avatar-fallback {
-    width: 38px !important;
-    min-width: 38px !important;
-    height: 38px !important;
-    justify-self: center;
+.portal-sidebar-avatar-compact {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
     border-radius: 50% !important;
-    box-sizing: border-box;
-}
-
-.portal-sidebar-avatar {
     object-fit: cover !important;
+    box-sizing: border-box;
     border: 2px solid #E0EBF1;
 }
 
-.portal-sidebar-avatar-fallback {
+.portal-sidebar-avatar-compact.portal-sidebar-avatar-fallback {
     display: grid;
     place-items: center;
     background: var(--portal-primary-light);
@@ -234,191 +178,199 @@ section[data-testid="stSidebar"] button[kind="header"] {
     font-weight: 850;
 }
 
-.portal-sidebar-user-copy,
-.portal-sidebar-footer {
-    display: none;
-}
-
-/* Logout não faz parte do estado compacto. */
-section[data-testid="stSidebar"] .stButton {
-    display: none;
-}
-
 /* =========================================================
-   ESTADO EXPANDIDO — PAINEL COMPLETO
+   ESTADO 2 — PAINEL EXPANDIDO
    ========================================================= */
+
+.portal-sidebar-expanded {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 292px;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border-right: 1px solid var(--portal-border);
+    box-shadow: 18px 0 44px rgba(14, 42, 58, 0.14);
+    z-index: 100003;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-8px);
+    transition:
+        opacity 110ms ease,
+        transform 140ms cubic-bezier(.2,.8,.2,1),
+        visibility 0s linear 140ms;
+}
 
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
-    section[data-testid="stSidebar"]:hover > div:first-child,
-    section[data-testid="stSidebar"]:focus-within > div:first-child {
-        width: var(--portal-sidebar-open) !important;
-        min-width: var(--portal-sidebar-open) !important;
-        max-width: var(--portal-sidebar-open) !important;
-        box-shadow: 16px 0 42px rgba(14, 42, 58, 0.14);
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-header,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-header {
-        width: var(--portal-sidebar-open);
-        padding-inline: var(--portal-sidebar-pad-x);
-        place-items: stretch;
-        align-items: center;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-brandmark,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-brandmark {
-        display: grid;
-        grid-template-columns: var(--portal-sidebar-icon-box) minmax(0, 1fr);
-        place-items: initial;
-        align-items: center;
-        column-gap: var(--portal-sidebar-gap);
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-brand-copy,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-brand-copy {
-        display: block;
-        min-width: 0;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-section-label,
-    section[data-testid="stSidebar"]:hover .portal-sidebar-account-label,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-section-label,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-account-label {
-        width: auto;
-        height: auto;
-        margin: 14px var(--portal-sidebar-pad-x) 5px;
-        overflow: visible;
+    section[data-testid="stSidebar"]:hover .portal-sidebar-expanded,
+    section[data-testid="stSidebar"]:focus-within .portal-sidebar-expanded {
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-nav,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav {
-        width: var(--portal-sidebar-open);
-        align-items: stretch;
-        gap: 2px;
-        padding: 0 var(--portal-sidebar-pad-x);
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-nav-item,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-item {
-        width: calc(
-            var(--portal-sidebar-open) -
-            (var(--portal-sidebar-pad-x) * 2)
-        );
-        grid-template-columns:
-            var(--portal-sidebar-icon-box)
-            minmax(0, 1fr);
-        place-items: initial;
-        align-items: center;
-        column-gap: var(--portal-sidebar-gap);
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-nav-icon,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-icon {
-        width: var(--portal-sidebar-icon-box);
-        height: var(--portal-sidebar-row);
-        display: grid;
-        place-items: center;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-nav-text,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-text {
-        display: block;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: inherit !important;
-        font-size: 0.84rem;
-        font-weight: 700;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-separator,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-separator {
-        width: calc(
-            var(--portal-sidebar-open) -
-            (var(--portal-sidebar-pad-x) * 2)
-        );
-        margin: 14px var(--portal-sidebar-pad-x) 4px;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-user-compact,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-user-compact {
-        width: calc(
-            var(--portal-sidebar-open) -
-            (var(--portal-sidebar-pad-x) * 2)
-        );
-        min-height: 54px;
-        grid-template-columns:
-            var(--portal-sidebar-icon-box)
-            minmax(0, 1fr);
-        place-items: initial;
-        align-items: center;
-        column-gap: var(--portal-sidebar-gap);
-        margin-inline: var(--portal-sidebar-pad-x);
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-user-copy,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-user-copy {
-        display: block;
-        min-width: 0;
-    }
-
-    section[data-testid="stSidebar"]:hover .portal-sidebar-footer,
-    section[data-testid="stSidebar"]:focus-within .portal-sidebar-footer {
-        display: block;
-        margin: 10px var(--portal-sidebar-pad-x) 18px;
-        color: var(--portal-text-muted) !important;
-        font-size: 0.62rem;
-    }
-
-    /* O logout só existe visualmente no painel aberto. */
-    section[data-testid="stSidebar"]:hover .stButton,
-    section[data-testid="stSidebar"]:focus-within .stButton {
-        display: block;
-        width: var(--portal-sidebar-open) !important;
-        padding-inline: var(--portal-sidebar-pad-x) !important;
-    }
-
-    section[data-testid="stSidebar"]:hover .stButton > button,
-    section[data-testid="stSidebar"]:focus-within .stButton > button {
-        width: calc(
-            var(--portal-sidebar-open) -
-            (var(--portal-sidebar-pad-x) * 2)
-        ) !important;
-        min-height: 42px !important;
+        transform: translateX(0);
+        transition:
+            opacity 90ms ease,
+            transform 120ms cubic-bezier(.2,.8,.2,1),
+            visibility 0s;
     }
 }
 
-/* =========================================================
-   TIPOGRAFIA DO PAINEL ABERTO
-   ========================================================= */
+.portal-sidebar-expanded-brand {
+    flex: 0 0 78px;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 13px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--portal-border);
+}
 
-.portal-sidebar-organization {
+.portal-sidebar-expanded-brandmark {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: linear-gradient(
+        145deg,
+        var(--portal-primary),
+        var(--portal-primary-dark)
+    );
+    color: #FFFFFF !important;
+    font-size: 1rem;
+    font-weight: 850;
+    box-shadow: 0 7px 18px rgba(0, 86, 145, 0.20);
+}
+
+.portal-sidebar-expanded-brand-copy {
+    min-width: 0;
+}
+
+.portal-sidebar-expanded-organization {
     color: var(--portal-primary) !important;
-    font-size: 0.59rem;
+    font-size: 0.58rem;
     font-weight: 850;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.portal-sidebar-title {
+.portal-sidebar-expanded-title {
     margin-top: 2px;
     color: var(--portal-text) !important;
     font-size: 0.98rem;
     font-weight: 800;
+    white-space: nowrap;
 }
 
-.portal-sidebar-section-label,
-.portal-sidebar-account-label {
+.portal-sidebar-expanded-label {
+    flex: 0 0 auto;
+    margin: 14px 14px 5px;
     color: var(--portal-text-muted) !important;
     font-size: 0.57rem;
     font-weight: 850;
     letter-spacing: 0.11em;
 }
 
-.portal-sidebar-user-name {
-    max-width: 100%;
+.portal-sidebar-expanded-nav {
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 10px;
+}
+
+.portal-sidebar-expanded-item {
+    width: 100%;
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: #425765 !important;
+    text-decoration: none !important;
+    overflow: hidden;
+    transition:
+        background var(--portal-motion-fast) ease,
+        color var(--portal-motion-fast) ease,
+        border-color var(--portal-motion-fast) ease;
+}
+
+.portal-sidebar-expanded-item:hover {
+    background: var(--portal-primary-soft);
+    color: var(--portal-primary-dark) !important;
+}
+
+.portal-sidebar-expanded-item.is-active {
+    background: #E2F1FA;
+    color: var(--portal-primary-dark) !important;
+    border-color: #C4E1F1;
+    box-shadow: inset 3px 0 0 var(--portal-primary);
+}
+
+.portal-sidebar-expanded-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: inherit !important;
+    font-size: 0.84rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.portal-sidebar-expanded-spacer {
+    flex: 1 1 auto;
+    min-height: 10px;
+}
+
+.portal-sidebar-expanded-separator {
+    width: calc(100% - 28px);
+    height: 1px;
+    margin: 6px 14px 0;
+    background: var(--portal-border);
+}
+
+.portal-sidebar-account-label {
+    margin-top: 10px;
+}
+
+.portal-sidebar-expanded-account {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 13px;
+    margin: 0 14px;
+    min-height: 54px;
+}
+
+.portal-sidebar-avatar-expanded {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    justify-self: center;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    box-sizing: border-box;
+    border: 2px solid #E0EBF1;
+}
+
+.portal-sidebar-avatar-expanded.portal-sidebar-avatar-fallback {
+    display: grid;
+    place-items: center;
+    background: var(--portal-primary-light);
+    color: var(--portal-primary-dark) !important;
+    font-weight: 850;
+}
+
+.portal-sidebar-expanded-user-copy {
+    min-width: 0;
+}
+
+.portal-sidebar-expanded-user-name {
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--portal-text) !important;
@@ -427,70 +379,95 @@ section[data-testid="stSidebar"] .stButton {
     white-space: nowrap;
 }
 
-.portal-sidebar-user-role {
+.portal-sidebar-expanded-user-role {
     margin-top: 2px;
     color: var(--portal-text-muted) !important;
     font-size: 0.66rem;
 }
 
-/* =========================================================
-   ALTURA REDUZIDA
-   ========================================================= */
+.portal-sidebar-expanded-footer {
+    flex: 0 0 auto;
+    margin: 8px 14px 76px;
+    color: var(--portal-text-muted) !important;
+    font-size: 0.62rem;
+}
 
-@media (max-height: 720px) {
-    .portal-sidebar-header {
-        height: 64px;
-    }
+/* Logout: pertence apenas ao estado expandido. */
+section[data-testid="stSidebar"] .stButton {
+    position: fixed;
+    left: 14px;
+    bottom: 20px;
+    width: 264px !important;
+    z-index: 100005;
 
-    .portal-sidebar-nav {
-        gap: 2px;
-        padding-top: 4px;
-        padding-bottom: 4px;
-    }
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 80ms ease;
+}
 
-    .portal-sidebar-nav-item,
-    .portal-sidebar-nav-icon {
-        height: 42px;
-    }
-
-    .portal-sidebar-nav-item {
-        width: 46px;
-    }
-
-    @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
-        section[data-testid="stSidebar"]:hover .portal-sidebar-nav-item,
-        section[data-testid="stSidebar"]:focus-within .portal-sidebar-nav-item {
-            width: calc(
-                var(--portal-sidebar-open) -
-                (var(--portal-sidebar-pad-x) * 2)
-            );
-        }
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) {
+    section[data-testid="stSidebar"]:hover .stButton,
+    section[data-testid="stSidebar"]:focus-within .stButton {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 }
 
+section[data-testid="stSidebar"] .stButton > button {
+    width: 264px !important;
+    min-height: 42px !important;
+}
+
 /* =========================================================
-   TABLET / MOBILE
-   Sem hover confiável: usa o estado compacto completo.
+   TELAS MENORES
+   Sem hover confiável: mantém a rail compacta íntegra.
    ========================================================= */
 
 @media (max-width: 900px) {
     section[data-testid="stSidebar"],
-    section[data-testid="stSidebar"] > div:first-child {
+    section[data-testid="stSidebar"] > div:first-child,
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"],
+    section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
         display: block !important;
         visibility: visible !important;
         transform: none !important;
-        translate: none !important;
         left: 0 !important;
-        width: var(--portal-sidebar-rail) !important;
-        min-width: var(--portal-sidebar-rail) !important;
-        max-width: var(--portal-sidebar-rail) !important;
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
     }
 
-    section[data-testid="stSidebar"] {
-        flex: 0 0 var(--portal-sidebar-rail) !important;
+    .portal-sidebar-expanded {
+        display: none !important;
+    }
+}
+
+@media (max-height: 700px) {
+    .portal-sidebar-compact-brand,
+    .portal-sidebar-expanded-brand {
+        flex-basis: 66px;
     }
 
-    section[data-testid="stSidebar"] > div:first-child {
-        overflow-y: auto !important;
+    .portal-sidebar-compact-nav {
+        gap: 2px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
+    .portal-sidebar-compact-item,
+    .portal-sidebar-icon-slot {
+        width: 44px;
+        height: 42px;
+        min-height: 42px;
+    }
+
+    .portal-sidebar-expanded-item {
+        min-height: 40px;
+    }
+
+    .portal-sidebar-expanded-label {
+        margin-top: 8px;
     }
 }
