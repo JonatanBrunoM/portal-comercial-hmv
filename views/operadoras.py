@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import re
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -94,6 +95,16 @@ def _html_escape(value: object) -> str:
     return html.escape(str(value or ""))
 
 
+def _clean_display_text(value: object) -> str:
+    """Remove símbolos decorativos no início de textos vindos do cadastro."""
+    text = str(value or "").strip()
+    return re.sub(
+        r"^[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\s]+",
+        "",
+        text,
+    ).strip()
+
+
 def _render_stat_card(label: str, value: object) -> None:
     st.markdown(
         f"""
@@ -140,20 +151,45 @@ def _render_overview(operator_id: str, operadora) -> None:
     )
 
     st.markdown(
-        '<div class="hmv-section-label">Visão operacional</div>'
-        '<div class="hmv-section-help">Os pontos mais consultados desta operadora reunidos em um único lugar.</div>',
+        '<div class="hmv-section-label">Resumo da operadora</div>'
+        '<div class="hmv-section-help">Uma leitura rápida do que já está disponível para consulta nesta central.</div>',
         unsafe_allow_html=True,
     )
 
-    s1, s2, s3, s4 = st.columns(4)
-    with s1:
-        _render_stat_card("Planos ativos", counts["planos"])
-    with s2:
-        _render_stat_card("Portais", counts["portais"])
-    with s3:
-        _render_stat_card("Contatos", counts["contatos"])
-    with s4:
-        _render_stat_card("Documentos", counts["documentos"])
+    st.html(
+        f"""
+        <section class="operator-overview-strip">
+            <div class="operator-overview-item">
+                <span class="operator-overview-icon">{icon("clipboard")}</span>
+                <span class="operator-overview-copy">
+                    <strong>{_html_escape(counts["planos"])}</strong>
+                    <small>Planos ativos</small>
+                </span>
+            </div>
+            <div class="operator-overview-item">
+                <span class="operator-overview-icon">{icon("globe")}</span>
+                <span class="operator-overview-copy">
+                    <strong>{_html_escape(counts["portais"])}</strong>
+                    <small>Portais</small>
+                </span>
+            </div>
+            <div class="operator-overview-item">
+                <span class="operator-overview-icon">{icon("phone")}</span>
+                <span class="operator-overview-copy">
+                    <strong>{_html_escape(counts["contatos"])}</strong>
+                    <small>Contatos</small>
+                </span>
+            </div>
+            <div class="operator-overview-item">
+                <span class="operator-overview-icon">{icon("file")}</span>
+                <span class="operator-overview-copy">
+                    <strong>{_html_escape(counts["documentos"])}</strong>
+                    <small>Documentos</small>
+                </span>
+            </div>
+        </section>
+        """
+    )
 
     if not active_contingencies.empty or not active_notices.empty:
         st.markdown(
@@ -271,7 +307,7 @@ def _render_overview(operator_id: str, operadora) -> None:
         st.info("Nenhum portal operacional cadastrado.")
     else:
         for _, portal in portais.head(2).iterrows():
-            name = _safe_text(portal, "nome") or "Portal sem nome"
+            name = _clean_display_text(_safe_text(portal, "nome")) or "Portal sem nome"
             portal_type = _safe_text(portal, "tipo") or "Portal operacional"
             url = _safe_text(portal, "url")
             instructions = _safe_text(portal, "instrucao_acesso")
@@ -911,6 +947,7 @@ def render_operadora_detail(operator_id: str) -> None:
     renderers[selected_module]()
 
 def render_operadoras() -> None:
+    st.html('<div class="operator-page-marker" aria-hidden="true"></div>')
     selected_operator_id = st.session_state.get("selected_operator_id")
 
     if selected_operator_id:
