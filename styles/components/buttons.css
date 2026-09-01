@@ -1,0 +1,52 @@
+main .stButton > button,
+main .stLinkButton > a {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--portal-border-strong) !important;
+    background: var(--portal-surface) !important;
+    color: var(--portal-text) !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    box-shadow: none !important;
+    transition:
+        transform var(--portal-motion-fast) ease,
+        border-color var(--portal-motion-fast) ease,
+        background var(--portal-motion-fast) ease,
+        box-shadow var(--portal-motion-fast) ease !important;
+}
+
+main .stButton > button *,
+main .stButton > button p,
+main .stButton > button span,
+main .stLinkButton > a * {
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+main .stButton > button:hover,
+main .stLinkButton > a:hover {
+    transform: translateY(-1px);
+    border-color: #9FC4D9 !important;
+    background: #F8FCFE !important;
+    color: var(--portal-primary-dark) !important;
+    box-shadow: 0 6px 16px rgba(0, 86, 145, 0.07) !important;
+}
+
+main .stButton > button[kind="primary"] {
+    border-color: var(--portal-primary) !important;
+    background: var(--portal-primary) !important;
+    color: #FFFFFF !important;
+}
+
+main .stButton > button[kind="primary"]:hover {
+    border-color: var(--portal-primary-dark) !important;
+    background: var(--portal-primary-dark) !important;
+    color: #FFFFFF !important;
+}
+
+main .stButton > button:focus-visible,
+main .stLinkButton > a:focus-visible {
+    outline: 3px solid rgba(0, 86, 145, 0.16) !important;
+    outline-offset: 2px !important;
+}
