@@ -12,6 +12,7 @@ STYLE_ORDER = (
     "styles/nicegui/base.css",
     "styles/nicegui/layout.css",
     "styles/nicegui/components.css",
+    "styles/nicegui/data.css",
 )
 
 
