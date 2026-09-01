@@ -6,22 +6,8 @@ import streamlit as st
 
 from components.sidebar import navigate_to
 from core.search_service import SearchResult, group_search_results
+from ui.icons import category_icon
 
-
-CATEGORY_ICONS = {
-    "Operadoras": "🏥",
-    "Planos": "📋",
-    "Portais": "🌐",
-    "Elegibilidade": "✅",
-    "Documentos": "📄",
-    "Autorizações": "🔑",
-    "Coberturas": "🩺",
-    "Contatos": "📞",
-    "Consultores": "👤",
-    "Comunicados": "📢",
-    "Contingências": "⚠️",
-    "Dicas operacionais": "💡",
-}
 
 CATEGORY_ORDER = [
     "Contingências",
@@ -61,7 +47,7 @@ def _result_button_label(result: SearchResult) -> str:
 
 
 def _render_result_content(result: SearchResult, featured: bool = False) -> None:
-    icon = CATEGORY_ICONS.get(result.category, "🔎")
+    icon_html = category_icon(result.category)
     safe_category = html.escape(result.category)
     safe_title = html.escape(result.title)
     safe_subtitle = html.escape(result.subtitle)
@@ -88,7 +74,7 @@ def _render_result_content(result: SearchResult, featured: bool = False) -> None
         f"""
         <article class="portal-search-result">
             <div class="portal-search-result-top">
-                <span class="portal-search-result-icon">{icon}</span>
+                <span class="portal-search-result-icon">{icon_html}</span>
                 <span class="portal-search-result-category">{safe_category}</span>
                 {operator_badge}
                 {featured_badge}
@@ -175,10 +161,8 @@ def render_search_results(
 
     for category in ordered_categories:
         category_results = remaining_groups[category]
-        icon = CATEGORY_ICONS.get(category, "🔎")
-
         with st.expander(
-            f"{icon} {category} · {len(category_results)}",
+            f"{category} · {len(category_results)}",
             expanded=len(ordered_categories) <= 2,
         ):
             for result in category_results:
