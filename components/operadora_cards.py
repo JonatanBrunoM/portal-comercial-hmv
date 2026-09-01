@@ -5,6 +5,7 @@ import html
 import streamlit as st
 
 from core.operadoras_service import OperadoraSummary
+from ui.icons import icon
 
 
 def render_operadora_card(
@@ -28,7 +29,7 @@ def render_operadora_card(
     <article class="portal-operadora-card">
         <div class="portal-operadora-card-top">
             <div class="portal-operadora-icon">
-                🏥
+                {icon("building")}
             </div>
 
             <div class="portal-operadora-status">
