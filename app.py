@@ -5,6 +5,7 @@ import os
 from nicegui import app, ui
 
 from nicegui_app.pages.home import render_home
+from nicegui_app.pages.supabase_test import render_supabase_test
 from nicegui_app.theme import apply_theme
 
 
@@ -17,6 +18,12 @@ def health() -> dict[str, str]:
 def index() -> None:
     apply_theme()
     render_home()
+
+
+@ui.page("/supabase-test")
+def supabase_test() -> None:
+    apply_theme()
+    render_supabase_test()
 
 
 if __name__ in {"__main__", "__mp_main__"}:
