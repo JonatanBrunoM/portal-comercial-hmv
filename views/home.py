@@ -6,6 +6,7 @@ from components.sidebar import navigate_to
 from components.search_results import render_search_results
 from core.dashboard_service import get_dashboard_summary
 from core.search_service import search_global
+from ui.icons import icon
 
 
 def _safe(value) -> str:
@@ -137,23 +138,14 @@ def _nav_href(page: str) -> str:
     return f"?page={slugs.get(page, 'inicio')}"
 
 
-QUICK_ICONS = {
-    "Operadoras": """
-        <svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8h8v13M8 7v2M8 12v2M8 17v2M16 11v2M16 16v2"/></svg>
-    """,
-    "Portais": """
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
-    """,
-    "Documentos": """
-        <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6"/></svg>
-    """,
-    "Contatos": """
-        <svg viewBox="0 0 24 24"><path d="M7 3 4 5.5c.5 7 7 13.5 14 14l2.5-3-4-3-2 2c-2.5-1-5-3.5-6-6l2-2z"/></svg>
-    """,
-    "Contingências": """
-        <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4zM12 9v5M12 17.5h.01"/></svg>
-    """,
+QUICK_ICON_NAMES = {
+    "Operadoras": "building",
+    "Portais": "globe",
+    "Documentos": "file",
+    "Contatos": "phone",
+    "Contingências": "warning",
 }
+
 
 
 def _render_quick_dock() -> None:
@@ -170,7 +162,7 @@ def _render_quick_dock() -> None:
         cards.append(
             f"""
             <a class="portal-quick-card" href="{_nav_href(page)}" target="_self">
-                <span class="portal-quick-icon">{QUICK_ICONS[page]}</span>
+                <span class="portal-quick-icon">{icon(QUICK_ICON_NAMES[page])}</span>
                 <span class="portal-quick-copy">
                     <strong>{_safe(page)}</strong>
                     <small>{_safe(subtitle)}</small>
