@@ -16,6 +16,7 @@ STYLE_ORDER = (
     "styles/nicegui/auth.css",
     "styles/nicegui/components_auth_patch.css",
     "styles/nicegui/operators.css",
+    "styles/nicegui/portals.css",
 )
 
 
