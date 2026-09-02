@@ -18,14 +18,14 @@ MODULES = (
         "description": "Estrutura principal dos convênios disponíveis no portal.",
         "icon": "domain",
         "count_key": "operadoras",
-        "route": "/operadoras",
+        "route": "/administracao/cadastros",
     },
     {
         "title": "Planos",
         "description": "Planos vinculados às operadoras e suas informações de referência.",
         "icon": "health_and_safety",
         "count_key": "planos",
-        "route": "/operadoras",
+        "route": "/administracao/cadastros",
     },
     {
         "title": "Portais",
