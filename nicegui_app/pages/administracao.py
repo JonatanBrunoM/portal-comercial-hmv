@@ -32,7 +32,7 @@ MODULES = (
         "description": "Portais externos, instruções de acesso e vínculos operacionais.",
         "icon": "vpn_key",
         "count_key": "portais",
-        "route": "/portais",
+        "route": "/administracao/portais",
     },
     {
         "title": "Documentos",
