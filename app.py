@@ -14,6 +14,10 @@ from nicegui_app.auth.google_oauth import (
 )
 from nicegui_app.pages.home import render_home
 from nicegui_app.pages.login import render_login
+from nicegui_app.pages.operadoras import (
+    render_operadora_detail,
+    render_operadoras,
+)
 from nicegui_app.pages.supabase_test import render_supabase_test
 from nicegui_app.theme import apply_theme
 
@@ -43,22 +47,51 @@ def login_page(error: str | None = None) -> None:
     render_login(error)
 
 
-@ui.page("/")
-def index(request: Request):
+def _authenticated_user(request: Request) -> dict | RedirectResponse:
     user = get_session_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    return user
+
+
+@ui.page("/")
+def index(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
 
     apply_theme()
     render_home(user)
     return None
 
 
+@ui.page("/operadoras")
+def operators_page(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_operadoras(user)
+    return None
+
+
+@ui.page("/operadoras/{operator_id}")
+def operator_detail_page(request: Request, operator_id: str):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_operadora_detail(user, operator_id)
+    return None
+
+
 @ui.page("/supabase-test")
 def supabase_test(request: Request):
-    user = get_session_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
 
     apply_theme()
     render_supabase_test(user)
