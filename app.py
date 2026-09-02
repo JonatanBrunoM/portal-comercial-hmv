@@ -1,5 +1,3 @@
-
-
 import os
 
 from fastapi import Request
@@ -19,7 +17,6 @@ from nicegui_app.pages.operadoras import (
     render_operadora_detail,
     render_operadoras,
 )
-from nicegui_app.pages.supabase_test import render_supabase_test
 from nicegui_app.theme import apply_theme
 
 
@@ -108,17 +105,6 @@ def portal_detail_page(request: Request, portal_id: str):
 
     apply_theme()
     render_portal_detail(user, portal_id)
-    return None
-
-
-@ui.page("/supabase-test")
-def supabase_test(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_supabase_test(user)
     return None
 
 
