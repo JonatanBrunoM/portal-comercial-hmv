@@ -15,7 +15,7 @@ NAV_ITEMS = (
     ("contacts", "contacts", "Contatos", "/contatos"),
     ("consultants", "support_agent", "Consultores", "/consultores"),
     ("communications", "campaign", "Comunicados", "/comunicados"),
-    ("contingencies", "warning_amber", "Contingências", None),
+    ("contingencies", "warning_amber", "Contingências", "/contingencias"),
 )
 
 ADMIN_ITEMS = (
