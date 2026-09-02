@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -8,31 +7,28 @@ from nicegui import ui
 
 
 NAV_ITEMS = (
-    ("home", "home", "Início"),
-    ("search", "search", "Pesquisa"),
-    ("operators", "domain", "Operadoras"),
-    ("portals", "vpn_key", "Portais"),
-    ("documents", "description", "Documentos"),
-    ("contacts", "contacts", "Contatos"),
-    ("consultants", "support_agent", "Consultores"),
-    ("communications", "campaign", "Comunicados"),
-    ("contingencies", "warning_amber", "Contingências"),
+    ("home", "home", "Início", "/"),
+    ("search", "search", "Pesquisa", None),
+    ("operators", "domain", "Operadoras", "/operadoras"),
+    ("portals", "vpn_key", "Portais", None),
+    ("documents", "description", "Documentos", None),
+    ("contacts", "contacts", "Contatos", None),
+    ("consultants", "support_agent", "Consultores", None),
+    ("communications", "campaign", "Comunicados", None),
+    ("contingencies", "warning_amber", "Contingências", None),
 )
 
 ADMIN_ITEMS = (
-    ("admin", "settings", "Administração"),
+    ("admin", "settings", "Administração", None),
 )
 
 
-def _soon(label: str) -> Callable[[], None]:
-    def handler() -> None:
-        ui.notify(
-            f"{label}: módulo será conectado nas próximas etapas.",
-            type="info",
-            position="top",
-        )
-
-    return handler
+def _soon(label: str) -> None:
+    ui.notify(
+        f"{label}: módulo será conectado nas próximas etapas.",
+        type="info",
+        position="top",
+    )
 
 
 def _initials(name: str, email: str) -> str:
@@ -49,6 +45,7 @@ def _nav_button(
     key: str,
     icon: str,
     label: str,
+    target: str | None,
     *,
     active: str,
     mobile: bool = False,
@@ -57,7 +54,13 @@ def _nav_button(
     if key == active:
         classes += " is-active"
 
-    with ui.button(on_click=_soon(label)).props("flat no-caps").classes(classes):
+    def navigate() -> None:
+        if target:
+            ui.navigate.to(target)
+        else:
+            _soon(label)
+
+    with ui.button(on_click=navigate).props("flat no-caps").classes(classes):
         ui.icon(icon).classes("portal-nav-icon")
         ui.label(label).classes("portal-nav-label")
 
@@ -81,8 +84,14 @@ def _desktop_sidebar(active: str, user: dict) -> None:
 
         ui.label("NAVEGAÇÃO").classes("portal-nav-section-label")
         with ui.column().classes("portal-nav-list"):
-            for key, icon, label in NAV_ITEMS:
-                _nav_button(key, icon, label, active=active)
+            for key, icon, label, target in NAV_ITEMS:
+                _nav_button(
+                    key,
+                    icon,
+                    label,
+                    target,
+                    active=active,
+                )
 
         with ui.element("div").classes("portal-sidebar-spacer"):
             pass
@@ -90,8 +99,14 @@ def _desktop_sidebar(active: str, user: dict) -> None:
         if user.get("role") == "admin":
             ui.label("GESTÃO").classes("portal-nav-section-label")
             with ui.column().classes("portal-nav-list"):
-                for key, icon, label in ADMIN_ITEMS:
-                    _nav_button(key, icon, label, active=active)
+                for key, icon, label, target in ADMIN_ITEMS:
+                    _nav_button(
+                        key,
+                        icon,
+                        label,
+                        target,
+                        active=active,
+                    )
 
         with ui.row().classes("portal-profile"):
             ui.avatar(_initials(name, email)).classes("portal-profile-avatar")
@@ -115,12 +130,12 @@ def _topbar(user: dict) -> None:
         with ui.element("div").classes("portal-topbar-spacer"):
             pass
 
-        with ui.button(on_click=_soon("Ajuda")).props(
+        with ui.button(on_click=lambda: _soon("Ajuda")).props(
             "flat round aria-label='Ajuda'"
         ).classes("portal-icon-button"):
             ui.icon("help_outline")
 
-        with ui.button(on_click=_soon("Notificações")).props(
+        with ui.button(on_click=lambda: _soon("Notificações")).props(
             "flat round aria-label='Notificações'"
         ).classes("portal-icon-button"):
             ui.icon("notifications_none")
@@ -131,8 +146,15 @@ def _topbar(user: dict) -> None:
 def _mobile_navigation(active: str) -> None:
     visible = NAV_ITEMS[:5]
     with ui.element("nav").classes("portal-mobile-nav"):
-        for key, icon, label in visible:
-            _nav_button(key, icon, label, active=active, mobile=True)
+        for key, icon, label, target in visible:
+            _nav_button(
+                key,
+                icon,
+                label,
+                target,
+                active=active,
+                mobile=True,
+            )
 
 
 @contextmanager
