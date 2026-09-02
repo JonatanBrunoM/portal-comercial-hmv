@@ -25,6 +25,7 @@ STYLE_ORDER = (
     "styles/nicegui/admin_users.css",
     "styles/nicegui/admin_registers.css",
     "styles/nicegui/admin_portals.css",
+    "styles/nicegui/admin_documents.css",
 )
 
 
