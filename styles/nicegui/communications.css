@@ -1,0 +1,300 @@
+.portal-communications-summary {
+    display:flex;
+    width:100%;
+    padding:28px 30px;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    border:1px solid var(--portal-ink-200);
+    border-radius:var(--portal-radius-lg);
+    background:radial-gradient(circle at 86% 20%,rgba(0,86,145,.08),transparent 17rem),var(--portal-white);
+}
+
+.portal-communications-summary-value {
+    margin-top:5px;
+    color:var(--portal-primary-950);
+    font-size:clamp(1.8rem,3vw,2.65rem);
+    font-weight:790;
+    letter-spacing:-.04em;
+}
+
+.portal-communications-summary-description {
+    color:var(--portal-ink-500);
+    font-size:.78rem;
+}
+
+.portal-communications-stats {
+    gap:10px;
+}
+
+.portal-communications-stat {
+    min-width:110px;
+    padding:14px;
+    border-radius:14px;
+    background:#f7fafc;
+}
+
+.portal-communications-stat-value {
+    color:var(--portal-primary-900);
+    font-size:1.3rem;
+    font-weight:820;
+}
+
+.portal-communications-featured-heading {
+    margin-top:28px;
+}
+
+.portal-communications-toolbar {
+    display:flex;
+    width:100%;
+    margin-top:26px;
+    gap:12px;
+    align-items:center;
+}
+
+.portal-communications-search {
+    flex:1;
+}
+
+.portal-communications-filter {
+    width:170px;
+}
+
+.portal-communications-count {
+    margin:18px 2px 10px;
+    color:var(--portal-ink-500);
+    font-size:.68rem;
+}
+
+.portal-communications-grid {
+    display:grid;
+    width:100%;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:16px;
+    margin-top:12px;
+}
+
+.portal-communication-card {
+    display:flex;
+    min-height:340px;
+    padding:22px;
+    flex-direction:column;
+    border:1px solid var(--portal-ink-200);
+    border-radius:20px;
+    background:var(--portal-white);
+}
+
+.portal-communication-card.is-featured {
+    border-color:#d9c886;
+    background:linear-gradient(180deg,#fffdf5,#fff 45%);
+}
+
+.portal-communication-head {
+    width:100%;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.portal-communication-icon {
+    font-size:28px;
+    color:var(--portal-primary-700);
+}
+
+.portal-communication-featured {
+    color:#8a6b00;
+    font-size:.58rem;
+    font-weight:800;
+}
+
+.portal-communication-category {
+    margin-top:20px;
+    color:var(--portal-primary-700);
+    font-size:.58rem;
+    font-weight:820;
+    letter-spacing:.12em;
+}
+
+.portal-communication-title {
+    margin-top:6px;
+    color:var(--portal-primary-950);
+    font-size:1.14rem;
+    font-weight:790;
+    line-height:1.2;
+}
+
+.portal-communication-operator {
+    margin-top:6px;
+    color:var(--portal-primary-700);
+    font-size:.65rem;
+    font-weight:730;
+}
+
+.portal-communication-summary {
+    display:-webkit-box;
+    margin-top:14px;
+    overflow:hidden;
+    color:var(--portal-ink-600);
+    font-size:.69rem;
+    line-height:1.55;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:4;
+}
+
+.portal-communication-meta {
+    margin-top:10px;
+    align-items:center;
+    gap:6px;
+    color:var(--portal-ink-500);
+}
+
+.portal-communication-meta .q-icon {
+    font-size:14px;
+}
+
+.portal-communication-meta .q-label {
+    font-size:.61rem;
+}
+
+.portal-communication-actions {
+    width:100%;
+    margin-top:auto;
+    padding-top:15px;
+    align-items:center;
+    justify-content:space-between;
+    border-top:1px solid var(--portal-ink-100);
+}
+
+.portal-communication-priority {
+    padding:5px 9px;
+    border-radius:999px;
+    background:#f4f7f8;
+    color:var(--portal-ink-600);
+    font-size:.58rem;
+    font-weight:730;
+}
+
+.portal-communication-button {
+    color:var(--portal-primary-700)!important;
+    font-size:.68rem;
+    font-weight:760;
+}
+
+.portal-communications-empty {
+    display:grid;
+    min-height:220px;
+    grid-column:1/-1;
+    place-items:center;
+    align-content:center;
+    border:1px dashed var(--portal-ink-200);
+    border-radius:20px;
+    color:var(--portal-ink-400);
+}
+
+.portal-communication-detail-hero {
+    display:flex;
+    width:100%;
+    margin-top:10px;
+    padding:30px;
+    align-items:center;
+    gap:22px;
+    border:1px solid var(--portal-ink-200);
+    border-radius:24px;
+    background:var(--portal-white);
+}
+
+.portal-communication-detail-icon {
+    font-size:50px;
+    color:var(--portal-primary-700);
+}
+
+.portal-communication-detail-title {
+    margin-top:8px;
+    color:var(--portal-primary-950);
+    font-size:clamp(2rem,4vw,3.4rem);
+    font-weight:790;
+    letter-spacing:-.05em;
+    line-height:1;
+}
+
+.portal-communication-detail-grid {
+    display:grid;
+    width:100%;
+    margin-top:16px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+}
+
+.portal-communication-detail-item {
+    display:flex;
+    min-height:88px;
+    padding:17px;
+    align-items:center;
+    gap:11px;
+    border:1px solid var(--portal-ink-200);
+    border-radius:16px;
+    background:var(--portal-white);
+}
+
+.portal-communication-detail-item>.q-icon {
+    color:var(--portal-primary-600);
+    font-size:21px;
+}
+
+.portal-communication-detail-label {
+    color:var(--portal-ink-500);
+    font-size:.6rem;
+}
+
+.portal-communication-detail-value {
+    color:var(--portal-primary-950);
+    font-size:.78rem;
+    font-weight:740;
+}
+
+.portal-communication-content-card {
+    margin-top:18px;
+    padding:22px;
+    border:1px solid var(--portal-ink-200);
+    border-radius:17px;
+    background:var(--portal-white);
+}
+
+.portal-communication-detail-summary {
+    margin-top:10px;
+    color:var(--portal-primary-950);
+    font-size:.9rem;
+    line-height:1.6;
+}
+
+.portal-communication-content {
+    margin-top:12px;
+    color:var(--portal-ink-600);
+    font-size:.74rem;
+    line-height:1.75;
+    white-space:pre-line;
+}
+
+@media(max-width:1180px) {
+    .portal-communications-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .portal-communication-detail-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:760px) {
+    .portal-communications-summary,.portal-communications-toolbar {
+        align-items:stretch;
+        flex-direction:column;
+    }
+
+    .portal-communications-filter {
+        width:100%;
+    }
+
+    .portal-communications-grid,.portal-communication-detail-grid {
+        grid-template-columns:1fr;
+    }
+}
