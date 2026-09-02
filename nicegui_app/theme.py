@@ -12,9 +12,7 @@ STYLE_ORDER = (
     "styles/nicegui/base.css",
     "styles/nicegui/layout.css",
     "styles/nicegui/components.css",
-    "styles/nicegui/data.css",
     "styles/nicegui/auth.css",
-    "styles/nicegui/components_auth_patch.css",
     "styles/nicegui/operators.css",
     "styles/nicegui/portals.css",
 )
