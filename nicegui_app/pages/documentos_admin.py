@@ -267,9 +267,24 @@ def _open_dialog(
             label="Operadora",
         ).props("outlined")
 
+        selected_operator_id = item.operator_id if item else ""
+
+        initial_plan_options = {"": "Sem plano específico"}
+        initial_plan_options.update(
+            {
+                plan_id: plan_name
+                for plan_id, (operator_id, plan_name) in plans.items()
+                if not operator_id or operator_id == selected_operator_id
+            }
+        )
+
+        initial_plan_value = item.plan_id if item else ""
+        if initial_plan_value not in initial_plan_options:
+            initial_plan_value = ""
+
         plan = ui.select(
-            {"": "Sem plano específico"},
-            value=item.plan_id if item else "",
+            initial_plan_options,
+            value=initial_plan_value,
             label="Plano",
         ).props("outlined")
 
