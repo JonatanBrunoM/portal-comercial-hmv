@@ -22,6 +22,7 @@ STYLE_ORDER = (
     "styles/nicegui/contingencies.css",
     "styles/nicegui/search.css",
     "styles/nicegui/admin.css",
+    "styles/nicegui/admin_users.css",
 )
 
 
