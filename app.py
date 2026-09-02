@@ -11,6 +11,7 @@ from nicegui_app.auth.google_oauth import (
     start_google_login,
 )
 from nicegui_app.pages.home import render_home
+from nicegui_app.pages.contatos import render_contato_detail, render_contatos
 from nicegui_app.pages.documentos import render_documento_detail, render_documentos
 from nicegui_app.pages.login import render_login
 from nicegui_app.pages.portais import render_portal_detail, render_portais
@@ -129,6 +130,29 @@ def document_detail_page(request: Request, document_id: str):
 
     apply_theme()
     render_documento_detail(user, document_id)
+    return None
+
+
+
+@ui.page("/contatos")
+def contacts_page(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_contatos(user)
+    return None
+
+
+@ui.page("/contatos/{contact_id}")
+def contact_detail_page(request: Request, contact_id: str):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_contato_detail(user, contact_id)
     return None
 
 
