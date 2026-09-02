@@ -45,8 +45,9 @@ def _feature_card(
             pass
 
 
-def render_home() -> None:
+def render_home(user: dict) -> None:
     with portal_layout(
+        user=user,
         active="home",
         page_eyebrow="CENTRAL DE INFORMAÇÃO COMERCIAL",
         page_title="Um único ponto de partida.",
