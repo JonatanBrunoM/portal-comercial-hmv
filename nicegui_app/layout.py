@@ -14,7 +14,7 @@ NAV_ITEMS = (
     ("documents", "description", "Documentos", "/documentos"),
     ("contacts", "contacts", "Contatos", "/contatos"),
     ("consultants", "support_agent", "Consultores", "/consultores"),
-    ("communications", "campaign", "Comunicados", None),
+    ("communications", "campaign", "Comunicados", "/comunicados"),
     ("contingencies", "warning_amber", "Contingências", None),
 )
 
