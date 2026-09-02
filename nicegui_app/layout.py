@@ -19,7 +19,7 @@ NAV_ITEMS = (
 )
 
 ADMIN_ITEMS = (
-    ("admin", "settings", "Administração", None),
+    ("admin", "settings", "Administração", "/administracao"),
 )
 
 
