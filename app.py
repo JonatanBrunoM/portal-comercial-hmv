@@ -11,6 +11,7 @@ from nicegui_app.auth.google_oauth import (
     start_google_login,
 )
 from nicegui_app.pages.home import render_home
+from nicegui_app.pages.documentos import render_documento_detail, render_documentos
 from nicegui_app.pages.login import render_login
 from nicegui_app.pages.portais import render_portal_detail, render_portais
 from nicegui_app.pages.operadoras import (
@@ -105,6 +106,29 @@ def portal_detail_page(request: Request, portal_id: str):
 
     apply_theme()
     render_portal_detail(user, portal_id)
+    return None
+
+
+
+@ui.page("/documentos")
+def documents_page(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_documentos(user)
+    return None
+
+
+@ui.page("/documentos/{document_id}")
+def document_detail_page(request: Request, document_id: str):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_documento_detail(user, document_id)
     return None
 
 
