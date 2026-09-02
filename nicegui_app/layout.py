@@ -8,7 +8,7 @@ from nicegui import ui
 
 NAV_ITEMS = (
     ("home", "home", "Início", "/"),
-    ("search", "search", "Pesquisa", None),
+    ("search", "search", "Pesquisa", "/pesquisa"),
     ("operators", "domain", "Operadoras", "/operadoras"),
     ("portals", "vpn_key", "Portais", "/portais"),
     ("documents", "description", "Documentos", "/documentos"),
