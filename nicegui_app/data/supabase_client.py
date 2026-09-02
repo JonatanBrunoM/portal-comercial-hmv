@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
 import os
 from functools import lru_cache
 from typing import Any
 
 import httpx
 from supabase import Client, create_client
+
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseConfigurationError(RuntimeError):
@@ -47,12 +51,6 @@ def get_supabase_client() -> Client:
 
 
 def _rest_headers() -> dict[str, str]:
-    """
-    Cabeçalhos server-side para o PostgREST.
-
-    Chaves sb_secret_* usam o header apikey.
-    service_role legado também recebe Authorization Bearer.
-    """
     key = get_supabase_server_key()
 
     headers = {
@@ -84,6 +82,14 @@ def rest_select(
         params=query_params,
         timeout=timeout,
     )
+
+    logger.info(
+        "Supabase REST respondeu. tabela=%s status=%s content_type=%s",
+        table_name,
+        response.status_code,
+        response.headers.get("content-type", "não informado"),
+    )
+
     response.raise_for_status()
 
     payload = response.json()
@@ -101,7 +107,7 @@ def rest_select(
 
 
 def check_supabase_connection() -> tuple[bool, str]:
-    """Executa uma leitura mínima sem revelar detalhes sensíveis."""
+    """Executa uma leitura mínima sem revelar chave, URL completa ou dados."""
     try:
         rest_select(
             "operadoras",
@@ -109,7 +115,31 @@ def check_supabase_connection() -> tuple[bool, str]:
             params={"limit": "1"},
         )
         return True, "Supabase conectado"
+
     except SupabaseConfigurationError as error:
+        logger.error("Configuração Supabase ausente: %s", error)
         return False, str(error)
-    except Exception:
+
+    except httpx.HTTPStatusError as error:
+        logger.error(
+            "Supabase REST recusou a consulta. status=%s",
+            error.response.status_code,
+        )
+        return (
+            False,
+            f"Supabase respondeu com HTTP {error.response.status_code}.",
+        )
+
+    except httpx.RequestError as error:
+        logger.error(
+            "Falha de transporte ao acessar Supabase. tipo=%s",
+            type(error).__name__,
+        )
+        return False, "Falha de rede ao consultar o Supabase."
+
+    except Exception as error:
+        logger.exception(
+            "Falha inesperada na validação REST do Supabase. tipo=%s",
+            type(error).__name__,
+        )
         return False, "Não foi possível consultar o Supabase."
