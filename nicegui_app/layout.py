@@ -11,7 +11,7 @@ NAV_ITEMS = (
     ("search", "search", "Pesquisa", None),
     ("operators", "domain", "Operadoras", "/operadoras"),
     ("portals", "vpn_key", "Portais", "/portais"),
-    ("documents", "description", "Documentos", None),
+    ("documents", "description", "Documentos", "/documentos"),
     ("contacts", "contacts", "Contatos", None),
     ("consultants", "support_agent", "Consultores", None),
     ("communications", "campaign", "Comunicados", None),
