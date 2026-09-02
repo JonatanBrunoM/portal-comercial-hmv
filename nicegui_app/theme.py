@@ -23,6 +23,7 @@ STYLE_ORDER = (
     "styles/nicegui/search.css",
     "styles/nicegui/admin.css",
     "styles/nicegui/admin_users.css",
+    "styles/nicegui/admin_registers.css",
 )
 
 
