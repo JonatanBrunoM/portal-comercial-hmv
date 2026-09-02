@@ -11,6 +11,7 @@ from nicegui_app.auth.google_oauth import (
     start_google_login,
 )
 from nicegui_app.pages.home import render_home
+from nicegui_app.pages.contingencias import render_contingencia_detail, render_contingencias
 from nicegui_app.pages.comunicados import render_comunicado_detail, render_comunicados
 from nicegui_app.pages.consultores import render_consultor_detail, render_consultores
 from nicegui_app.pages.contatos import render_contato_detail, render_contatos
@@ -194,6 +195,25 @@ def communication_detail_page(request: Request, communication_id: str):
     if isinstance(user, RedirectResponse): return user
     apply_theme()
     render_comunicado_detail(user, communication_id)
+
+
+
+@ui.page("/contingencias")
+def contingencies_page(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    apply_theme()
+    render_contingencias(user)
+
+
+@ui.page("/contingencias/{contingency_id}")
+def contingency_detail_page(request: Request, contingency_id: str):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    apply_theme()
+    render_contingencia_detail(user, contingency_id)
 
 
 def _storage_secret() -> str:
