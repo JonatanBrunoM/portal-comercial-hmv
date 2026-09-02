@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 
 from nicegui import ui
 
@@ -86,11 +86,7 @@ def render_home(user: dict) -> None:
                     with ui.button(
                         "Ver operadoras",
                         icon="domain",
-                        on_click=lambda: ui.notify(
-                            "A central de operadoras será conectada em breve.",
-                            type="info",
-                            position="top",
-                        ),
+                        on_click=lambda: ui.navigate.to("/operadoras"),
                     ).props("flat no-caps").classes("portal-button-secondary"):
                         pass
 
