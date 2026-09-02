@@ -189,8 +189,14 @@ def render_administracao(user: dict) -> None:
                     with ui.column().classes("portal-admin-panel-title-copy"):
                         ui.label("ACESSOS").classes("portal-section-kicker")
                         ui.label("Usuários do Portal").classes("portal-admin-panel-title")
-                    with ui.element("div").classes("portal-admin-panel-badge"):
-                        ui.label(str(len(profiles)).zfill(2))
+                    with ui.row().classes("items-center q-gutter-sm"):
+                        with ui.element("div").classes("portal-admin-panel-badge"):
+                            ui.label(str(len(profiles)).zfill(2))
+                        ui.button(
+                            "Gerenciar",
+                            icon="manage_accounts",
+                            on_click=lambda: ui.navigate.to("/administracao/usuarios"),
+                        ).props("flat no-caps").classes("portal-admin-users-manage-button")
 
                 if profiles:
                     with ui.column().classes("portal-admin-users-list"):
