@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 
 import os
 
@@ -14,6 +14,7 @@ from nicegui_app.auth.google_oauth import (
 )
 from nicegui_app.pages.home import render_home
 from nicegui_app.pages.login import render_login
+from nicegui_app.pages.portais import render_portal_detail, render_portais
 from nicegui_app.pages.operadoras import (
     render_operadora_detail,
     render_operadoras,
@@ -84,6 +85,29 @@ def operator_detail_page(request: Request, operator_id: str):
 
     apply_theme()
     render_operadora_detail(user, operator_id)
+    return None
+
+
+
+@ui.page("/portais")
+def portals_page(request: Request):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_portais(user)
+    return None
+
+
+@ui.page("/portais/{portal_id}")
+def portal_detail_page(request: Request, portal_id: str):
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_portal_detail(user, portal_id)
     return None
 
 
