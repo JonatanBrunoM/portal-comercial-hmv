@@ -35,6 +35,16 @@ def _soon(label: str) -> Callable[[], None]:
     return handler
 
 
+def _initials(name: str, email: str) -> str:
+    source = (name or email.split("@", 1)[0]).strip()
+    parts = [part for part in source.split() if part]
+    if not parts:
+        return "HM"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return f"{parts[0][0]}{parts[-1][0]}".upper()
+
+
 def _nav_button(
     key: str,
     icon: str,
@@ -61,7 +71,11 @@ def _brand() -> None:
             ui.label("Hospital Moinhos de Vento").classes("portal-brand-subtitle")
 
 
-def _desktop_sidebar(active: str) -> None:
+def _desktop_sidebar(active: str, user: dict) -> None:
+    name = str(user.get("name") or "").strip() or "Usuário institucional"
+    email = str(user.get("email") or "").strip()
+    role = "Administrador" if user.get("role") == "admin" else "Usuário"
+
     with ui.element("aside").classes("portal-sidebar"):
         _brand()
 
@@ -73,20 +87,25 @@ def _desktop_sidebar(active: str) -> None:
         with ui.element("div").classes("portal-sidebar-spacer"):
             pass
 
-        ui.label("GESTÃO").classes("portal-nav-section-label")
-        with ui.column().classes("portal-nav-list"):
-            for key, icon, label in ADMIN_ITEMS:
-                _nav_button(key, icon, label, active=active)
+        if user.get("role") == "admin":
+            ui.label("GESTÃO").classes("portal-nav-section-label")
+            with ui.column().classes("portal-nav-list"):
+                for key, icon, label in ADMIN_ITEMS:
+                    _nav_button(key, icon, label, active=active)
 
         with ui.row().classes("portal-profile"):
-            ui.avatar("JB").classes("portal-profile-avatar")
+            ui.avatar(_initials(name, email)).classes("portal-profile-avatar")
             with ui.column().classes("portal-profile-copy"):
-                ui.label("Usuário institucional").classes("portal-profile-name")
-                ui.label("Ambiente de POC").classes("portal-profile-role")
-            ui.icon("more_horiz").classes("portal-profile-more")
+                ui.label(name).classes("portal-profile-name")
+                ui.label(role).classes("portal-profile-role")
+            with ui.link(target="/logout").classes("portal-logout-link"):
+                ui.icon("logout").classes("portal-profile-more")
 
 
-def _topbar() -> None:
+def _topbar(user: dict) -> None:
+    name = str(user.get("name") or "").strip()
+    email = str(user.get("email") or "").strip()
+
     with ui.element("header").classes("portal-topbar"):
         with ui.row().classes("portal-mobile-brand"):
             with ui.element("div").classes("portal-mobile-brand-mark"):
@@ -106,7 +125,7 @@ def _topbar() -> None:
         ).classes("portal-icon-button"):
             ui.icon("notifications_none")
 
-        ui.avatar("JB").classes("portal-topbar-avatar")
+        ui.avatar(_initials(name, email)).classes("portal-topbar-avatar")
 
 
 def _mobile_navigation(active: str) -> None:
@@ -119,17 +138,18 @@ def _mobile_navigation(active: str) -> None:
 @contextmanager
 def portal_layout(
     *,
+    user: dict,
     active: str = "home",
     page_title: str = "",
     page_eyebrow: str = "",
     page_description: str = "",
 ) -> Iterator[None]:
-    """Estrutura compartilhada por todas as páginas NiceGUI."""
+    """Estrutura compartilhada por todas as páginas autenticadas."""
     with ui.element("div").classes("portal-app-shell"):
-        _desktop_sidebar(active)
+        _desktop_sidebar(active, user)
 
         with ui.element("div").classes("portal-main-shell"):
-            _topbar()
+            _topbar(user)
 
             with ui.element("main").classes("portal-content"):
                 if page_title:
