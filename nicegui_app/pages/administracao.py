@@ -39,7 +39,7 @@ MODULES = (
         "description": "Documentos e orientações utilizados no atendimento.",
         "icon": "description",
         "count_key": "documentos",
-        "route": "/documentos",
+        "route": "/administracao/documentos",
     },
     {
         "title": "Contatos",
