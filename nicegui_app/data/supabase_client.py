@@ -106,6 +106,80 @@ def rest_select(
     ]
 
 
+
+def rest_insert(
+    table_name: str,
+    payload: dict[str, Any],
+    *,
+    timeout: float = 15.0,
+) -> dict[str, Any] | None:
+    """Insere um registro via PostgREST usando somente a credencial server-side."""
+    headers = {
+        **_rest_headers(),
+        "Prefer": "return=representation",
+    }
+
+    response = httpx.post(
+        f"{get_supabase_url()}/rest/v1/{table_name}",
+        headers=headers,
+        json=payload,
+        timeout=timeout,
+    )
+
+    logger.info(
+        "Supabase REST insert respondeu. tabela=%s status=%s",
+        table_name,
+        response.status_code,
+    )
+    response.raise_for_status()
+
+    data = response.json()
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        return dict(data[0])
+    return None
+
+
+def rest_update(
+    table_name: str,
+    *,
+    match: dict[str, str],
+    payload: dict[str, Any],
+    timeout: float = 15.0,
+) -> dict[str, Any] | None:
+    """Atualiza registro(s) via PostgREST usando filtros explícitos."""
+    if not match:
+        raise ValueError("rest_update exige ao menos um filtro em match.")
+
+    headers = {
+        **_rest_headers(),
+        "Prefer": "return=representation",
+    }
+
+    params = {
+        key: value if "." in value else f"eq.{value}"
+        for key, value in match.items()
+    }
+
+    response = httpx.patch(
+        f"{get_supabase_url()}/rest/v1/{table_name}",
+        headers=headers,
+        params=params,
+        json=payload,
+        timeout=timeout,
+    )
+
+    logger.info(
+        "Supabase REST update respondeu. tabela=%s status=%s",
+        table_name,
+        response.status_code,
+    )
+    response.raise_for_status()
+
+    data = response.json()
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        return dict(data[0])
+    return None
+
 def check_supabase_connection() -> tuple[bool, str]:
     """Executa uma leitura mínima sem revelar chave, URL completa ou dados."""
     try:
