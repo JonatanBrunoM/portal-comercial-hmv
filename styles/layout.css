@@ -1,133 +1,189 @@
-/*
- * LAYOUT GLOBAL
- *
- * Regra principal:
- * a sidebar ocupa uma faixa própria e o conteúdo principal sempre trabalha
- * com o espaço REAL restante do viewport.
- *
- * Este arquivo não estiliza Home, cards ou sidebar internamente.
- */
+from __future__ import annotations
 
-[data-testid="stAppViewContainer"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    padding-top: 0 !important;
-    overflow-x: hidden !important;
-}
+from contextlib import contextmanager
+from typing import Iterator
 
-/*
- * O Streamlit usa um flex container entre sidebar e conteúdo principal.
- * Em viewports menores alguns wrappers internos mantêm min-width implícito,
- * fazendo o conteúdo transbordar e ser visualmente "cortado".
- */
-section[data-testid="stMain"],
-[data-testid="stMain"],
-.main {
-    min-width: 0 !important;
-    width: auto !important;
-    max-width: none !important;
-    flex: 1 1 0% !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-}
+from nicegui import ui
 
-/* Wrappers internos do conteúdo também precisam poder encolher. */
-section[data-testid="stMain"] > div,
-[data-testid="stMain"] > div,
-[data-testid="stMainBlockContainer"],
-.block-container {
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-}
 
-/*
- * A página utiliza toda a largura disponível até o limite do design system.
- * Nada aqui depende de uma resolução específica.
- */
-.block-container {
-    width: 100% !important;
-    max-width: var(--portal-content-max) !important;
-    margin-inline: auto !important;
-    padding:
-        clamp(1rem, 2vw, 1.4rem)
-        clamp(0.9rem, 2vw, var(--portal-page-gutter))
-        clamp(2.4rem, 5vw, 4rem) !important;
-}
+NAV_ITEMS = (
+    ("home", "home", "Início", "/"),
+    ("search", "search", "Pesquisa", None),
+    ("operators", "domain", "Operadoras", "/operadoras"),
+    ("portals", "vpn_key", "Portais", "/portais"),
+    ("documents", "description", "Documentos", None),
+    ("contacts", "contacts", "Contatos", None),
+    ("consultants", "support_agent", "Consultores", None),
+    ("communications", "campaign", "Comunicados", None),
+    ("contingencies", "warning_amber", "Contingências", None),
+)
 
-/* Impede filhos de grid/flex do Streamlit de forçarem largura mínima indevida. */
-[data-testid="stHorizontalBlock"],
-[data-testid="stHorizontalBlock"] > div,
-[data-testid="column"],
-[data-testid="column"] > div,
-[data-testid="stVerticalBlock"],
-[data-testid="stVerticalBlock"] > div {
-    min-width: 0 !important;
-}
+ADMIN_ITEMS = (
+    ("admin", "settings", "Administração", None),
+)
 
-/* HTML customizado nunca deve ultrapassar o container da aplicação. */
-.block-container img,
-.block-container svg,
-.block-container video,
-.block-container iframe {
-    max-width: 100%;
-}
 
-/*
- * Viewport intermediário:
- * mantém a sidebar compacta e deixa o restante integralmente para a página.
- */
-@media (max-width: 900px) {
-    /*
-     * A partir deste breakpoint o Streamlit deixa a sidebar em overlay.
-     * Portanto ela não reserva mais espaço no fluxo da página.
-     * Reservamos manualmente os 80px da rail e deslocamos o conteúdo.
-     */
-    section[data-testid="stMain"],
-    [data-testid="stMain"],
-    .main {
-        width: calc(100dvw - 80px) !important;
-        min-width: 0 !important;
-        max-width: calc(100dvw - 80px) !important;
-        flex: 0 0 calc(100dvw - 80px) !important;
-        margin-left: 80px !important;
-        padding-left: 0 !important;
-        transform: none !important;
-        overflow-x: clip !important;
-    }
+def _soon(label: str) -> None:
+    ui.notify(
+        f"{label}: módulo será conectado nas próximas etapas.",
+        type="info",
+        position="top",
+    )
 
-    [data-testid="stMainBlockContainer"],
-    .block-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding:
-            0.9rem
-            clamp(0.75rem, 2.5vw, 1rem)
-            2.5rem !important;
-    }
-}
 
-/*
- * Telas realmente estreitas.
- * Continua preservando a rail de navegação, mas reduz o respiro da página.
- */
-@media (max-width: 640px) {
-    section[data-testid="stMain"],
-    [data-testid="stMain"],
-    .main {
-        width: calc(100dvw - 80px) !important;
-        max-width: calc(100dvw - 80px) !important;
-        flex-basis: calc(100dvw - 80px) !important;
-        margin-left: 80px !important;
-    }
+def _initials(name: str, email: str) -> str:
+    source = (name or email.split("@", 1)[0]).strip()
+    parts = [part for part in source.split() if part]
+    if not parts:
+        return "HM"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return f"{parts[0][0]}{parts[-1][0]}".upper()
 
-    [data-testid="stMainBlockContainer"],
-    .block-container {
-        padding:
-            0.75rem
-            0.7rem
-            2rem !important;
-    }
-}
+
+def _nav_button(
+    key: str,
+    icon: str,
+    label: str,
+    target: str | None,
+    *,
+    active: str,
+    mobile: bool = False,
+) -> None:
+    classes = "portal-mobile-nav-item" if mobile else "portal-nav-item"
+    if key == active:
+        classes += " is-active"
+
+    def navigate() -> None:
+        if target:
+            ui.navigate.to(target)
+        else:
+            _soon(label)
+
+    with ui.button(on_click=navigate).props("flat no-caps").classes(classes):
+        ui.icon(icon).classes("portal-nav-icon")
+        ui.label(label).classes("portal-nav-label")
+
+
+def _brand() -> None:
+    with ui.row().classes("portal-brand"):
+        with ui.element("div").classes("portal-brand-mark"):
+            ui.icon("local_hospital")
+        with ui.column().classes("portal-brand-copy"):
+            ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
+            ui.label("Hospital Moinhos de Vento").classes("portal-brand-subtitle")
+
+
+def _desktop_sidebar(active: str, user: dict) -> None:
+    name = str(user.get("name") or "").strip() or "Usuário institucional"
+    email = str(user.get("email") or "").strip()
+    role = "Administrador" if user.get("role") == "admin" else "Usuário"
+
+    with ui.element("aside").classes("portal-sidebar"):
+        _brand()
+
+        ui.label("NAVEGAÇÃO").classes("portal-nav-section-label")
+        with ui.column().classes("portal-nav-list"):
+            for key, icon, label, target in NAV_ITEMS:
+                _nav_button(
+                    key,
+                    icon,
+                    label,
+                    target,
+                    active=active,
+                )
+
+        with ui.element("div").classes("portal-sidebar-spacer"):
+            pass
+
+        if user.get("role") == "admin":
+            ui.label("GESTÃO").classes("portal-nav-section-label")
+            with ui.column().classes("portal-nav-list"):
+                for key, icon, label, target in ADMIN_ITEMS:
+                    _nav_button(
+                        key,
+                        icon,
+                        label,
+                        target,
+                        active=active,
+                    )
+
+        with ui.row().classes("portal-profile"):
+            ui.avatar(_initials(name, email)).classes("portal-profile-avatar")
+            with ui.column().classes("portal-profile-copy"):
+                ui.label(name).classes("portal-profile-name")
+                ui.label(role).classes("portal-profile-role")
+            with ui.link(target="/logout").classes("portal-logout-link"):
+                ui.icon("logout").classes("portal-profile-more")
+
+
+def _topbar(user: dict) -> None:
+    name = str(user.get("name") or "").strip()
+    email = str(user.get("email") or "").strip()
+
+    with ui.element("header").classes("portal-topbar"):
+        with ui.row().classes("portal-mobile-brand"):
+            with ui.element("div").classes("portal-mobile-brand-mark"):
+                ui.icon("local_hospital")
+            ui.label("Portal Comercial").classes("portal-mobile-brand-title")
+
+        with ui.element("div").classes("portal-topbar-spacer"):
+            pass
+
+        with ui.button(on_click=lambda: _soon("Ajuda")).props(
+            "flat round aria-label='Ajuda'"
+        ).classes("portal-icon-button"):
+            ui.icon("help_outline")
+
+        with ui.button(on_click=lambda: _soon("Notificações")).props(
+            "flat round aria-label='Notificações'"
+        ).classes("portal-icon-button"):
+            ui.icon("notifications_none")
+
+        ui.avatar(_initials(name, email)).classes("portal-topbar-avatar")
+
+
+def _mobile_navigation(active: str) -> None:
+    visible = NAV_ITEMS[:5]
+    with ui.element("nav").classes("portal-mobile-nav"):
+        for key, icon, label, target in visible:
+            _nav_button(
+                key,
+                icon,
+                label,
+                target,
+                active=active,
+                mobile=True,
+            )
+
+
+@contextmanager
+def portal_layout(
+    *,
+    user: dict,
+    active: str = "home",
+    page_title: str = "",
+    page_eyebrow: str = "",
+    page_description: str = "",
+) -> Iterator[None]:
+    """Estrutura compartilhada por todas as páginas autenticadas."""
+    with ui.element("div").classes("portal-app-shell"):
+        _desktop_sidebar(active, user)
+
+        with ui.element("div").classes("portal-main-shell"):
+            _topbar(user)
+
+            with ui.element("main").classes("portal-content"):
+                if page_title:
+                    with ui.element("section").classes("portal-page-header"):
+                        if page_eyebrow:
+                            ui.label(page_eyebrow).classes("portal-page-eyebrow")
+                        ui.label(page_title).classes("portal-page-title")
+                        if page_description:
+                            ui.label(page_description).classes(
+                                "portal-page-description"
+                            )
+
+                yield
+
+        _mobile_navigation(active)
