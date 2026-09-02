@@ -46,7 +46,7 @@ MODULES = (
         "description": "Centrais, setores, responsáveis e canais de atendimento.",
         "icon": "contacts",
         "count_key": "contatos",
-        "route": "/contatos",
+        "route": "/administracao/contatos",
     },
     {
         "title": "Consultores",
