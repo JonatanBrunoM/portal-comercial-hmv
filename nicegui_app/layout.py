@@ -13,7 +13,7 @@ NAV_ITEMS = (
     ("portals", "vpn_key", "Portais", "/portais"),
     ("documents", "description", "Documentos", "/documentos"),
     ("contacts", "contacts", "Contatos", "/contatos"),
-    ("consultants", "support_agent", "Consultores", None),
+    ("consultants", "support_agent", "Consultores", "/consultores"),
     ("communications", "campaign", "Comunicados", None),
     ("contingencies", "warning_amber", "Contingências", None),
 )
