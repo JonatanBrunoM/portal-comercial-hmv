@@ -14,6 +14,7 @@ from nicegui_app.pages.home import render_home
 from nicegui_app.pages.administracao import render_administracao
 from nicegui_app.pages.usuarios_admin import render_admin_usuarios
 from nicegui_app.pages.cadastros_admin import render_admin_cadastros
+from nicegui_app.pages.portais_admin import render_admin_portais
 from nicegui_app.pages.pesquisa import render_pesquisa
 from nicegui_app.pages.contingencias import render_contingencia_detail, render_contingencias
 from nicegui_app.pages.comunicados import render_comunicado_detail, render_comunicados
@@ -276,6 +277,17 @@ def administration_registers_page(request: Request):
 
     apply_theme()
     render_admin_cadastros(user)
+    return None
+
+
+
+@ui.page("/administracao/portais")
+def administration_portals_page(request: Request):
+    user = _admin_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    apply_theme()
+    render_admin_portais(user)
     return None
 
 
