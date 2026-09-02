@@ -1,0 +1,15 @@
+.portal-logout-link {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 9px;
+    color: rgba(255,255,255,.46) !important;
+    text-decoration: none !important;
+}
+
+.portal-logout-link:hover {
+    background: rgba(255,255,255,.08);
+    color: var(--portal-white) !important;
+}
