@@ -31,8 +31,9 @@ def _operator_card(operator: object) -> None:
             ui.label(operator.status).classes("portal-db-status")
 
 
-def render_supabase_test() -> None:
+def render_supabase_test(user: dict) -> None:
     with portal_layout(
+        user=user,
         active="operators",
         page_eyebrow="ETAPA 3A · INFRAESTRUTURA DE DADOS",
         page_title="NiceGUI conectado ao Supabase.",
@@ -56,12 +57,6 @@ def render_supabase_test() -> None:
                 ui.label(message).classes("portal-db-status-description")
 
         if not connected:
-            with ui.element("section").classes("portal-db-help"):
-                ui.label("O código está pronto.").classes("portal-db-help-title")
-                ui.label(
-                    "Cadastre as variáveis do Supabase no Render e faça um novo "
-                    "deploy. Nenhuma chave deve ser adicionada ao GitHub."
-                ).classes("portal-db-help-text")
             return
 
         try:
@@ -75,8 +70,7 @@ def render_supabase_test() -> None:
                 "Falha inesperada ao carregar operadoras do Supabase."
             )
             ui.label(
-                "A conexão respondeu, mas não foi possível carregar as operadoras. "
-                "O detalhe técnico foi registrado apenas no servidor."
+                "A conexão respondeu, mas não foi possível carregar as operadoras."
             ).classes("portal-db-error-text")
             return
 
