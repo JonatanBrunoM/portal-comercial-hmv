@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from nicegui import ui
 
 from nicegui_app.data.supabase_client import (
@@ -8,6 +10,9 @@ from nicegui_app.data.supabase_client import (
 )
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.operadoras_service import get_operadoras_preview
+
+
+logger = logging.getLogger(__name__)
 
 
 def _operator_card(operator: object) -> None:
@@ -62,11 +67,16 @@ def render_supabase_test() -> None:
         try:
             operators = get_operadoras_preview()
         except SupabaseConfigurationError as error:
+            logger.exception("Falha de configuração ao carregar operadoras.")
             ui.label(str(error)).classes("portal-db-error-text")
             return
         except Exception:
+            logger.exception(
+                "Falha inesperada ao carregar operadoras do Supabase."
+            )
             ui.label(
-                "A conexão respondeu, mas não foi possível carregar as operadoras."
+                "A conexão respondeu, mas não foi possível carregar as operadoras. "
+                "O detalhe técnico foi registrado apenas no servidor."
             ).classes("portal-db-error-text")
             return
 
