@@ -11,6 +11,7 @@ from nicegui_app.auth.google_oauth import (
     start_google_login,
 )
 from nicegui_app.pages.home import render_home
+from nicegui_app.pages.administracao import render_administracao
 from nicegui_app.pages.pesquisa import render_pesquisa
 from nicegui_app.pages.contingencias import render_contingencia_detail, render_contingencias
 from nicegui_app.pages.comunicados import render_comunicado_detail, render_comunicados
@@ -55,6 +56,18 @@ def _authenticated_user(request: Request) -> dict | RedirectResponse:
     user = get_session_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    return user
+
+
+
+def _admin_user(request: Request) -> dict | RedirectResponse:
+    user = _authenticated_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    if str(user.get("role") or "").strip().lower() != "admin":
+        return RedirectResponse("/", status_code=303)
+
     return user
 
 
@@ -226,6 +239,18 @@ def search_page(request: Request):
 
     apply_theme()
     render_pesquisa(user)
+
+
+
+@ui.page("/administracao")
+def administration_page(request: Request):
+    user = _admin_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    apply_theme()
+    render_administracao(user)
+    return None
 
 
 def _storage_secret() -> str:
