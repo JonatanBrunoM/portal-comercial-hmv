@@ -35,6 +35,7 @@ from nicegui_app.pages.operadoras import (
     render_operadoras,
 )
 from nicegui_app.theme import apply_theme
+from nicegui_app.layout import portal_shell, spa_content_mode
 from nicegui_app.data.supabase_client import warm_public_data_cache
 
 
@@ -66,6 +67,7 @@ def portal_logout(request: Request):
     return logout(request)
 
 
+
 @ui.page("/login")
 def login_page(error: str | None = None) -> None:
     render_login(error)
@@ -78,315 +80,175 @@ def _authenticated_user(request: Request) -> dict | RedirectResponse:
     return user
 
 
+def _render_spa_page(renderer, user: dict, *args) -> None:
+    """Renderiza somente o conteúdo variável dentro do shell persistente."""
+    with spa_content_mode():
+        with ui.element("div").classes("portal-spa-page"):
+            renderer(user, *args)
 
-def _admin_user(request: Request) -> dict | RedirectResponse:
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
 
-    profile = get_current_admin_profile(user)
-    if not profile:
-        return RedirectResponse("/", status_code=303)
+def _render_admin_spa_page(renderer, user: dict, *args) -> None:
+    """Proteção de rota administrativa no shell.
 
-    refreshed = dict(user)
-    refreshed["profile_id"] = str(profile.get("id") or "").strip()
-    refreshed["role"] = str(profile.get("role") or "").strip()
-    refreshed["status"] = str(profile.get("status") or "").strip()
-    refreshed["name"] = str(profile.get("nome") or refreshed.get("name") or "").strip()
-    refreshed["email"] = str(profile.get("email") or refreshed.get("email") or "").strip()
-    refreshed["picture"] = str(
-        profile.get("foto_url") or refreshed.get("picture") or ""
-    ).strip()
+    As mutações administrativas continuam revalidando o perfil no Supabase
+    pelos services existentes.
+    """
+    if str(user.get("role") or "").strip().lower() != "admin":
+        ui.navigate.to("/")
+        return
 
-    return refreshed
+    _render_spa_page(renderer, user, *args)
+
+
+def _build_portal_routes(user: dict) -> dict[str, object]:
+    return {
+        "/": lambda: _render_spa_page(render_home, user),
+        "/pesquisa": lambda: _render_spa_page(render_pesquisa, user),
+        "/operadoras": lambda: _render_spa_page(render_operadoras, user),
+        "/operadoras/{operator_id}": (
+            lambda operator_id: _render_spa_page(
+                render_operadora_detail,
+                user,
+                operator_id,
+            )
+        ),
+        "/portais": lambda: _render_spa_page(render_portais, user),
+        "/portais/{portal_id}": (
+            lambda portal_id: _render_spa_page(
+                render_portal_detail,
+                user,
+                portal_id,
+            )
+        ),
+        "/documentos": lambda: _render_spa_page(render_documentos, user),
+        "/documentos/{document_id}": (
+            lambda document_id: _render_spa_page(
+                render_documento_detail,
+                user,
+                document_id,
+            )
+        ),
+        "/contatos": lambda: _render_spa_page(render_contatos, user),
+        "/contatos/{contact_id}": (
+            lambda contact_id: _render_spa_page(
+                render_contato_detail,
+                user,
+                contact_id,
+            )
+        ),
+        "/consultores": lambda: _render_spa_page(render_consultores, user),
+        "/consultores/{consultant_id}": (
+            lambda consultant_id: _render_spa_page(
+                render_consultor_detail,
+                user,
+                consultant_id,
+            )
+        ),
+        "/comunicados": lambda: _render_spa_page(render_comunicados, user),
+        "/comunicados/{communication_id}": (
+            lambda communication_id: _render_spa_page(
+                render_comunicado_detail,
+                user,
+                communication_id,
+            )
+        ),
+        "/contingencias": lambda: _render_spa_page(render_contingencias, user),
+        "/contingencias/{contingency_id}": (
+            lambda contingency_id: _render_spa_page(
+                render_contingencia_detail,
+                user,
+                contingency_id,
+            )
+        ),
+        "/administracao": (
+            lambda: _render_admin_spa_page(render_administracao, user)
+        ),
+        "/administracao/usuarios": (
+            lambda: _render_admin_spa_page(render_admin_usuarios, user)
+        ),
+        "/administracao/cadastros": (
+            lambda: _render_admin_spa_page(render_admin_cadastros, user)
+        ),
+        "/administracao/portais": (
+            lambda: _render_admin_spa_page(render_admin_portais, user)
+        ),
+        "/administracao/credenciais": (
+            lambda: _render_admin_spa_page(render_admin_credenciais, user)
+        ),
+        "/administracao/documentos": (
+            lambda: _render_admin_spa_page(render_admin_documentos, user)
+        ),
+        "/administracao/contatos": (
+            lambda: _render_admin_spa_page(render_admin_contatos, user)
+        ),
+        "/administracao/consultores": (
+            lambda: _render_admin_spa_page(render_admin_consultores, user)
+        ),
+        "/administracao/comunicados": (
+            lambda: _render_admin_spa_page(render_admin_comunicados, user)
+        ),
+        "/administracao/contingencias": (
+            lambda: _render_admin_spa_page(render_admin_contingencias, user)
+        ),
+    }
 
 
 @ui.page("/")
-def index(request: Request):
+@ui.page("/{_:path}")
+def portal_page(request: Request) -> RedirectResponse | None:
+    """Entrada única do Portal Comercial.
+
+    ``ui.sub_pages`` troca apenas o conteúdo central via History API.
+    Sidebar, topbar, sessão e conexão NiceGUI permanecem vivas entre módulos.
+    """
     user = _authenticated_user(request)
     if isinstance(user, RedirectResponse):
         return user
 
     apply_theme()
-    render_home(user)
+
+    # Remove espaçamentos padrão do cliente NiceGUI; todo o layout é do Portal.
+    ui.context.client.content.classes("p-0 gap-0")
+
+    with portal_shell(user=user) as navigation:
+        router = ui.sub_pages(
+            _build_portal_routes(user),
+            show_404=True,
+        ).classes("portal-spa-router")
+
+    client_router = ui.context.client.sub_pages_router
+    client_router.on_path_changed(navigation.update)
+    navigation.update(client_router.current_path)
+
+    # Evita manter scroll intermediário ao trocar de módulo e acrescenta
+    # feedback visual imediato sem bloquear a navegação.
+    ui.add_head_html(
+        """
+        <script>
+        (() => {
+            if (window.__portalSpaNavigationInstalled) return;
+            window.__portalSpaNavigationInstalled = true;
+
+            const markNavigation = () => {
+                document.documentElement.classList.add('portal-is-navigating');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                window.clearTimeout(window.__portalNavigationTimer);
+                window.__portalNavigationTimer = window.setTimeout(
+                    () => document.documentElement.classList.remove('portal-is-navigating'),
+                    450,
+                );
+            };
+
+            window.addEventListener('pushstate', markNavigation);
+            window.addEventListener('popstate', markNavigation);
+        })();
+        </script>
+        """
+    )
+
     return None
 
 
-@ui.page("/operadoras")
-def operators_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_operadoras(user)
-    return None
-
-
-@ui.page("/operadoras/{operator_id}")
-def operator_detail_page(request: Request, operator_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_operadora_detail(user, operator_id)
-    return None
-
-
-
-@ui.page("/portais")
-def portals_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_portais(user)
-    return None
-
-
-@ui.page("/portais/{portal_id}")
-def portal_detail_page(request: Request, portal_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_portal_detail(user, portal_id)
-    return None
-
-
-
-@ui.page("/documentos")
-def documents_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_documentos(user)
-    return None
-
-
-@ui.page("/documentos/{document_id}")
-def document_detail_page(request: Request, document_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_documento_detail(user, document_id)
-    return None
-
-
-
-@ui.page("/contatos")
-def contacts_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_contatos(user)
-    return None
-
-
-@ui.page("/contatos/{contact_id}")
-def contact_detail_page(request: Request, contact_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_contato_detail(user, contact_id)
-    return None
-
-
-
-@ui.page("/consultores")
-def consultants_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_consultores(user)
-    return None
-
-
-@ui.page("/consultores/{consultant_id}")
-def consultant_detail_page(request: Request, consultant_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_consultor_detail(user, consultant_id)
-    return None
-
-
-@ui.page("/comunicados")
-def communications_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse): return user
-    apply_theme()
-    render_comunicados(user)
-
-@ui.page("/comunicados/{communication_id}")
-def communication_detail_page(request: Request, communication_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse): return user
-    apply_theme()
-    render_comunicado_detail(user, communication_id)
-
-
-
-@ui.page("/contingencias")
-def contingencies_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-    apply_theme()
-    render_contingencias(user)
-
-
-@ui.page("/contingencias/{contingency_id}")
-def contingency_detail_page(request: Request, contingency_id: str):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-    apply_theme()
-    render_contingencia_detail(user, contingency_id)
-
-
-
-@ui.page("/pesquisa")
-def search_page(request: Request):
-    user = _authenticated_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_pesquisa(user)
-
-
-
-@ui.page("/administracao")
-def administration_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_administracao(user)
-    return None
-
-
-
-@ui.page("/administracao/usuarios")
-def administration_users_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_usuarios(user)
-    return None
-
-
-
-@ui.page("/administracao/cadastros")
-def administration_registers_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_cadastros(user)
-    return None
-
-
-
-@ui.page("/administracao/portais")
-def administration_portals_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-    apply_theme()
-    render_admin_portais(user)
-    return None
-
-
-
-@ui.page("/administracao/credenciais")
-def administration_credentials_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_credenciais(user)
-    return None
-
-
-@ui.page("/administracao/documentos")
-def administration_documents_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_documentos(user)
-    return None
-
-
-
-@ui.page("/administracao/contatos")
-def administration_contacts_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_contatos(user)
-    return None
-
-
-
-@ui.page("/administracao/consultores")
-def administration_consultants_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_consultores(user)
-    return None
-
-
-
-@ui.page("/administracao/comunicados")
-def administration_communications_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_comunicados(user)
-    return None
-
-
-
-@ui.page("/administracao/contingencias")
-def administration_contingencies_page(request: Request):
-    user = _admin_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    apply_theme()
-    render_admin_contingencias(user)
-    return None
 
 
 def _storage_secret() -> str:
