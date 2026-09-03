@@ -1,12 +1,14 @@
-from __future__ import annotations
+
 
 from nicegui import ui
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.credenciais_service import (
     CredentialPreview,
+    format_credential_datetime,
     get_admin_credentials,
     get_admin_history,
+    password_policy_label,
     save_credential,
 )
 from nicegui_app.services.portais_admin_service import get_admin_portais
@@ -48,13 +50,46 @@ def render_admin_credenciais(user: dict) -> None:
             label="Portal",
         ).props("outlined").classes("portal-admin-credentials-select")
 
+        summary = ui.element("section").classes("portal-admin-credentials-summary")
         toolbar = ui.row().classes("portal-admin-credentials-toolbar")
         content = ui.column().classes("portal-admin-credentials-list")
 
         def refresh() -> None:
             content.clear()
+            summary.clear()
             portal_id = str(portal_select.value or "")
             items = get_admin_credentials(portal_id, user)
+
+            active_count = sum(1 for item in items if item.status == "Ativo")
+            inactive_count = len(items) - active_count
+
+            with summary:
+                with ui.column().classes("portal-admin-credentials-summary-copy"):
+                    ui.label("ACESSOS DO PORTAL").classes("portal-section-kicker")
+                    ui.label(
+                        f"{len(items):02d} credencial(is) cadastrada(s)"
+                    ).classes("portal-admin-credentials-summary-title")
+                    ui.label(
+                        "Senhas permanecem criptografadas e o histórico é preservado "
+                        "a cada troca."
+                    ).classes("portal-admin-credentials-summary-description")
+
+                with ui.row().classes("portal-admin-credentials-summary-stats"):
+                    with ui.column().classes("portal-admin-credentials-stat"):
+                        ui.label(str(active_count).zfill(2)).classes(
+                            "portal-admin-credentials-stat-value"
+                        )
+                        ui.label("Ativas").classes(
+                            "portal-admin-credentials-stat-label"
+                        )
+
+                    with ui.column().classes("portal-admin-credentials-stat"):
+                        ui.label(str(inactive_count).zfill(2)).classes(
+                            "portal-admin-credentials-stat-value"
+                        )
+                        ui.label("Inativas").classes(
+                            "portal-admin-credentials-stat-label"
+                        )
 
             with toolbar:
                 toolbar.clear()
@@ -72,13 +107,35 @@ def render_admin_credenciais(user: dict) -> None:
                     return
 
                 for item in items:
+                    status_class = (
+                        "portal-admin-credential-status is-active"
+                        if item.status == "Ativo"
+                        else "portal-admin-credential-status"
+                    )
+
                     with ui.element("article").classes("portal-admin-credential-card"):
                         with ui.column().classes("portal-admin-credential-main"):
-                            ui.label(item.identification).classes("portal-admin-credential-title")
-                            ui.label(item.login).classes("portal-admin-credential-login")
+                            with ui.row().classes("portal-admin-credential-title-row"):
+                                ui.label(item.identification).classes(
+                                    "portal-admin-credential-title"
+                                )
+                                with ui.element("div").classes(status_class):
+                                    ui.element("span").classes(
+                                        "portal-admin-credential-status-dot"
+                                    )
+                                    ui.label(item.status)
+
+                            ui.label(item.login).classes(
+                                "portal-admin-credential-login"
+                            )
                             ui.label(
-                                f"Status: {item.status} · Senhas bloqueadas: {item.blocked_passwords}"
+                                password_policy_label(item.blocked_passwords)
                             ).classes("portal-admin-credential-meta")
+                            ui.label(
+                                "Última troca: "
+                                f"{format_credential_datetime(item.password_changed_at)}"
+                            ).classes("portal-admin-credential-meta")
+
                         with ui.row().classes("portal-admin-credential-actions"):
                             ui.button(
                                 "Histórico",
@@ -104,9 +161,11 @@ def render_admin_credenciais(user: dict) -> None:
                 else:
                     for row in rows:
                         with ui.element("div").classes("portal-admin-history-row"):
-                            ui.label(str(row.get("alterado_em") or "Data não informada")).classes(
-                                "portal-admin-history-date"
-                            )
+                            ui.label(
+                                format_credential_datetime(
+                                    str(row.get("alterado_em") or "")
+                                )
+                            ).classes("portal-admin-history-date")
                             ui.label(str(row.get("login") or "Login não informado")).classes(
                                 "portal-admin-history-login"
                             )
@@ -153,11 +212,15 @@ def render_admin_credenciais(user: dict) -> None:
                     value=item.password_rule if item else "",
                 ).props("outlined autogrow")
                 blocked = ui.number(
-                    "Quantidade de senhas bloqueadas",
+                    "Senhas anteriores bloqueadas para reutilização",
                     value=item.blocked_passwords if item else 0,
                     min=0,
                     precision=0,
                 ).props("outlined")
+                ui.label(
+                    "Exemplo: valor 3 impede reutilizar as 3 versões anteriores. "
+                    "O histórico completo continua preservado mesmo quando este valor é 0."
+                ).classes("portal-admin-credentials-help")
                 status = ui.select(
                     ["Ativo", "Inativo"],
                     value=item.status if item else "Ativo",
@@ -170,8 +233,8 @@ def render_admin_credenciais(user: dict) -> None:
                 if item:
                     ui.label(
                         "Se informar uma nova senha, o motivo passa a ser obrigatório. "
-                        "A senha também será comparada com a atual e com todo o histórico "
-                        "antes de qualquer alteração."
+                        "A nova senha será comparada com a senha atual e com a quantidade "
+                        "de versões anteriores definida na política acima."
                     ).classes("portal-admin-credentials-help")
 
                 def save() -> None:
