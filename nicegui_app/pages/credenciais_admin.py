@@ -164,13 +164,14 @@ def render_admin_credenciais(user: dict) -> None:
                     label="Status",
                 ).props("outlined")
                 reason = ui.input(
-                    "Motivo da alteração",
+                    "Motivo da troca de senha",
                     value="",
                 ).props("outlined")
                 if item:
                     ui.label(
-                        "Ao informar uma nova senha, a versão anterior será preservada "
-                        "criptografada no histórico."
+                        "Se informar uma nova senha, o motivo passa a ser obrigatório. "
+                        "A senha também será comparada com a atual e com todo o histórico "
+                        "antes de qualquer alteração."
                     ).classes("portal-admin-credentials-help")
 
                 def save() -> None:
