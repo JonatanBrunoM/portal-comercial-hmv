@@ -67,7 +67,7 @@ MODULES = (
         "description": "Incidentes, fluxos alternativos e períodos de contingência.",
         "icon": "warning_amber",
         "count_key": "contingencias",
-        "route": "/contingencias",
+        "route": "/administracao/contingencias",
     },
 )
 
