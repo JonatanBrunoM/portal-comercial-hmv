@@ -358,8 +358,8 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         ui.label("Contingências").classes("portal-hub-subtitle")
                         _render_generic(
                             detail.contingencias,
-                            ("titulo", "orientacao", "codigo"),
-                            [("Orientação", ("orientacao", "descricao")), ("Observações", ("observacoes",)), ("Status", ("status",))],
+                            ("titulo", "codigo"),
+                            [("Descrição", ("descricao",)), ("Como proceder", ("orientacao_alternativa",)), ("Contato alternativo", ("contato_alternativo",)), ("Prioridade", ("prioridade",)), ("Status", ("status",))],
                             "warning_amber",
                             "Nenhuma contingência cadastrada.",
                         )
@@ -385,8 +385,8 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         ui.label("Carteiras / consultoria").classes("portal-hub-subtitle")
                         _render_generic(
                             detail.carteiras,
-                            ("nome", "codigo"),
-                            [("Observações", ("observacoes",)), ("Status", ("status",))],
+                            ("consultor_nome", "papel", "codigo"),
+                            [("Papel", ("papel",)), ("Cargo", ("consultor_cargo",)), ("E-mail", ("consultor_email",)), ("Telefone", ("consultor_telefone",)), ("Observações", ("observacoes",)), ("Status", ("status",))],
                             "support_agent",
                             "Nenhuma carteira vinculada.",
                         )
