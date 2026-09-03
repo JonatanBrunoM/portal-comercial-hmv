@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
+import time
 from functools import lru_cache
 from typing import Any
 
@@ -10,6 +12,66 @@ from supabase import Client, create_client
 
 
 logger = logging.getLogger(__name__)
+
+
+# Tabelas institucionais de leitura frequente. O cache é curto e invalidado
+# imediatamente sempre que o próprio Portal grava na tabela. Dados sensíveis
+# (profiles, credenciais, histórico e auditoria) nunca entram neste cache.
+_CACHEABLE_TABLES = {
+    "operadoras", "planos", "locais_atendimento", "tipos_atendimento",
+    "portais", "elegibilidade", "documentos", "autorizacoes", "coberturas",
+    "contatos", "contingencias", "dicas_operacionais", "consultores",
+    "carteiras", "comunicados",
+}
+_CACHE_TTL_SECONDS = 45.0
+_SELECT_CACHE: dict[tuple, tuple[float, list[dict[str, Any]]]] = {}
+_CACHE_LOCK = threading.RLock()
+
+
+@lru_cache(maxsize=1)
+def _http_client() -> httpx.Client:
+    """Mantém conexões HTTPS vivas entre consultas ao Supabase.
+
+    Antes desta etapa cada rest_select criava uma conexão HTTP/TLS nova. Em
+    páginas com várias consultas isso multiplicava a latência de navegação.
+    """
+    return httpx.Client(
+        limits=httpx.Limits(max_connections=30, max_keepalive_connections=15),
+        timeout=httpx.Timeout(15.0, connect=5.0),
+        http2=False,
+    )
+
+
+def _cache_key(table_name: str, select: str, params: dict[str, str]) -> tuple:
+    return table_name, select, tuple(sorted((str(k), str(v)) for k, v in params.items()))
+
+
+def _cache_get(key: tuple) -> list[dict[str, Any]] | None:
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        cached = _SELECT_CACHE.get(key)
+        if not cached:
+            return None
+        expires_at, rows = cached
+        if expires_at <= now:
+            _SELECT_CACHE.pop(key, None)
+            return None
+        return [dict(row) for row in rows]
+
+
+def _cache_put(key: tuple, rows: list[dict[str, Any]]) -> None:
+    with _CACHE_LOCK:
+        _SELECT_CACHE[key] = (
+            time.monotonic() + _CACHE_TTL_SECONDS,
+            [dict(row) for row in rows],
+        )
+
+
+def invalidate_table_cache(table_name: str) -> None:
+    with _CACHE_LOCK:
+        stale = [key for key in _SELECT_CACHE if key[0] == table_name]
+        for key in stale:
+            _SELECT_CACHE.pop(key, None)
 
 
 class SupabaseConfigurationError(RuntimeError):
@@ -76,7 +138,15 @@ def rest_select(
     query_params = {"select": select}
     query_params.update(params or {})
 
-    response = httpx.get(
+    cache_key = None
+    if table_name in _CACHEABLE_TABLES:
+        cache_key = _cache_key(table_name, select, query_params)
+        cached = _cache_get(cache_key)
+        if cached is not None:
+            logger.debug("Supabase cache hit. tabela=%s", table_name)
+            return cached
+
+    response = _http_client().get(
         f"{get_supabase_url()}/rest/v1/{table_name}",
         headers=_rest_headers(),
         params=query_params,
@@ -99,11 +169,16 @@ def rest_select(
             "O Supabase retornou um formato inesperado para uma consulta de tabela."
         )
 
-    return [
+    rows = [
         dict(row)
         for row in payload
         if isinstance(row, dict)
     ]
+
+    if cache_key is not None:
+        _cache_put(cache_key, rows)
+
+    return rows
 
 
 
@@ -119,7 +194,7 @@ def rest_insert(
         "Prefer": "return=representation",
     }
 
-    response = httpx.post(
+    response = _http_client().post(
         f"{get_supabase_url()}/rest/v1/{table_name}",
         headers=headers,
         json=payload,
@@ -156,6 +231,7 @@ def rest_insert(
         ]
         raise RuntimeError(" ".join(parts))
 
+    invalidate_table_cache(table_name)
     data = response.json()
     if isinstance(data, list) and data and isinstance(data[0], dict):
         return dict(data[0])
@@ -209,7 +285,7 @@ def rest_update(
         for key, value in match.items()
     }
 
-    response = httpx.patch(
+    response = _http_client().patch(
         f"{get_supabase_url()}/rest/v1/{table_name}",
         headers=headers,
         params=params,
@@ -247,6 +323,7 @@ def rest_update(
         ]
         raise RuntimeError(" ".join(parts))
 
+    invalidate_table_cache(table_name)
     data = response.json()
     if isinstance(data, list) and data and isinstance(data[0], dict):
         return dict(data[0])
