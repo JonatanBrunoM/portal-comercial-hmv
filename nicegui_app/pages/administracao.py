@@ -35,6 +35,13 @@ MODULES = (
         "route": "/administracao/portais",
     },
     {
+        "title": "Credenciais",
+        "description": "Logins, senhas criptografadas e histórico protegido dos portais.",
+        "icon": "shield_lock",
+        "count_key": "portal_credenciais",
+        "route": "/administracao/credenciais",
+    },
+    {
         "title": "Documentos",
         "description": "Documentos e orientações utilizados no atendimento.",
         "icon": "description",
