@@ -102,7 +102,7 @@ def get_admin_contingencias() -> list[AdminContingencia]:
                 priority=_text(row, "prioridade") or "Normal",
                 start_date=_date_value(row.get("inicio_em")),
                 end_date=_date_value(row.get("fim_em")),
-                status=_text(row, "status") or "Ativo",
+                status=_text(row, "status") or "Rascunho",
             )
         )
 
@@ -110,7 +110,7 @@ def get_admin_contingencias() -> list[AdminContingencia]:
 
 
 def is_current(item: AdminContingencia) -> bool:
-    if item.status.strip().lower() != "ativo":
+    if item.status.strip().lower() != "publicado":
         return False
 
     today = date.today().isoformat()
@@ -160,7 +160,7 @@ def save_contingencia(
     if priority not in {"Baixa", "Normal", "Alta", "Crítica"}:
         raise ValueError("Prioridade inválida.")
 
-    if status not in {"Ativo", "Inativo"}:
+    if status not in {"Rascunho", "Publicado", "Inativo"}:
         raise ValueError("Status inválido.")
 
     refs = get_contingency_reference_data()
