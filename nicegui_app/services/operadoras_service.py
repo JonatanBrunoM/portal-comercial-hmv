@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any
 
@@ -101,17 +102,40 @@ def get_operadora_detail(operator_id: str) -> OperadoraDetail | None:
     if record is None:
         return None
 
+    loaders = {
+        "planos": list_planos_by_operadora,
+        "portais": list_portais_by_operadora,
+        "elegibilidade": list_elegibilidade_by_operadora,
+        "documentos": list_documentos_by_operadora,
+        "autorizacoes": list_autorizacoes_by_operadora,
+        "coberturas": list_coberturas_by_operadora,
+        "contatos": list_contatos_by_operadora,
+        "contingencias": list_contingencias_by_operadora,
+        "dicas": list_dicas_by_operadora,
+        "comunicados": list_comunicados_by_operadora,
+        "carteiras": _carteiras,
+    }
+
+    # O hub da operadora reúne muitos conjuntos independentes. Antes eles eram
+    # carregados um após o outro; agora aguardamos apenas o grupo mais lento.
+    with ThreadPoolExecutor(max_workers=8, thread_name_prefix="portal-operator") as pool:
+        futures = {
+            name: pool.submit(loader, operator_id)
+            for name, loader in loaders.items()
+        }
+        data = {name: future.result() for name, future in futures.items()}
+
     return OperadoraDetail(
         operator=_operator_from_record(record),
-        planos=_active_rows(list_planos_by_operadora(operator_id)),
-        portais=_active_rows(list_portais_by_operadora(operator_id)),
-        elegibilidade=_active_rows(list_elegibilidade_by_operadora(operator_id)),
-        documentos=_active_rows(list_documentos_by_operadora(operator_id)),
-        autorizacoes=_active_rows(list_autorizacoes_by_operadora(operator_id)),
-        coberturas=_active_rows(list_coberturas_by_operadora(operator_id)),
-        contatos=_active_rows(list_contatos_by_operadora(operator_id)),
-        contingencias=_visible_contingencies(list_contingencias_by_operadora(operator_id)),
-        dicas=_active_rows(list_dicas_by_operadora(operator_id)),
-        comunicados=_published_rows(list_comunicados_by_operadora(operator_id)),
-        carteiras=_carteiras(operator_id),
+        planos=_active_rows(data["planos"]),
+        portais=_active_rows(data["portais"]),
+        elegibilidade=_active_rows(data["elegibilidade"]),
+        documentos=_active_rows(data["documentos"]),
+        autorizacoes=_active_rows(data["autorizacoes"]),
+        coberturas=_active_rows(data["coberturas"]),
+        contatos=_active_rows(data["contatos"]),
+        contingencias=_visible_contingencies(data["contingencias"]),
+        dicas=_active_rows(data["dicas"]),
+        comunicados=_published_rows(data["comunicados"]),
+        carteiras=tuple(data["carteiras"]),
     )
