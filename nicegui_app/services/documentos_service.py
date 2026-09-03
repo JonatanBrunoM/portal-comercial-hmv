@@ -9,6 +9,7 @@ from nicegui_app.repositories.documentos_repository import (
     list_locais_for_documentos,
     list_operadoras_for_documentos,
     list_planos_for_documentos,
+    list_tipos_atendimento_for_documentos,
 )
 
 
@@ -45,6 +46,7 @@ def _maps() -> tuple[
     dict[str, str],
     dict[str, str],
     dict[str, str],
+    dict[str, str],
 ]:
     operators = {
         _text(row, "id"): _text(row, "nome_curto", "nome")
@@ -61,7 +63,12 @@ def _maps() -> tuple[
         for row in list_locais_for_documentos()
         if _text(row, "id")
     }
-    return operators, plans, locals_map
+    attendance_types = {
+        _text(row, "id"): _text(row, "nome")
+        for row in list_tipos_atendimento_for_documentos()
+        if _text(row, "id")
+    }
+    return operators, plans, locals_map, attendance_types
 
 
 def _validity(value: Any) -> int | None:
@@ -76,10 +83,12 @@ def _from_record(
     operators: dict[str, str],
     plans: dict[str, str],
     locals_map: dict[str, str],
+    attendance_types: dict[str, str],
 ) -> DocumentoPreview:
     operator_id = _text(row, "operadora_id")
     plan_id = _text(row, "plano_id")
     local_id = _text(row, "local_id")
+    attendance_type_id = _text(row, "tipo_atendimento_id")
 
     return DocumentoPreview(
         document_id=_text(row, "id"),
@@ -91,7 +100,7 @@ def _from_record(
         plan_name=plans.get(plan_id, ""),
         local_id=local_id,
         local_name=locals_map.get(local_id, ""),
-        attendance_type=_text(row, "tipo_atendimento"),
+        attendance_type=attendance_types.get(attendance_type_id, _text(row, "tipo_atendimento")),
         required=bool(row.get("obrigatorio")),
         file_format=_text(row, "formato"),
         validity_days=_validity(row.get("validade_dias")),
@@ -103,9 +112,9 @@ def _from_record(
 
 
 def get_documentos_preview() -> list[DocumentoPreview]:
-    operators, plans, locals_map = _maps()
+    operators, plans, locals_map, attendance_types = _maps()
     return [
-        _from_record(row, operators, plans, locals_map)
+        _from_record(row, operators, plans, locals_map, attendance_types)
         for row in list_documentos()
     ]
 
@@ -115,5 +124,5 @@ def get_documento_detail(document_id: str) -> DocumentoPreview | None:
     if record is None:
         return None
 
-    operators, plans, locals_map = _maps()
-    return _from_record(record, operators, plans, locals_map)
+    operators, plans, locals_map, attendance_types = _maps()
+    return _from_record(record, operators, plans, locals_map, attendance_types)
