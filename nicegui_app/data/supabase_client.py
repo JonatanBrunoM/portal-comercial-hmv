@@ -155,8 +155,34 @@ def rest_update(
         "Prefer": "return=representation",
     }
 
+    supported_operators = (
+        "eq.",
+        "neq.",
+        "gt.",
+        "gte.",
+        "lt.",
+        "lte.",
+        "like.",
+        "ilike.",
+        "in.",
+        "is.",
+        "not.",
+        "cs.",
+        "cd.",
+        "ov.",
+        "sl.",
+        "sr.",
+        "nxr.",
+        "nxl.",
+        "adj.",
+    )
+
     params = {
-        key: value if "." in value else f"eq.{value}"
+        key: (
+            value
+            if str(value).startswith(supported_operators)
+            else f"eq.{value}"
+        )
         for key, value in match.items()
     }
 
