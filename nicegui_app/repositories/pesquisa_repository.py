@@ -19,4 +19,8 @@ def load_search_catalog() -> dict[str, list[dict[str, Any]]]:
         "consultores": _list("consultores"),
         "comunicados": _list("comunicados"),
         "contingencias": _list("contingencias"),
+        "elegibilidade": _list("elegibilidade"),
+        "autorizacoes": _list("autorizacoes"),
+        "coberturas": _list("coberturas"),
+        "dicas_operacionais": _list("dicas_operacionais"),
     }
