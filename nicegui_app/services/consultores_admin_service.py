@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import Any
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.consultores_admin_repository import (
     append_admin_audit,
@@ -17,6 +21,9 @@ from nicegui_app.repositories.consultores_admin_repository import (
     update_consultor,
 )
 
+
+
+logger = logging.getLogger(__name__)
 
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
@@ -135,6 +142,8 @@ def save_consultor(
     status: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     name = name.strip()
     email = email.strip()
     status = status.strip()
@@ -170,7 +179,7 @@ def save_consultor(
 
     try:
         append_admin_audit(
-            actor_id=str(actor.get("profile_id") or actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action=(
                 "Atualização de consultor"
                 if record_id
@@ -181,8 +190,8 @@ def save_consultor(
             previous_data=previous,
             new_data=payload,
         )
-    except Exception as error:
-        print(f"[AUDIT] Falha ao registrar alteração de consultor: {error}")
+    except Exception:
+        logger.exception("Falha ao registrar auditoria administrativa.")
 
 
 def save_carteira(
@@ -196,6 +205,8 @@ def save_carteira(
     status: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     consultant_id = consultant_id.strip()
     operator_id = operator_id.strip()
     status = status.strip()
@@ -251,7 +262,7 @@ def save_carteira(
 
     try:
         append_admin_audit(
-            actor_id=str(actor.get("profile_id") or actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action=(
                 "Atualização de carteira"
                 if record_id
@@ -262,5 +273,5 @@ def save_carteira(
             previous_data=previous,
             new_data=payload,
         )
-    except Exception as error:
-        print(f"[AUDIT] Falha ao registrar alteração de carteira: {error}")
+    except Exception:
+        logger.exception("Falha ao registrar auditoria administrativa.")
