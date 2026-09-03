@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.cadastros_admin_repository import (
     append_admin_audit,
@@ -16,9 +21,26 @@ from nicegui_app.repositories.cadastros_admin_repository import (
 )
 
 
+
+logger = logging.getLogger(__name__)
+
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
 
+
+
+def _validate_url(value: str) -> str | None:
+    value = value.strip()
+    if not value:
+        return None
+
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError(
+            "Informe uma URL válida iniciando com http:// ou https://."
+        )
+
+    return value
 
 @dataclass(frozen=True, slots=True)
 class AdminOperadora:
@@ -91,6 +113,8 @@ def save_operadora(
     notes: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     name = name.strip()
     short_name = short_name.strip()
     code = code.strip()
@@ -108,7 +132,7 @@ def save_operadora(
         "nome": name,
         "nome_curto": short_name,
         "status": status,
-        "site_url": site_url.strip() or None,
+        "site_url": _validate_url(site_url),
         "observacoes": notes.strip() or None,
     }
 
@@ -119,7 +143,7 @@ def save_operadora(
 
     try:
         append_admin_audit(
-            actor_id=str(actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action="Atualização de operadora" if record_id else "Cadastro de operadora",
             entity="operadoras",
             entity_id=str(saved.get("id") or record_id or ""),
@@ -128,7 +152,7 @@ def save_operadora(
             new_data=payload,
         )
     except Exception:
-        pass
+        logger.exception("Falha ao registrar auditoria administrativa.")
 
 
 def save_plano(
@@ -143,6 +167,8 @@ def save_plano(
     summary: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     operator_id = operator_id.strip()
     name = name.strip()
     standardized_name = standardized_name.strip()
@@ -173,7 +199,7 @@ def save_plano(
 
     try:
         append_admin_audit(
-            actor_id=str(actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action="Atualização de plano" if record_id else "Cadastro de plano",
             entity="planos",
             entity_id=str(saved.get("id") or record_id or ""),
@@ -182,4 +208,4 @@ def save_plano(
             new_data=payload,
         )
     except Exception:
-        pass
+        logger.exception("Falha ao registrar auditoria administrativa.")
