@@ -82,7 +82,7 @@ def render_admin_contingencias(user: dict) -> None:
             ).props("outlined dense").classes("portal-admin-contingencies-filter")
 
             status_filter = ui.select(
-                ["Todos", "Ativo", "Inativo"],
+                ["Todos", "Rascunho", "Publicado", "Inativo"],
                 value="Todos",
                 label="Status",
             ).props("outlined dense").classes("portal-admin-contingencies-filter")
@@ -300,8 +300,8 @@ def _open_dialog(
         ).props("outlined type=date")
 
         status = ui.select(
-            ["Ativo", "Inativo"],
-            value=item.status if item else "Ativo",
+            ["Rascunho", "Publicado", "Inativo"],
+            value=item.status if item else "Rascunho",
             label="Status",
         ).props("outlined")
 
