@@ -53,7 +53,7 @@ MODULES = (
         "description": "Consultores e carteiras de relacionamento.",
         "icon": "support_agent",
         "count_key": "consultores",
-        "route": "/consultores",
+        "route": "/administracao/consultores",
     },
     {
         "title": "Comunicados",
