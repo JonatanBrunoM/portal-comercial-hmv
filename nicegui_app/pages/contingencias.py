@@ -34,7 +34,7 @@ def _priority_class(priority: str) -> str:
     return ""
 
 def _status_class(item: ContingenciaPreview) -> str:
-    return "is-active" if item.period_active and _norm(item.status) == "ativo" else ""
+    return "is-active" if item.period_active else ""
 
 def _card(item: ContingenciaPreview) -> None:
     with ui.element("article").classes("portal-contingency-card"):
