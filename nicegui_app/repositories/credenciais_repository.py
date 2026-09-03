@@ -21,6 +21,31 @@ def get_credential(credential_id: str) -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
+
+def get_active_profile(*, profile_id: str = "", email: str = "") -> dict[str, Any] | None:
+    params: dict[str, str] = {"limit": "1"}
+
+    if profile_id.strip():
+        params["id"] = f"eq.{profile_id.strip()}"
+    elif email.strip():
+        params["email"] = f"ilike.{email.strip().lower()}"
+    else:
+        return None
+
+    rows = rest_select(
+        "profiles",
+        select="id,nome,email,role,status",
+        params=params,
+    )
+    if not rows:
+        return None
+
+    profile = rows[0]
+    if str(profile.get("status") or "").strip().lower() != "ativo":
+        return None
+    return profile
+
+
 def create_credential(payload: dict[str, Any]) -> dict[str, Any] | None:
     return rest_insert("portal_credenciais", payload)
 
