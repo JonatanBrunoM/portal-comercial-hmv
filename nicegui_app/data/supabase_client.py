@@ -23,7 +23,7 @@ _CACHEABLE_TABLES = {
     "contatos", "contingencias", "dicas_operacionais", "consultores",
     "carteiras", "comunicados",
 }
-_CACHE_TTL_SECONDS = 45.0
+_CACHE_TTL_SECONDS = 300.0
 _SELECT_CACHE: dict[tuple, tuple[float, list[dict[str, Any]]]] = {}
 _CACHE_LOCK = threading.RLock()
 
@@ -72,6 +72,143 @@ def invalidate_table_cache(table_name: str) -> None:
         stale = [key for key in _SELECT_CACHE if key[0] == table_name]
         for key in stale:
             _SELECT_CACHE.pop(key, None)
+        _TABLE_SNAPSHOTS.pop(table_name, None)
+
+
+# Snapshot integral das tabelas institucionais. Ele permite responder localmente
+# às consultas simples mais comuns (eq/order/limit) sem uma nova ida ao Supabase.
+_TABLE_SNAPSHOTS: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+
+
+def _snapshot_get(table_name: str) -> list[dict[str, Any]] | None:
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        cached = _TABLE_SNAPSHOTS.get(table_name)
+        if not cached:
+            return None
+        expires_at, rows = cached
+        if expires_at <= now:
+            _TABLE_SNAPSHOTS.pop(table_name, None)
+            return None
+        return [dict(row) for row in rows]
+
+
+def _snapshot_put(table_name: str, rows: list[dict[str, Any]]) -> None:
+    with _CACHE_LOCK:
+        _TABLE_SNAPSHOTS[table_name] = (
+            time.monotonic() + _CACHE_TTL_SECONDS,
+            [dict(row) for row in rows],
+        )
+
+
+def _project_rows(rows: list[dict[str, Any]], select: str) -> list[dict[str, Any]]:
+    if select.strip() == "*":
+        return [dict(row) for row in rows]
+
+    # O Portal usa projeções simples separadas por vírgula nas tabelas que entram
+    # no snapshot. Se futuramente houver relações PostgREST, a consulta remota
+    # continua sendo usada.
+    fields = [field.strip() for field in select.split(",") if field.strip()]
+    if not fields or any("(" in field or ")" in field for field in fields):
+        raise ValueError("projection_not_supported")
+    return [{field: row.get(field) for field in fields} for row in rows]
+
+
+def _apply_snapshot_query(
+    rows: list[dict[str, Any]],
+    *,
+    select: str,
+    params: dict[str, str],
+) -> list[dict[str, Any]]:
+    data = [dict(row) for row in rows]
+    supported = {"order", "limit", "offset"}
+
+    for key, raw_value in params.items():
+        if key in supported:
+            continue
+        value = str(raw_value)
+        if value.startswith("eq."):
+            expected = value[3:]
+            data = [
+                row for row in data
+                if str(row.get(key) if row.get(key) is not None else "") == expected
+            ]
+        else:
+            raise ValueError("filter_not_supported")
+
+    order = str(params.get("order") or "").strip()
+    if order:
+        pieces = order.split(".", 1)
+        field = pieces[0]
+        descending = len(pieces) > 1 and pieces[1].lower().startswith("desc")
+        data.sort(
+            key=lambda row: (
+                row.get(field) is None,
+                str(row.get(field) or "").casefold(),
+            ),
+            reverse=descending,
+        )
+
+    offset = int(params.get("offset") or 0)
+    if offset:
+        data = data[offset:]
+
+    limit = params.get("limit")
+    if limit is not None:
+        data = data[: max(0, int(limit))]
+
+    return _project_rows(data, select)
+
+
+def _try_snapshot_select(
+    table_name: str,
+    *,
+    select: str,
+    params: dict[str, str],
+) -> list[dict[str, Any]] | None:
+    rows = _snapshot_get(table_name)
+    if rows is None:
+        return None
+    try:
+        return _apply_snapshot_query(rows, select=select, params=params)
+    except (TypeError, ValueError):
+        return None
+
+
+def warm_public_data_cache() -> None:
+    """Aquece em paralelo as tabelas públicas/institucionais.
+
+    É chamado no startup em uma thread de fundo. Assim o deploy pode ficar
+    pronto enquanto os dados de navegação são preparados, sem bloquear a UI.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def load(table_name: str) -> tuple[str, list[dict[str, Any]]]:
+        response = _http_client().get(
+            f"{get_supabase_url()}/rest/v1/{table_name}",
+            headers=_rest_headers(),
+            params={"select": "*"},
+            timeout=15.0,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        rows = [dict(row) for row in payload if isinstance(row, dict)]
+        return table_name, rows
+
+    logger.info("Iniciando warm-up do cache institucional.")
+    with ThreadPoolExecutor(max_workers=8, thread_name_prefix="portal-warmup") as pool:
+        futures = [pool.submit(load, table) for table in sorted(_CACHEABLE_TABLES)]
+        for future in as_completed(futures):
+            try:
+                table_name, rows = future.result()
+                _snapshot_put(table_name, rows)
+                _cache_put(_cache_key(table_name, "*", {"select": "*"}), rows)
+            except Exception as error:
+                logger.warning(
+                    "Warm-up parcial: uma tabela não foi carregada. tipo=%s",
+                    type(error).__name__,
+                )
+    logger.info("Warm-up do cache institucional concluído.")
 
 
 class SupabaseConfigurationError(RuntimeError):
@@ -140,6 +277,15 @@ def rest_select(
 
     cache_key = None
     if table_name in _CACHEABLE_TABLES:
+        snapshot = _try_snapshot_select(
+            table_name,
+            select=select,
+            params=params or {},
+        )
+        if snapshot is not None:
+            logger.debug("Supabase snapshot hit. tabela=%s", table_name)
+            return snapshot
+
         cache_key = _cache_key(table_name, select, query_params)
         cached = _cache_get(cache_key)
         if cached is not None:
@@ -177,6 +323,13 @@ def rest_select(
 
     if cache_key is not None:
         _cache_put(cache_key, rows)
+
+    if (
+        table_name in _CACHEABLE_TABLES
+        and select.strip() == "*"
+        and not (params or {})
+    ):
+        _snapshot_put(table_name, rows)
 
     return rows
 
