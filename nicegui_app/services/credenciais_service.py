@@ -1,5 +1,6 @@
-from __future__ import annotations
 
+
+import hmac
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -10,19 +11,70 @@ from nicegui_app.repositories.credenciais_repository import (
     append_credential_audit,
     append_credential_history,
     create_credential,
+    get_active_profile,
     get_credential,
     list_credential_history,
     list_credentials_by_portal,
     update_credential,
 )
-from nicegui_app.security.credentials_crypto import decrypt_password, encrypt_password
+from nicegui_app.security.credentials_crypto import (
+    CredentialCryptoConfigurationError,
+    decrypt_password,
+    encrypt_password,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
+class CredentialAccessError(PermissionError):
+    pass
+
+
+class CredentialSecurityError(RuntimeError):
+    pass
+
+
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
+
+
+def _actor_profile(actor: dict[str, Any]) -> dict[str, Any]:
+    profile = get_active_profile(
+        profile_id=str(actor.get("profile_id") or actor.get("id") or ""),
+        email=str(actor.get("email") or ""),
+    )
+    if not profile:
+        raise CredentialAccessError(
+            "Seu perfil não está mais ativo. Atualize a página ou entre novamente."
+        )
+    return profile
+
+
+def _audit(
+    *,
+    actor_id: str | None,
+    action: str,
+    credential_id: str,
+    description: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Auditoria sem senha, ciphertext ou conteúdo sensível."""
+    try:
+        append_credential_audit(
+            actor_id=actor_id,
+            action=action,
+            credential_id=credential_id,
+            description=description,
+            metadata=metadata or {},
+        )
+    except Exception:
+        # A falha de auditoria não expõe payload nem segredo em log.
+        logger.exception(
+            "Falha ao registrar auditoria de credencial. acao=%s credencial_id=%s",
+            action,
+            credential_id,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +107,10 @@ def _preview(row: dict[str, Any]) -> CredentialPreview:
 
 
 def get_public_credentials(portal_id: str) -> list[CredentialPreview]:
-    return [_preview(row) for row in list_credentials_by_portal(portal_id, active_only=True)]
+    return [
+        _preview(row)
+        for row in list_credentials_by_portal(portal_id, active_only=True)
+    ]
 
 
 def get_admin_credentials(portal_id: str, actor: dict) -> list[CredentialPreview]:
@@ -63,25 +118,82 @@ def get_admin_credentials(portal_id: str, actor: dict) -> list[CredentialPreview
     return [_preview(row) for row in list_credentials_by_portal(portal_id)]
 
 
-def reveal_password(credential_id: str, actor: dict, *, action: str = "Visualização de senha") -> str:
+def reveal_password(
+    credential_id: str,
+    actor: dict,
+    *,
+    action: str = "Visualização de senha",
+) -> str:
+    profile = _actor_profile(actor)
     row = get_credential(credential_id)
+
     if not row or _text(row, "status") != "Ativo":
         raise ValueError("Credencial ativa não encontrada.")
 
-    password = decrypt_password(_text(row, "senha_criptografada"))
-
     try:
-        append_credential_audit(
-            actor_id=str(actor.get("profile_id") or "") or None,
-            action=action,
-            credential_id=credential_id,
-            description="Acesso à senha de portal por usuário autenticado.",
-            metadata={"portal_id": _text(row, "portal_id")},
-        )
+        password = decrypt_password(_text(row, "senha_criptografada"))
+    except CredentialCryptoConfigurationError:
+        logger.error("Chave Fernet de credenciais ausente ou inválida.")
+        raise CredentialSecurityError(
+            "O serviço seguro de credenciais não está disponível no momento."
+        ) from None
     except Exception:
-        logger.exception("Falha ao registrar auditoria de acesso à credencial.")
+        logger.exception(
+            "Falha de descriptografia de credencial. credencial_id=%s",
+            credential_id,
+        )
+        raise CredentialSecurityError(
+            "Não foi possível acessar esta credencial com segurança."
+        ) from None
 
+    _audit(
+        actor_id=_text(profile, "id") or None,
+        action=action,
+        credential_id=credential_id,
+        description="Acesso autorizado à senha de portal.",
+        metadata={"portal_id": _text(row, "portal_id")},
+    )
     return password
+
+
+def _password_was_used(
+    *,
+    candidate: str,
+    current: dict[str, Any],
+    history: list[dict[str, Any]],
+) -> bool:
+    encrypted_values = [_text(current, "senha_criptografada")]
+    encrypted_values.extend(
+        _text(row, "senha_criptografada")
+        for row in history
+        if _text(row, "senha_criptografada")
+    )
+
+    for encrypted in encrypted_values:
+        if not encrypted:
+            continue
+        try:
+            previous_password = decrypt_password(encrypted)
+        except CredentialCryptoConfigurationError:
+            logger.error("Chave Fernet de credenciais ausente ou inválida.")
+            raise CredentialSecurityError(
+                "Não é possível validar o histórico de senhas no momento."
+            ) from None
+        except Exception:
+            # Fail closed: se uma versão histórica não puder ser validada,
+            # a troca não prossegue.
+            logger.exception(
+                "Falha ao validar histórico criptografado. credencial_id=%s",
+                _text(current, "id"),
+            )
+            raise CredentialSecurityError(
+                "O histórico desta credencial precisa ser validado antes da troca de senha."
+            ) from None
+
+        if hmac.compare_digest(candidate, previous_password):
+            return True
+
+    return False
 
 
 def save_credential(
@@ -105,6 +217,8 @@ def save_credential(
     login = login.strip()
     identification = identification.strip() or "Acesso principal"
     status = status.strip()
+    password = password.strip()
+    change_reason = change_reason.strip()
 
     if not portal_id:
         raise ValueError("Portal inválido.")
@@ -122,23 +236,26 @@ def save_credential(
     if credential_id and not previous:
         raise ValueError("Credencial não encontrada.")
 
-    password_changed = bool(password.strip())
+    password_changed = bool(password)
 
     if not credential_id and not password_changed:
         raise ValueError("Informe a senha inicial.")
 
     if credential_id and password_changed:
-        # O histórico recebe a senha ANTERIOR já criptografada; nunca texto puro.
-        append_credential_history(
-            {
-                "credencial_id": credential_id,
-                "alterado_por": actor_id,
-                "login": _text(previous, "login"),
-                "senha_criptografada": _text(previous, "senha_criptografada"),
-                "motivo_alteracao": change_reason.strip() or "Atualização administrativa",
-                "dica_acesso": _text(previous, "dica_acesso") or None,
-            }
-        )
+        if not change_reason:
+            raise ValueError("Informe o motivo da troca de senha.")
+
+        history = list_credential_history(credential_id)
+
+        # A nova senha é validada ANTES de qualquer gravação.
+        if _password_was_used(
+            candidate=password,
+            current=previous,
+            history=history,
+        ):
+            raise ValueError(
+                "Esta senha já foi utilizada nesta credencial. Informe uma senha diferente."
+            )
 
     payload: dict[str, Any] = {
         "portal_id": portal_id,
@@ -153,9 +270,30 @@ def save_credential(
     }
 
     if password_changed:
-        # Criptografa ANTES de persistir a nova senha.
-        payload["senha_criptografada"] = encrypt_password(password)
+        try:
+            # A senha é criptografada antes de qualquer persistência.
+            encrypted_new_password = encrypt_password(password)
+        except CredentialCryptoConfigurationError:
+            logger.error("Chave Fernet de credenciais ausente ou inválida.")
+            raise CredentialSecurityError(
+                "O serviço seguro de credenciais não está disponível no momento."
+            ) from None
+
+        payload["senha_criptografada"] = encrypted_new_password
         payload["senha_alterada_em"] = now
+
+    if credential_id and password_changed:
+        # Só depois de todas as validações a versão atual vai ao histórico.
+        append_credential_history(
+            {
+                "credencial_id": credential_id,
+                "alterado_por": actor_id,
+                "login": _text(previous, "login"),
+                "senha_criptografada": _text(previous, "senha_criptografada"),
+                "motivo_alteracao": change_reason,
+                "dica_acesso": _text(previous, "dica_acesso") or None,
+            }
+        )
 
     saved = (
         update_credential(credential_id, payload)
@@ -163,7 +301,7 @@ def save_credential(
         else create_credential(
             {
                 **payload,
-                "senha_criptografada": encrypt_password(password),
+                "senha_criptografada": payload["senha_criptografada"],
                 "senha_alterada_em": now,
             }
         )
@@ -172,24 +310,23 @@ def save_credential(
     if not saved:
         raise RuntimeError("Não foi possível confirmar o salvamento da credencial.")
 
-    try:
-        append_credential_audit(
-            actor_id=actor_id,
-            action="Atualização de credencial" if credential_id else "Cadastro de credencial",
-            credential_id=str(saved.get("id") or credential_id or ""),
-            description="Credencial de portal alterada pela Administração.",
-            metadata={
-                "portal_id": portal_id,
-                "identificacao": identification,
-                "login": login,
-                "status": status,
-                "senha_alterada": password_changed,
-            },
-        )
-    except Exception:
-        logger.exception("Falha ao registrar auditoria administrativa da credencial.")
+    _audit(
+        actor_id=actor_id,
+        action="Atualização de credencial" if credential_id else "Cadastro de credencial",
+        credential_id=str(saved.get("id") or credential_id or ""),
+        description="Credencial de portal alterada pela Administração.",
+        metadata={
+            "portal_id": portal_id,
+            "identificacao": identification,
+            "status": status,
+            "senha_alterada": password_changed,
+        },
+    )
 
 
-def get_admin_history(credential_id: str, actor: dict) -> list[dict[str, Any]]:
+def get_admin_history(
+    credential_id: str,
+    actor: dict,
+) -> list[dict[str, Any]]:
     require_current_admin(actor)
     return list_credential_history(credential_id)
