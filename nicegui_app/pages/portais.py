@@ -10,6 +10,10 @@ from nicegui_app.services.portais_service import (
     get_portal_detail,
     get_portais_preview,
 )
+from nicegui_app.services.credenciais_service import (
+    get_public_credentials,
+    reveal_password,
+)
 
 
 def _normalized(value: str) -> str:
@@ -299,21 +303,85 @@ def render_portal_detail(user: dict, portal_id: str) -> None:
                 )
 
         if portal.requires_login:
-            with ui.element("section").classes(
-                "portal-system-credentials-placeholder"
-            ):
-                with ui.element("div").classes(
-                    "portal-system-credentials-icon"
-                ):
-                    ui.icon("shield_lock")
-                with ui.column().classes(
-                    "portal-system-credentials-copy"
-                ):
-                    ui.label("Credenciais de acesso").classes(
-                        "portal-system-credentials-title"
-                    )
+            credentials = get_public_credentials(portal.portal_id)
+
+            with ui.element("section").classes("portal-system-credentials-panel"):
+                with ui.row().classes("portal-system-credentials-head"):
+                    with ui.element("div").classes("portal-system-credentials-icon"):
+                        ui.icon("shield_lock")
+                    with ui.column().classes("portal-system-credentials-copy"):
+                        ui.label("Credenciais de acesso").classes("portal-system-credentials-title")
+                        ui.label(
+                            "A senha permanece protegida e só é descriptografada no servidor "
+                            "quando você solicita revelar ou copiar."
+                        ).classes("portal-system-credentials-description")
+
+                if not credentials:
                     ui.label(
-                        "Este portal possui autenticação. As credenciais serão "
-                        "conectadas na etapa específica de segurança e histórico "
-                        "de senhas."
-                    ).classes("portal-system-credentials-description")
+                        "Nenhuma credencial ativa está cadastrada para este portal."
+                    ).classes("portal-system-credentials-empty")
+                else:
+                    with ui.column().classes("portal-system-credentials-list"):
+                        for credential in credentials:
+                            with ui.element("article").classes("portal-system-credential-card"):
+                                ui.label(credential.identification).classes("portal-system-credential-name")
+
+                                with ui.row().classes("portal-system-credential-field"):
+                                    ui.label("Login").classes("portal-system-credential-label")
+                                    ui.label(credential.login).classes("portal-system-credential-value")
+
+                                password_value = ui.label("••••••••••••").classes(
+                                    "portal-system-credential-password"
+                                )
+                                state = {"visible": False}
+
+                                def toggle_password(
+                                    cid=credential.credential_id,
+                                    label=password_value,
+                                    state=state,
+                                ) -> None:
+                                    try:
+                                        if state["visible"]:
+                                            label.set_text("••••••••••••")
+                                            state["visible"] = False
+                                            return
+                                        secret = reveal_password(cid, user)
+                                        label.set_text(secret)
+                                        state["visible"] = True
+                                    except Exception as error:
+                                        ui.notify(str(error), type="negative", position="top")
+
+                                async def copy_password(cid=credential.credential_id) -> None:
+                                    try:
+                                        secret = reveal_password(cid, user, action="Cópia de senha")
+                                        import json
+                                        await ui.run_javascript(
+                                            f"navigator.clipboard.writeText({json.dumps(secret)})"
+                                        )
+                                        ui.notify("Senha copiada.", type="positive", position="top")
+                                    except Exception as error:
+                                        ui.notify(str(error), type="negative", position="top")
+
+                                with ui.row().classes("portal-system-credential-password-row"):
+                                    with ui.column().classes("portal-system-credential-password-copy"):
+                                        ui.label("Senha").classes("portal-system-credential-label")
+                                        password_value
+                                    ui.button(
+                                        "Revelar",
+                                        icon="visibility",
+                                        on_click=toggle_password,
+                                    ).props("flat no-caps").classes("portal-system-credential-action")
+                                    ui.button(
+                                        "Copiar",
+                                        icon="content_copy",
+                                        on_click=copy_password,
+                                    ).props("flat no-caps").classes("portal-system-credential-action")
+
+                                if credential.access_tip:
+                                    ui.label(credential.access_tip).classes("portal-system-credential-tip")
+                                if credential.password_rule:
+                                    ui.label(
+                                        f"Regra de senha: {credential.password_rule}"
+                                    ).classes("portal-system-credential-note")
+                                if credential.notes:
+                                    ui.label(credential.notes).classes("portal-system-credential-note")
