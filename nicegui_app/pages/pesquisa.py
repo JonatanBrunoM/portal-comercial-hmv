@@ -42,7 +42,7 @@ def render_pesquisa(user: dict) -> None:
         page_title="Pergunte ao Portal Comercial.",
         page_description=(
             "Encontre rapidamente operadoras, planos, portais, documentos, "
-            "contatos, consultores, comunicados e contingências."
+            "contatos, consultores, elegibilidade, autorizações, coberturas, dicas, comunicados e contingências."
         ),
     ):
         with ui.element("section").classes("portal-search-hero"):
@@ -67,7 +67,7 @@ def render_pesquisa(user: dict) -> None:
                 for suggestion in ("Unimed", "Autorização", "Elegibilidade", "Portal", "Contato"):
                     ui.button(
                         suggestion,
-                        on_click=lambda value=suggestion: search.set_value(value),
+                        on_click=lambda value=suggestion: (search.set_value(value), search.run_method("focus")),
                     ).props("outline rounded no-caps").classes("portal-search-suggestion")
 
         with ui.row().classes("portal-search-controls"):
