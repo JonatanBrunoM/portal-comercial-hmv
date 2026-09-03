@@ -21,6 +21,20 @@ def _text(row: dict[str, Any], *keys: str) -> str:
     return ""
 
 
+def _status(row: dict[str, Any]) -> str:
+    return normalize(_text(row, "status"))
+
+def _active(row: dict[str, Any]) -> bool:
+    status = _status(row)
+    return not status or status == "ativo"
+
+def _published(row: dict[str, Any]) -> bool:
+    return _status(row) == "publicado"
+
+def _visible_contingency(row: dict[str, Any]) -> bool:
+    return _status(row) in {"programada", "ativa"}
+
+
 @dataclass(frozen=True, slots=True)
 class SearchResult:
     result_id: str
@@ -84,6 +98,8 @@ def get_search_catalog() -> list[SearchResult]:
     results: list[SearchResult] = []
 
     for row in catalog["operadoras"]:
+        if not _active(row):
+            continue
         rid = _text(row, "id")
         results.append(_result(
             row,
@@ -97,6 +113,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["planos"]:
+        if not _active(row):
+            continue
         oid = _text(row, "operadora_id")
         results.append(_result(
             row,
@@ -110,6 +128,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["portais"]:
+        if not _active(row):
+            continue
         rid = _text(row, "id")
         oid = _text(row, "operadora_id")
         pid = _text(row, "plano_id")
@@ -125,6 +145,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["documentos"]:
+        if not _active(row):
+            continue
         rid = _text(row, "id")
         oid = _text(row, "operadora_id")
         results.append(_result(
@@ -139,6 +161,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["contatos"]:
+        if not _active(row):
+            continue
         rid = _text(row, "id")
         oid = _text(row, "operadora_id")
         results.append(_result(
@@ -153,6 +177,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["consultores"]:
+        if not _active(row):
+            continue
         rid = _text(row, "id")
         results.append(_result(
             row,
@@ -166,6 +192,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["comunicados"]:
+        if not _published(row):
+            continue
         rid = _text(row, "id")
         oid = _text(row, "operadora_id")
         results.append(_result(
@@ -180,6 +208,8 @@ def get_search_catalog() -> list[SearchResult]:
         ))
 
     for row in catalog["contingencias"]:
+        if not _visible_contingency(row):
+            continue
         rid = _text(row, "id")
         oid = _text(row, "operadora_id")
         results.append(_result(
@@ -192,6 +222,27 @@ def get_search_catalog() -> list[SearchResult]:
             route=f"/contingencias/{rid}",
             icon="warning_amber",
         ))
+
+
+    for row in catalog["elegibilidade"]:
+        if not _active(row): continue
+        oid, pid = _text(row,"operadora_id"), _text(row,"plano_id")
+        results.append(_result(row, kind="Elegibilidade", eyebrow="ELEGIBILIDADE", title=_text(row,"orientacao") or "Orientação de elegibilidade", subtitle=" · ".join(v for v in (operators.get(oid,""),plans.get(pid,"")) if v), description=_text(row,"observacoes","codigo"), route=f"/operadoras/{oid}" if oid else "/operadoras", icon="verified"))
+
+    for row in catalog["autorizacoes"]:
+        if not _active(row): continue
+        oid, pid = _text(row,"operadora_id"), _text(row,"plano_id")
+        results.append(_result(row, kind="Autorizações", eyebrow="AUTORIZAÇÃO", title=_text(row,"orientacao") or "Regra de autorização", subtitle=" · ".join(v for v in (operators.get(oid,""),plans.get(pid,""),_text(row,"momento_autorizacao")) if v), description=" · ".join(v for v in (_text(row,"quem_solicita"),_text(row,"meio_solicitacao"),_text(row,"prazo"),_text(row,"observacoes")) if v), route=f"/operadoras/{oid}" if oid else "/operadoras", icon="fact_check"))
+
+    for row in catalog["coberturas"]:
+        if not _active(row): continue
+        oid, pid = _text(row,"operadora_id"), _text(row,"plano_id")
+        results.append(_result(row, kind="Coberturas", eyebrow="COBERTURA", title=_text(row,"restricoes_cobertura","acomodacao") or "Informação de cobertura", subtitle=" · ".join(v for v in (operators.get(oid,""),plans.get(pid,"")) if v), description=" · ".join(v for v in (_text(row,"acomodacao"),_text(row,"acompanhante"),_text(row,"observacoes")) if v), route=f"/operadoras/{oid}" if oid else "/operadoras", icon="health_and_safety"))
+
+    for row in catalog["dicas_operacionais"]:
+        if not _active(row): continue
+        oid, pid = _text(row,"operadora_id"), _text(row,"plano_id")
+        results.append(_result(row, kind="Dicas operacionais", eyebrow="DICA OPERACIONAL", title=_text(row,"titulo") or "Dica operacional", subtitle=" · ".join(v for v in (operators.get(oid,""),plans.get(pid,""),_text(row,"categoria")) if v), description=_text(row,"dica","palavras_chave"), route=f"/operadoras/{oid}" if oid else "/operadoras", icon="lightbulb"))
 
     return results
 
