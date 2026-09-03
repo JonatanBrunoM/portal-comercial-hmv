@@ -1,13 +1,20 @@
 from __future__ import annotations
+
+import logging
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.portais_admin_repository import (
     append_portal_audit, create_portal, get_portal_admin,
     list_locais_admin, list_operadoras_admin, list_planos_admin,
     list_portais_admin, update_portal,
 )
+
+
+logger = logging.getLogger(__name__)
 
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
@@ -87,6 +94,8 @@ def save_portal(*, record_id: str | None, code: str, operator_id: str,
                 plan_id: str, location_id: str, name: str, portal_type: str,
                 url: str, requires_login: bool, access_instruction: str,
                 general_tip: str, notes: str, status: str, actor: dict) -> None:
+    actor = require_current_admin(actor)
+
     operator_id = operator_id.strip()
     name = name.strip()
     if not operator_id:
@@ -126,11 +135,11 @@ def save_portal(*, record_id: str | None, code: str, operator_id: str,
         raise RuntimeError("Não foi possível confirmar o salvamento do portal.")
     try:
         append_portal_audit(
-            actor_id=str(actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action="Atualização de portal" if record_id else "Cadastro de portal",
             entity_id=str(saved.get("id") or record_id or ""),
             previous_data=previous,
             new_data=payload,
         )
     except Exception:
-        pass
+        logger.exception("Falha ao registrar auditoria administrativa.")
