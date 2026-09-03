@@ -94,7 +94,7 @@ def render_admin_comunicados(user: dict) -> None:
             )
 
             status_filter = ui.select(
-                ["Todos", "Ativo", "Inativo"],
+                ["Todos", "Rascunho", "Publicado", "Inativo"],
                 value="Todos",
                 label="Status",
             ).props("outlined dense").classes(
@@ -332,8 +332,8 @@ def _open_dialog(
         )
 
         status = ui.select(
-            ["Ativo", "Inativo"],
-            value=item.status if item else "Ativo",
+            ["Rascunho", "Publicado", "Inativo"],
+            value=item.status if item else "Rascunho",
             label="Status",
         ).props("outlined")
 
