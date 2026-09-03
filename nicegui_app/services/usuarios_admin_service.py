@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.usuarios_admin_repository import (
     append_profile_audit,
@@ -16,6 +20,9 @@ from nicegui_app.repositories.usuarios_admin_repository import (
 VALID_ROLES = {"usuario", "admin"}
 VALID_STATUSES = {"Ativo", "Inativo"}
 
+
+
+logger = logging.getLogger(__name__)
 
 def _text(row: dict[str, Any], key: str) -> str:
     value = row.get(key)
@@ -68,6 +75,8 @@ def save_profile_access(
     status: str,
     actor: dict,
 ) -> ManagedProfile:
+    actor = require_current_admin(actor)
+
     role = str(role or "").strip().lower()
     status = str(status or "").strip().title()
 
@@ -81,7 +90,7 @@ def save_profile_access(
     if not current:
         raise ValueError("Usuário não encontrado.")
 
-    actor_id = str(actor.get("id") or "").strip()
+    actor_id = str(actor.get("profile_id") or "").strip()
     actor_email = str(actor.get("email") or "").strip().lower()
     target_email = _text(current, "email").lower()
 
