@@ -450,3 +450,34 @@
         padding: 24px 20px;
     }
 }
+
+
+/* Etapa 13A · Credenciais seguras */
+.portal-system-credentials-panel {
+    width: 100%;
+    margin-top: 18px;
+    padding: 22px;
+    border: 1px solid var(--portal-ink-200);
+    border-radius: 17px;
+    background: #f8fbfd;
+}
+.portal-system-credentials-head { align-items: flex-start; gap: 13px; }
+.portal-system-credentials-list { width: 100%; margin-top: 18px; gap: 10px; }
+.portal-system-credential-card {
+    width: 100%; padding: 18px; border: 1px solid var(--portal-ink-200);
+    border-radius: 15px; background: var(--portal-white);
+}
+.portal-system-credential-name { color: var(--portal-primary-950); font-size: .82rem; font-weight: 780; }
+.portal-system-credential-field { margin-top: 12px; align-items: center; gap: 10px; }
+.portal-system-credential-label { color: var(--portal-ink-500); font-size: .6rem; }
+.portal-system-credential-value, .portal-system-credential-password {
+    color: var(--portal-primary-950); font-size: .76rem; font-weight: 720;
+}
+.portal-system-credential-password-row {
+    width: 100%; margin-top: 10px; align-items: center; gap: 8px;
+}
+.portal-system-credential-password-copy { flex: 1 1 auto; gap: 1px; }
+.portal-system-credential-action { color: var(--portal-primary-700) !important; font-size: .65rem; font-weight: 740; }
+.portal-system-credential-tip, .portal-system-credential-note, .portal-system-credentials-empty {
+    margin-top: 10px; color: var(--portal-ink-600); font-size: .67rem; line-height: 1.55;
+}
