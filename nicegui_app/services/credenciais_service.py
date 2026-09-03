@@ -1,9 +1,10 @@
-
+from __future__ import annotations
 
 import hmac
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from nicegui_app.auth.admin_access import require_current_admin
@@ -37,6 +38,31 @@ class CredentialSecurityError(RuntimeError):
 
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
+
+
+def format_credential_datetime(value: str) -> str:
+    """Converte timestamptz do Supabase para apresentação amigável no horário local."""
+    raw = str(value or "").strip()
+    if not raw:
+        return "Não registrada"
+
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        local = parsed.astimezone(ZoneInfo("America/Sao_Paulo"))
+        return local.strftime("%d/%m/%Y às %H:%M")
+    except Exception:
+        return raw
+
+
+def password_policy_label(blocked_passwords: int) -> str:
+    count = max(0, int(blocked_passwords or 0))
+    if count == 0:
+        return "Sem bloqueio de senhas anteriores"
+    if count == 1:
+        return "Não reutilizar a última senha anterior"
+    return f"Não reutilizar as últimas {count} senhas anteriores"
 
 
 def _actor_profile(actor: dict[str, Any]) -> dict[str, Any]:
@@ -161,13 +187,21 @@ def _password_was_used(
     candidate: str,
     current: dict[str, Any],
     history: list[dict[str, Any]],
+    blocked_passwords: int,
 ) -> bool:
+    # A senha atual nunca pode ser "trocada" por ela mesma.
     encrypted_values = [_text(current, "senha_criptografada")]
-    encrypted_values.extend(
-        _text(row, "senha_criptografada")
-        for row in history
-        if _text(row, "senha_criptografada")
-    )
+
+    # quantidade_senhas_bloqueadas representa quantas versões ANTERIORES
+    # devem permanecer indisponíveis para reutilização. O histórico completo
+    # continua armazenado, mesmo quando a política bloqueia apenas as últimas N.
+    history_limit = max(0, int(blocked_passwords or 0))
+    if history_limit:
+        encrypted_values.extend(
+            _text(row, "senha_criptografada")
+            for row in history[:history_limit]
+            if _text(row, "senha_criptografada")
+        )
 
     for encrypted in encrypted_values:
         if not encrypted:
@@ -252,9 +286,15 @@ def save_credential(
             candidate=password,
             current=previous,
             history=history,
+            blocked_passwords=blocked_passwords,
         ):
+            if blocked_passwords:
+                raise ValueError(
+                    "Esta senha está dentro do histórico bloqueado para reutilização. "
+                    "Informe uma senha diferente."
+                )
             raise ValueError(
-                "Esta senha já foi utilizada nesta credencial. Informe uma senha diferente."
+                "A nova senha precisa ser diferente da senha atual."
             )
 
     payload: dict[str, Any] = {
