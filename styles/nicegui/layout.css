@@ -301,3 +301,82 @@
         font-size: clamp(2rem, 12vw, 3rem);
     }
 }
+
+
+/* ==========================================================================
+   Etapa 13D.3 · App Shell persistente / navegação SPA
+   ========================================================================== */
+
+.portal-spa-shell {
+    overflow-x: clip;
+}
+
+.portal-spa-content {
+    position: relative;
+}
+
+.portal-spa-router {
+    width: 100%;
+    min-height: calc(100vh - var(--portal-topbar-height) - 116px);
+}
+
+.portal-spa-page {
+    width: 100%;
+    animation: portal-spa-enter 145ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transform-origin: top center;
+}
+
+@keyframes portal-spa-enter {
+    from {
+        opacity: 0.45;
+        transform: translateY(3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/*
+ * Feedback discreto durante a troca de rota.
+ * Não esconde a tela atual e não cria spinner/tela branca.
+ */
+.portal-is-navigating .portal-spa-router {
+    opacity: 0.985;
+}
+
+/*
+ * O shell não participa da animação de troca.
+ * Sidebar e topbar permanecem visualmente estáveis.
+ */
+.portal-spa-shell .portal-sidebar,
+.portal-spa-shell .portal-topbar,
+.portal-spa-shell .portal-mobile-nav {
+    animation: none !important;
+    transform: translateZ(0);
+}
+
+/*
+ * O botão ativo é atualizado pelo router sem reconstruir o menu.
+ * A transição curta evita o aspecto de "piscar" entre módulos.
+ */
+.portal-spa-shell .portal-nav-item,
+.portal-spa-shell .portal-mobile-nav-item {
+    transition:
+        background-color 120ms ease,
+        color 120ms ease,
+        border-color 120ms ease,
+        opacity 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-spa-page {
+        animation: none;
+    }
+
+    .portal-spa-shell .portal-nav-item,
+    .portal-spa-shell .portal-mobile-nav-item {
+        transition: none;
+    }
+}
