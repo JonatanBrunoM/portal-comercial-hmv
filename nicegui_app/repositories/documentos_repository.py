@@ -47,3 +47,11 @@ def list_locais_for_documentos() -> list[dict[str, Any]]:
         select="id,codigo,nome,status",
         params={"order": "nome.asc"},
     )
+
+
+def list_tipos_atendimento_for_documentos() -> list[dict[str, Any]]:
+    return rest_select(
+        "tipos_atendimento",
+        select="id,codigo,nome,status",
+        params={"order": "nome.asc"},
+    )
