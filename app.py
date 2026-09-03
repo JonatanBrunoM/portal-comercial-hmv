@@ -35,6 +35,15 @@ from nicegui_app.pages.operadoras import (
     render_operadoras,
 )
 from nicegui_app.theme import apply_theme
+from nicegui_app.data.supabase_client import warm_public_data_cache
+
+
+@app.on_startup
+async def warm_portal_cache() -> None:
+    """Aquece dados institucionais sem bloquear a inicialização da interface."""
+    import asyncio
+
+    asyncio.create_task(asyncio.to_thread(warm_public_data_cache))
 
 
 @app.get("/health")
@@ -402,4 +411,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         reload=False,
         show=False,
         storage_secret=_storage_secret(),
+        reconnect_timeout=15.0,
     )
