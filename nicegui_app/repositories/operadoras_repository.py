@@ -81,3 +81,11 @@ def list_comunicados_by_operadora(operator_id: str) -> list[dict[str, Any]]:
 
 def list_carteiras_by_operadora(operator_id: str) -> list[dict[str, Any]]:
     return _list_by_operadora("carteiras", operator_id)
+
+
+def list_consultores_for_operadora_hub() -> list[dict[str, Any]]:
+    return rest_select(
+        "consultores",
+        select="id,nome,cargo,email,telefone,status",
+        params={"order": "nome.asc"},
+    )
