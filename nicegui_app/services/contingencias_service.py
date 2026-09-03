@@ -46,6 +46,8 @@ class ContingenciaPreview:
 
     @property
     def period_active(self) -> bool:
+        if self.status.strip().lower() not in {"programada", "ativa"}:
+            return False
         today = date.today()
         if self.start_date and today < self.start_date:
             return False
