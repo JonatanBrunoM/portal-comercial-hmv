@@ -10,6 +10,7 @@ from nicegui_app.auth.google_oauth import (
     logout,
     start_google_login,
 )
+from nicegui_app.auth.admin_access import get_current_admin_profile
 from nicegui_app.pages.home import render_home
 from nicegui_app.pages.administracao import render_administracao
 from nicegui_app.pages.usuarios_admin import render_admin_usuarios
@@ -71,10 +72,21 @@ def _admin_user(request: Request) -> dict | RedirectResponse:
     if isinstance(user, RedirectResponse):
         return user
 
-    if str(user.get("role") or "").strip().lower() != "admin":
+    profile = get_current_admin_profile(user)
+    if not profile:
         return RedirectResponse("/", status_code=303)
 
-    return user
+    refreshed = dict(user)
+    refreshed["profile_id"] = str(profile.get("id") or "").strip()
+    refreshed["role"] = str(profile.get("role") or "").strip()
+    refreshed["status"] = str(profile.get("status") or "").strip()
+    refreshed["name"] = str(profile.get("nome") or refreshed.get("name") or "").strip()
+    refreshed["email"] = str(profile.get("email") or refreshed.get("email") or "").strip()
+    refreshed["picture"] = str(
+        profile.get("foto_url") or refreshed.get("picture") or ""
+    ).strip()
+
+    return refreshed
 
 
 @ui.page("/")
