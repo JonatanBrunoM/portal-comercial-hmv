@@ -85,7 +85,7 @@ def get_admin_comunicados() -> list[AdminComunicado]:
                 start_date=_date_value(row.get("inicio_em")),
                 end_date=_date_value(row.get("fim_em")),
                 featured=_bool(row.get("destaque")),
-                status=_text(row, "status") or "Ativo",
+                status=_text(row, "status") or "Rascunho",
                 responsible=_text(row, "responsavel"),
             )
         )
@@ -94,7 +94,7 @@ def get_admin_comunicados() -> list[AdminComunicado]:
 
 
 def is_current(item: AdminComunicado) -> bool:
-    if item.status.lower() != "ativo":
+    if item.status.lower() != "publicado":
         return False
 
     today = date.today().isoformat()
@@ -140,7 +140,7 @@ def save_comunicado(
     if not content:
         raise ValueError("Informe o conteúdo do comunicado.")
 
-    if status not in {"Ativo", "Inativo"}:
+    if status not in {"Rascunho", "Publicado", "Inativo"}:
         raise ValueError("Status inválido.")
 
     if priority not in {"Baixa", "Normal", "Alta", "Crítica"}:
