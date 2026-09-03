@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.documentos_admin_repository import (
     append_documento_audit,
@@ -16,6 +20,9 @@ from nicegui_app.repositories.documentos_admin_repository import (
     update_documento,
 )
 
+
+
+logger = logging.getLogger(__name__)
 
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
@@ -171,6 +178,8 @@ def save_documento(
     status: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     operator_id = operator_id.strip()
     name = name.strip()
     status = status.strip()
@@ -232,7 +241,7 @@ def save_documento(
 
     try:
         append_documento_audit(
-            actor_id=str(actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action=(
                 "Atualização de documento"
                 if record_id
@@ -243,4 +252,4 @@ def save_documento(
             new_data=payload,
         )
     except Exception:
-        pass
+        logger.exception("Falha ao registrar auditoria administrativa.")
