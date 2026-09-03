@@ -29,6 +29,7 @@ STYLE_ORDER = (
     "styles/nicegui/admin_contacts.css",
     "styles/nicegui/admin_consultants.css",
     "styles/nicegui/admin_communications.css",
+    "styles/nicegui/admin_contingencies.css",
 )
 
 
