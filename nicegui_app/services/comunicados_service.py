@@ -28,6 +28,8 @@ class ComunicadoPreview:
     start_date: date | None; end_date: date | None; featured: bool; status: str; responsible: str
     @property
     def period_active(self) -> bool:
+        if self.status.strip().lower() != "publicado":
+            return False
         today=date.today()
         return not ((self.start_date and today < self.start_date) or (self.end_date and today > self.end_date))
 
