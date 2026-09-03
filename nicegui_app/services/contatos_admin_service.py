@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import Any
+
+from nicegui_app.auth.admin_access import require_current_admin
 
 from nicegui_app.repositories.contatos_admin_repository import (
     append_contato_audit,
@@ -13,6 +17,9 @@ from nicegui_app.repositories.contatos_admin_repository import (
     update_contato,
 )
 
+
+
+logger = logging.getLogger(__name__)
 
 def _text(row: dict[str, Any], key: str) -> str:
     return str(row.get(key) or "").strip()
@@ -105,6 +112,8 @@ def save_contato(
     status: str,
     actor: dict,
 ) -> None:
+    actor = require_current_admin(actor)
+
     operator_id = operator_id.strip()
     department = department.strip()
     purpose = purpose.strip()
@@ -166,7 +175,7 @@ def save_contato(
 
     try:
         append_contato_audit(
-            actor_id=str(actor.get("profile_id") or actor.get("id") or "") or None,
+            actor_id=str(actor.get("profile_id") or "") or None,
             action=(
                 "Atualização de contato"
                 if record_id
@@ -176,5 +185,5 @@ def save_contato(
             previous_data=previous,
             new_data=payload,
         )
-    except Exception as error:
-        print(f"[AUDIT] Falha ao registrar alteração de contato: {error}")
+    except Exception:
+        logger.exception("Falha ao registrar auditoria administrativa.")
