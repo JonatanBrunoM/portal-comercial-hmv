@@ -60,7 +60,7 @@ MODULES = (
         "description": "Comunicados institucionais e orientações temporárias.",
         "icon": "campaign",
         "count_key": "comunicados",
-        "route": "/comunicados",
+        "route": "/administracao/comunicados",
     },
     {
         "title": "Contingências",
