@@ -131,7 +131,30 @@ def rest_insert(
         table_name,
         response.status_code,
     )
-    response.raise_for_status()
+
+    if response.is_error:
+        try:
+            error_payload = response.json()
+        except Exception:
+            error_payload = {}
+
+        message = str(error_payload.get("message") or "").strip()
+        details = str(error_payload.get("details") or "").strip()
+        hint = str(error_payload.get("hint") or "").strip()
+        code = str(error_payload.get("code") or "").strip()
+
+        parts = [
+            part
+            for part in (
+                f"Supabase recusou o cadastro em {table_name}.",
+                f"Código: {code}" if code else "",
+                f"Motivo: {message}" if message else "",
+                f"Detalhes: {details}" if details else "",
+                f"Dica: {hint}" if hint else "",
+            )
+            if part
+        ]
+        raise RuntimeError(" ".join(parts))
 
     data = response.json()
     if isinstance(data, list) and data and isinstance(data[0], dict):
@@ -199,7 +222,30 @@ def rest_update(
         table_name,
         response.status_code,
     )
-    response.raise_for_status()
+
+    if response.is_error:
+        try:
+            error_payload = response.json()
+        except Exception:
+            error_payload = {}
+
+        message = str(error_payload.get("message") or "").strip()
+        details = str(error_payload.get("details") or "").strip()
+        hint = str(error_payload.get("hint") or "").strip()
+        code = str(error_payload.get("code") or "").strip()
+
+        parts = [
+            part
+            for part in (
+                f"Supabase recusou a alteração em {table_name}.",
+                f"Código: {code}" if code else "",
+                f"Motivo: {message}" if message else "",
+                f"Detalhes: {details}" if details else "",
+                f"Dica: {hint}" if hint else "",
+            )
+            if part
+        ]
+        raise RuntimeError(" ".join(parts))
 
     data = response.json()
     if isinstance(data, list) and data and isinstance(data[0], dict):
