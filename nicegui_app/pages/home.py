@@ -253,7 +253,7 @@ def render_home(user: dict) -> None:
 
                     # A consulta é transferida para a página de Pesquisa.
                     # O resultado não é renderizado na Home.
-                    ui.context.client.storage["portal_home_search_query"] = query
+                    ui.context.client.storage["portal_pending_search_query"] = query
                     ui.navigate.to("/pesquisa")
 
                 with ui.element("div").classes("home-search-command"):
