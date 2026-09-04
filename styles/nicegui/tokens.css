@@ -66,3 +66,24 @@
     --portal-topbar-height: 76px;
     --portal-content-max: 1500px;
 }
+
+/* ==========================================================================
+   Etapa 16 · Tokens de refinamento UX/UI
+   ========================================================================== */
+
+:root {
+    --portal-control-height: 40px;
+    --portal-control-height-compact: 36px;
+
+    --portal-motion-fast: 120ms;
+    --portal-motion-normal: 170ms;
+    --portal-motion-slow: 240ms;
+
+    --portal-ease-out: cubic-bezier(.2, .72, .2, 1);
+
+    --portal-focus-ring:
+        0 0 0 3px rgba(0, 86, 145, .10);
+
+    --portal-border-interactive: #c8dae3;
+    --portal-border-hover: #aacbd9;
+}
