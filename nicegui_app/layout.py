@@ -151,30 +151,18 @@ def _user_avatar(user: dict, *, compact: bool = False) -> None:
 
 def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
     name = str(user.get("name") or "").strip() or "Usuário institucional"
-    email = str(user.get("email") or "").strip()
     role = "Administrador" if user.get("role") == "admin" else "Usuário"
 
     with ui.element("aside").classes("portal-sidebar"):
-        _brand()
+        with ui.element("div").classes("portal-sidebar-brand-area"):
+            _brand()
 
-        ui.label("NAVEGAÇÃO").classes("portal-nav-section-label")
-        with ui.column().classes("portal-nav-list"):
-            for key, icon, label, target in NAV_ITEMS:
-                _nav_button(
-                    key,
-                    icon,
-                    label,
-                    target,
-                    navigation=navigation,
-                )
-
-        with ui.element("div").classes("portal-sidebar-spacer"):
-            pass
-
-        if user.get("role") == "admin":
-            ui.label("GESTÃO").classes("portal-nav-section-label")
+        # Apenas a área de navegação rola em telas baixas.
+        # O perfil permanece sempre acessível no rodapé.
+        with ui.element("div").classes("portal-sidebar-scroll"):
+            ui.label("NAVEGAÇÃO").classes("portal-nav-section-label")
             with ui.column().classes("portal-nav-list"):
-                for key, icon, label, target in ADMIN_ITEMS:
+                for key, icon, label, target in NAV_ITEMS:
                     _nav_button(
                         key,
                         icon,
@@ -183,15 +171,29 @@ def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
                         navigation=navigation,
                     )
 
-        with ui.element("div").classes("portal-profile"):
-            _user_avatar(user)
+            if user.get("role") == "admin":
+                with ui.element("div").classes("portal-sidebar-admin-section"):
+                    ui.label("GESTÃO").classes("portal-nav-section-label")
+                    with ui.column().classes("portal-nav-list"):
+                        for key, icon, label, target in ADMIN_ITEMS:
+                            _nav_button(
+                                key,
+                                icon,
+                                label,
+                                target,
+                                navigation=navigation,
+                            )
 
-            with ui.column().classes("portal-profile-copy"):
-                ui.label(name).classes("portal-profile-name")
-                ui.label(role).classes("portal-profile-role")
+        with ui.element("div").classes("portal-sidebar-footer"):
+            with ui.element("div").classes("portal-profile"):
+                _user_avatar(user)
 
-            with ui.link(target="/logout").classes("portal-logout-link"):
-                ui.icon("logout").classes("portal-profile-more")
+                with ui.column().classes("portal-profile-copy"):
+                    ui.label(name).classes("portal-profile-name")
+                    ui.label(role).classes("portal-profile-role")
+
+                with ui.link(target="/logout").classes("portal-logout-link"):
+                    ui.icon("logout").classes("portal-profile-more")
 
 
 def _topbar(user: dict, navigation: PortalNavigationState) -> None:
