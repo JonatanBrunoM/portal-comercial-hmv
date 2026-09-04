@@ -482,6 +482,54 @@ def rest_update(
         return dict(data[0])
     return None
 
+
+def rest_rpc(
+    function_name: str,
+    payload: dict[str, Any],
+    *,
+    timeout: float = 15.0,
+) -> Any:
+    """Executa uma função Postgres exposta pelo PostgREST.
+
+    Usado para operações que precisam de atomicidade no banco. O payload nunca
+    é registrado em log, pois RPCs podem receber conteúdo sensível.
+    """
+    response = _http_client().post(
+        f"{get_supabase_url()}/rest/v1/rpc/{function_name}",
+        headers=_rest_headers(),
+        json=payload,
+        timeout=timeout,
+    )
+
+    logger.info(
+        "Supabase RPC respondeu. funcao=%s status=%s",
+        function_name,
+        response.status_code,
+    )
+
+    if response.is_error:
+        try:
+            error_payload = response.json()
+        except Exception:
+            error_payload = {}
+
+        code = str(error_payload.get("code") or "").strip()
+        message = str(error_payload.get("message") or "").strip()
+        logger.error(
+            "Supabase RPC recusada. funcao=%s status=%s code=%s",
+            function_name,
+            response.status_code,
+            code or "não informado",
+        )
+        # Não repassa details/hint/payload de uma RPC sensível para a interface.
+        raise RuntimeError(
+            message or f"Não foi possível concluir a operação segura {function_name}."
+        )
+
+    if not response.content:
+        return None
+    return response.json()
+
 def check_supabase_connection() -> tuple[bool, str]:
     """Executa uma leitura mínima sem revelar chave, URL completa ou dados."""
     try:
