@@ -380,3 +380,63 @@
         transition: none;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 14A · Sidebar adaptada a telas de menor altura
+   ========================================================================== */
+
+.portal-sidebar {
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+}
+
+.portal-sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.portal-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portal-sidebar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.20);
+}
+
+.portal-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+@media (max-height: 820px) and (min-width: 861px) {
+    .portal-sidebar {
+        padding-top: 18px;
+        padding-bottom: 14px;
+    }
+
+    .portal-brand {
+        padding-bottom: 18px;
+    }
+
+    .portal-nav-section-label {
+        margin-top: 4px;
+        margin-bottom: 5px;
+    }
+
+    .portal-nav-list {
+        gap: 1px;
+    }
+
+    .portal-sidebar-spacer {
+        min-height: 10px;
+    }
+
+    .portal-profile {
+        margin-top: 10px;
+    }
+}
