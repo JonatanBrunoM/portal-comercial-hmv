@@ -25,6 +25,20 @@ ADMIN_ITEMS = (
 )
 
 
+TOPBAR_CONTEXT = (
+    ("/administracao", "Administração"),
+    ("/contingencias", "Contingências"),
+    ("/comunicados", "Comunicados"),
+    ("/consultores", "Consultores"),
+    ("/contatos", "Contatos"),
+    ("/documentos", "Documentos"),
+    ("/portais", "Portais"),
+    ("/operadoras", "Operadoras"),
+    ("/pesquisa", "Pesquisa"),
+    ("/", "Início"),
+)
+
+
 _SPA_CONTENT_MODE: ContextVar[bool] = ContextVar(
     "portal_spa_content_mode",
     default=False,
@@ -57,20 +71,33 @@ def _path_matches(target: str, current_path: str) -> bool:
 
 @dataclass(slots=True)
 class PortalNavigationState:
-    """Mantém o estado visual do menu sem reconstruir o shell."""
+    """Mantém menu e contexto da topbar sem reconstruir o shell."""
 
     items: list[tuple[str, object]] = field(default_factory=list)
+    context_label: object | None = None
 
     def register(self, target: str, button: object) -> None:
         self.items.append((target, button))
 
+    def bind_context_label(self, label: object) -> None:
+        self.context_label = label
+
     def update(self, current_path: str) -> None:
         path = (current_path or "/").split("?", 1)[0].split("#", 1)[0] or "/"
+
         for target, button in self.items:
             if _path_matches(target, path):
                 button.classes(add="is-active")
             else:
                 button.classes(remove="is-active")
+
+        if self.context_label is not None:
+            current_label = "Portal Comercial"
+            for target, label in TOPBAR_CONTEXT:
+                if _path_matches(target, path):
+                    current_label = label
+                    break
+            self.context_label.set_text(current_label)
 
 
 def _nav_button(
@@ -151,9 +178,24 @@ def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
                 ui.icon("logout").classes("portal-profile-more")
 
 
-def _topbar(user: dict) -> None:
+def _topbar(user: dict, navigation: PortalNavigationState) -> None:
     name = str(user.get("name") or "").strip()
     email = str(user.get("email") or "").strip()
+
+    def submit_global_search() -> None:
+        query = str(global_search.value or "").strip()
+        if len(query) < 2:
+            ui.notify(
+                "Digite pelo menos 2 caracteres para pesquisar.",
+                type="info",
+                position="top",
+            )
+            global_search.run_method("focus")
+            return
+
+        ui.context.client.storage["portal_pending_search_query"] = query
+        global_search.value = ""
+        ui.navigate.to("/pesquisa")
 
     with ui.element("header").classes("portal-topbar"):
         with ui.row().classes("portal-mobile-brand"):
@@ -161,20 +203,31 @@ def _topbar(user: dict) -> None:
                 ui.icon("local_hospital")
             ui.label("Portal Comercial").classes("portal-mobile-brand-title")
 
+        with ui.row().classes("portal-topbar-context"):
+            ui.icon("chevron_right").classes("portal-topbar-context-icon")
+            context_label = ui.label("Início").classes("portal-topbar-context-label")
+            navigation.bind_context_label(context_label)
+
         with ui.element("div").classes("portal-topbar-spacer"):
             pass
 
-        with ui.button(on_click=lambda: _soon("Ajuda")).props(
-            "flat round aria-label='Ajuda'"
-        ).classes("portal-icon-button"):
-            ui.icon("help_outline")
+        with ui.element("div").classes("portal-topbar-search"):
+            ui.icon("search").classes("portal-topbar-search-icon")
+            global_search = ui.input(
+                placeholder="Pesquisar no portal..."
+            ).props(
+                "borderless dense autocomplete='off'"
+            ).classes("portal-topbar-search-input")
+            global_search.on("keydown.enter", submit_global_search)
+            ui.button(
+                icon="arrow_forward",
+                on_click=submit_global_search,
+            ).props(
+                "flat round dense aria-label='Pesquisar'"
+            ).classes("portal-topbar-search-button")
 
-        with ui.button(on_click=lambda: _soon("Notificações")).props(
-            "flat round aria-label='Notificações'"
-        ).classes("portal-icon-button"):
-            ui.icon("notifications_none")
-
-        ui.avatar(_initials(name, email)).classes("portal-topbar-avatar")
+        with ui.element("div").classes("portal-topbar-user"):
+            ui.avatar(_initials(name, email)).classes("portal-topbar-avatar")
 
 
 def _mobile_navigation(navigation: PortalNavigationState) -> None:
@@ -231,7 +284,7 @@ def portal_shell(*, user: dict) -> Iterator[PortalNavigationState]:
         _desktop_sidebar(user, navigation)
 
         with ui.element("div").classes("portal-main-shell"):
-            _topbar(user)
+            _topbar(user, navigation)
 
             with ui.element("main").classes("portal-content portal-spa-content"):
                 yield navigation
@@ -269,7 +322,7 @@ def portal_layout(
         _desktop_sidebar(user, navigation)
 
         with ui.element("div").classes("portal-main-shell"):
-            _topbar(user)
+            _topbar(user, navigation)
 
             with ui.element("main").classes("portal-content"):
                 _page_header(
