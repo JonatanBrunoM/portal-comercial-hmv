@@ -988,3 +988,239 @@
         height: 36px;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 14E · Refinamento final do perfil
+   ========================================================================== */
+
+/* ------------------------------
+   Sidebar: nome nunca vaza
+   ------------------------------ */
+
+.portal-profile {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: 42px minmax(0, 1fr) 30px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 11px;
+    overflow: hidden;
+}
+
+.portal-profile-copy {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    gap: 2px;
+}
+
+.portal-profile-name {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: .66rem;
+    line-height: 1.25;
+    font-weight: 760;
+}
+
+.portal-profile-role {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: .56rem;
+    line-height: 1.2;
+    color: rgba(255,255,255,.55);
+}
+
+.portal-logout-link {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    justify-self: end;
+    overflow: hidden;
+}
+
+/* ------------------------------
+   Topbar: avatar preserva proporção
+   ------------------------------ */
+
+.portal-user-trigger {
+    min-width: 0;
+    max-width: 190px;
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.portal-user-trigger .portal-user-avatar.is-compact {
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 34px;
+    border-radius: 50%;
+}
+
+.portal-user-trigger .portal-user-avatar-image,
+.portal-user-trigger .portal-user-avatar-image .q-img,
+.portal-user-trigger .portal-user-avatar-image .q-img__container,
+.portal-user-trigger .portal-user-avatar-image .q-img__image {
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+}
+
+.portal-user-trigger-copy {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.portal-user-trigger-name,
+.portal-user-trigger-role {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.portal-user-trigger-chevron {
+    width: 18px;
+    min-width: 18px;
+    justify-self: end;
+}
+
+/* ------------------------------
+   Menu de conta: sem scroll interno
+   ------------------------------ */
+
+.portal-user-menu {
+    width: 310px !important;
+    min-width: 310px !important;
+    max-width: min(310px, calc(100vw - 24px)) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 8px !important;
+    box-sizing: border-box;
+}
+
+.portal-user-menu .q-menu,
+.portal-user-menu .q-position-engine {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.portal-user-menu-header {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.portal-user-menu-header .portal-user-avatar.is-sidebar {
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    aspect-ratio: 1 / 1;
+}
+
+.portal-user-menu-header .portal-user-avatar-image,
+.portal-user-menu-header .portal-user-avatar-image .q-img,
+.portal-user-menu-header .portal-user-avatar-image .q-img__container,
+.portal-user-menu-header .portal-user-avatar-image .q-img__image {
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+}
+
+.portal-user-menu-copy {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.portal-user-menu-name,
+.portal-user-menu-email {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.portal-user-menu-action {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* evita scrollbar horizontal causada por conteúdo interno do menu */
+.portal-user-menu *,
+.portal-user-trigger * {
+    box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+    .portal-user-trigger {
+        max-width: 155px;
+    }
+}
+
+@media (max-width: 930px) {
+    .portal-user-trigger {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        grid-template-columns: 34px;
+        justify-content: center;
+        padding: 5px !important;
+    }
+
+    .portal-user-trigger-copy,
+    .portal-user-trigger-chevron {
+        display: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-user-menu {
+        width: min(310px, calc(100vw - 20px)) !important;
+        min-width: 0 !important;
+    }
+}
