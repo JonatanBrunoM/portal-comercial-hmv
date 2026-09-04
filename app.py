@@ -269,7 +269,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         host="0.0.0.0",
         port=int(os.getenv("PORT", "8080")),
         title="Portal Comercial | Hospital Moinhos de Vento",
-        favicon="🏥",
+        favicon="https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png",
         reload=False,
         show=False,
         storage_secret=_storage_secret(),
