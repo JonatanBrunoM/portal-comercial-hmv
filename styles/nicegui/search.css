@@ -681,3 +681,117 @@
         margin-top: -29px;
     }
 }
+
+/* ==========================================================================
+   Etapa 15C · Proporção da Pesquisa em relação ao viewport
+   ========================================================================== */
+
+/*
+ * Na rota de Pesquisa, o shell deve ocupar toda a largura útil à direita da
+ * sidebar. O :has() mantém a correção restrita a esta página e não altera Home
+ * ou demais módulos.
+ */
+body:has(.portal-search-workspace) .portal-main-shell {
+    width: calc(100vw - var(--portal-sidebar-width)) !important;
+    max-width: none !important;
+}
+
+body:has(.portal-search-workspace) .portal-content {
+    width: min(
+        calc(100% - 44px),
+        var(--portal-content-max)
+    ) !important;
+    max-width: none !important;
+    margin-inline: auto !important;
+}
+
+body:has(.portal-search-workspace) .portal-spa-router,
+body:has(.portal-search-workspace) .portal-spa-page {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+}
+
+/* A área principal passa a aproveitar a largura disponível. */
+.portal-search-workspace {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+}
+
+/*
+ * Em desktop o campo acompanha o painel. Antes ele parava em 920px e criava
+ * uma faixa vazia à direita em resoluções intermediárias.
+ */
+.portal-search-box {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Distribui melhor os controles na largura total. */
+.portal-search-controls {
+    width: 100%;
+}
+
+.portal-search-category {
+    flex: 0 0 190px;
+}
+
+.portal-search-count {
+    margin-left: auto;
+}
+
+/* Respostas e fontes acompanham a mesma largura da área de busca. */
+.portal-conversation-container,
+.portal-conversation-answer,
+.portal-search-results,
+.portal-search-start,
+.portal-search-interpretation {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+}
+
+/*
+ * Telas grandes: evita um painel exageradamente comprido, mantendo uma margem
+ * visual confortável nas laterais.
+ */
+@media (min-width: 1500px) {
+    body:has(.portal-search-workspace) .portal-content {
+        width: min(
+            calc(100% - 64px),
+            var(--portal-content-max)
+        ) !important;
+    }
+}
+
+/*
+ * Notebook 1366x768 e semelhantes: usa quase toda a área útil sem encostar
+ * no shell, deixando a proporção equivalente à Home.
+ */
+@media (min-width: 861px) and (max-width: 1499px) {
+    body:has(.portal-search-workspace) .portal-content {
+        width: calc(100% - 32px) !important;
+    }
+
+    .portal-search-workspace {
+        padding-inline: 24px;
+    }
+}
+
+/* Tablet/mobile: volta ao comportamento natural do layout responsivo. */
+@media (max-width: 860px) {
+    body:has(.portal-search-workspace) .portal-main-shell {
+        width: 100% !important;
+    }
+
+    body:has(.portal-search-workspace) .portal-content {
+        width: calc(100% - 28px) !important;
+    }
+}
+
+@media (max-width: 520px) {
+    body:has(.portal-search-workspace) .portal-content {
+        width: calc(100% - 20px) !important;
+    }
+}
