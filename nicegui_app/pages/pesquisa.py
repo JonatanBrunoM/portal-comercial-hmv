@@ -4,6 +4,7 @@ from nicegui import ui
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.pesquisa_service import (
+    ConversationalAnswer,
     RankedSearchResult,
     SearchResult,
     get_search_catalog,
@@ -47,6 +48,55 @@ def _result_card(match: RankedSearchResult, *, featured: bool = False) -> None:
         ).props("flat round").classes("portal-search-result-action")
 
 
+
+def _answer_card(answer: ConversationalAnswer) -> None:
+    confidence_label = {
+        "alta": "Correspondência alta",
+        "média": "Correspondência moderada",
+        "baixa": "Correspondência ampla",
+    }.get(answer.confidence, "Correspondência")
+
+    with ui.element("section").classes(
+        f"portal-conversation-answer confidence-{answer.confidence}"
+    ):
+        with ui.row().classes("portal-conversation-answer-top"):
+            with ui.element("div").classes("portal-conversation-avatar"):
+                ui.icon("auto_awesome")
+
+            with ui.column().classes("portal-conversation-heading"):
+                ui.label("RESPOSTA DO PORTAL").classes(
+                    "portal-conversation-kicker"
+                )
+                ui.label(answer.title).classes("portal-conversation-title")
+
+            ui.label(confidence_label).classes(
+                "portal-conversation-confidence"
+            )
+
+        ui.label(answer.lead).classes("portal-conversation-lead")
+
+        if answer.bullets:
+            with ui.column().classes("portal-conversation-points"):
+                for bullet in answer.bullets:
+                    with ui.row().classes("portal-conversation-point"):
+                        ui.icon("check_circle")
+                        ui.label(bullet)
+
+        with ui.row().classes("portal-conversation-footer"):
+            with ui.row().classes("portal-conversation-note"):
+                ui.icon("verified")
+                ui.label(answer.note)
+
+            ui.button(
+                answer.source_label,
+                icon="arrow_forward",
+                on_click=lambda: ui.navigate.to(answer.source_route),
+            ).props("unelevated no-caps").classes(
+                "portal-conversation-source"
+            )
+
+
+
 def render_pesquisa(user: dict) -> None:
     catalog = get_search_catalog()
     kinds = ["Tudo"] + sorted({item.kind for item in catalog})
@@ -57,8 +107,9 @@ def render_pesquisa(user: dict) -> None:
         page_eyebrow="PESQUISA INTELIGENTE",
         page_title="Pergunte ao Portal Comercial.",
         page_description=(
-            "Pesquise do seu jeito. O Portal interpreta termos, contexto e "
-            "erros simples de digitação para priorizar a informação mais útil."
+            "Faça uma pergunta como faria para uma pessoa. O Portal interpreta "
+            "intenção, contexto e erros de escrita e monta uma resposta "
+            "usando somente o conteúdo cadastrado."
         ),
     ):
         with ui.element("section").classes("portal-search-hero"):
@@ -67,8 +118,8 @@ def render_pesquisa(user: dict) -> None:
 
             ui.label("O que você precisa saber?").classes("portal-search-question")
             ui.label(
-                'Experimente frases como “senha do portal Unimed”, '
-                '“telefone da Cassi” ou “como autorizar Bradesco”.'
+                'Você pode escrever normalmente: “onde vejo a senha da Unimed?”, '
+                '“qual telefone da Cassi?” ou “como faço autorização no Bradesco?”.'
             ).classes("portal-search-helper")
 
             with ui.element("div").classes("portal-search-box"):
@@ -127,6 +178,11 @@ def render_pesquisa(user: dict) -> None:
         )
         interpretation.set_visibility(False)
 
+        answer_container = ui.element("div").classes(
+            "portal-conversation-container"
+        )
+        answer_container.set_visibility(False)
+
         results_container = ui.element("div").classes("portal-search-results")
 
         with ui.element("section").classes("portal-search-start") as start_state:
@@ -144,9 +200,11 @@ def render_pesquisa(user: dict) -> None:
             query = str(search.value or "")
             results_container.clear()
             interpretation.clear()
+            answer_container.clear()
 
             if len(query.strip()) < 2:
                 interpretation.set_visibility(False)
+                answer_container.set_visibility(False)
                 start_state.set_visibility(True)
                 result_count.set_text(
                     "Digite pelo menos 2 caracteres para pesquisar."
@@ -172,7 +230,17 @@ def render_pesquisa(user: dict) -> None:
                             "portal-search-interpretation-chip"
                         )
 
-                    if response.relaxed:
+                    if response.corrections:
+                        correction_text = " · ".join(
+                            f"{source} → {target}"
+                            for source, target in response.corrections[:3]
+                        )
+                        ui.label(
+                            f"corrigido: {correction_text}"
+                        ).classes(
+                            "portal-search-interpretation-chip is-correction"
+                        )
+                    elif response.relaxed:
                         ui.label(
                             "busca aproximada"
                         ).classes(
@@ -180,6 +248,13 @@ def render_pesquisa(user: dict) -> None:
                         )
             else:
                 interpretation.set_visibility(False)
+
+            if response.answer is not None:
+                answer_container.set_visibility(True)
+                with answer_container:
+                    _answer_card(response.answer)
+            else:
+                answer_container.set_visibility(False)
 
             matches = response.results
             count = len(matches)
@@ -201,19 +276,18 @@ def render_pesquisa(user: dict) -> None:
                         ).classes("portal-search-empty-description")
                     return
 
-                _result_card(matches[0], featured=True)
+                _result_card(matches[0], featured=False)
 
-                if len(matches) > 1:
-                    with ui.row().classes("portal-search-more-heading"):
-                        ui.label("Outros resultados relevantes").classes(
-                            "portal-search-more-title"
-                        )
-                        ui.label(
-                            f"{len(matches) - 1} correspondência(s)"
-                        ).classes("portal-search-more-count")
+                with ui.row().classes("portal-search-more-heading"):
+                    ui.label("Fontes e resultados relacionados").classes(
+                        "portal-search-more-title"
+                    )
+                    ui.label(
+                        f"{len(matches)} correspondência(s)"
+                    ).classes("portal-search-more-count")
 
-                    for match in matches[1:]:
-                        _result_card(match)
+                for match in matches:
+                    _result_card(match)
 
         search.on_value_change(lambda _: refresh())
         category.on_value_change(lambda _: refresh())
