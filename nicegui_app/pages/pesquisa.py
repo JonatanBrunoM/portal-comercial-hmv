@@ -56,7 +56,7 @@ def render_pesquisa(user: dict) -> None:
 
             with ui.element("div").classes("portal-search-box"):
                 initial_query = str(
-                    ui.context.client.storage.pop("portal_home_search_query", "") or ""
+                    ui.context.client.storage.pop("portal_pending_search_query", "") or ""
                 ).strip()
 
                 search = ui.input(
