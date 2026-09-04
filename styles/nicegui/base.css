@@ -42,3 +42,95 @@ select {
 .portal-app-shell .q-btn::before {
     box-shadow: none !important;
 }
+
+/* ==========================================================================
+   Etapa 16 · Base de interação e acessibilidade
+   ========================================================================== */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(16, 43, 59, .22) transparent;
+}
+
+body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(16, 43, 59, .18);
+    background-clip: padding-box;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 43, 59, .30);
+    background-clip: padding-box;
+}
+
+::selection {
+    background: rgba(0, 86, 145, .16);
+    color: var(--portal-primary-950);
+}
+
+/* Mantém o visual limpo, mas devolve indicação de teclado. */
+.q-btn:focus-visible,
+.q-field:focus-within,
+a:focus-visible,
+[tabindex]:focus-visible {
+    outline: none;
+}
+
+.q-btn:focus-visible {
+    box-shadow: var(--portal-focus-ring) !important;
+}
+
+a:focus-visible {
+    border-radius: 8px;
+    box-shadow: var(--portal-focus-ring);
+}
+
+/* Inputs Quasar mais consistentes em todos os módulos. */
+.portal-app-shell .q-field--outlined .q-field__control::before {
+    border-color: var(--portal-border-interactive);
+    transition:
+        border-color var(--portal-motion-fast) ease,
+        box-shadow var(--portal-motion-fast) ease;
+}
+
+.portal-app-shell .q-field--outlined:hover .q-field__control::before {
+    border-color: var(--portal-border-hover);
+}
+
+.portal-app-shell .q-field--outlined.q-field--focused .q-field__control::before {
+    border-color: var(--portal-primary-600);
+}
+
+.portal-app-shell .q-field--outlined.q-field--focused .q-field__control {
+    box-shadow: var(--portal-focus-ring);
+}
+
+/* Evita animações excessivas para quem prefere menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
