@@ -663,3 +663,71 @@
         transition: none;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 14A · Pesquisa real na Home
+   ========================================================================== */
+
+.home-search-command {
+    cursor: text;
+}
+
+.home-search-input {
+    min-width: 0;
+    width: 100%;
+}
+
+.home-search-input .q-field__control,
+.home-search-input .q-field__native,
+.home-search-input .q-field__marginal {
+    min-height: 48px !important;
+    height: 48px !important;
+}
+
+.home-search-input .q-field__control {
+    padding: 0 !important;
+    color: var(--portal-ink-950);
+}
+
+.home-search-input .q-field__native {
+    padding: 0 4px !important;
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--portal-ink-950);
+}
+
+.home-search-input .q-field__native::placeholder {
+    color: var(--portal-ink-500);
+    opacity: 1;
+    font-weight: 500;
+}
+
+.home-search-input .q-field__bottom {
+    display: none;
+}
+
+.home-search-submit {
+    min-height: 42px !important;
+    padding: 0 15px !important;
+    border-radius: 11px !important;
+    background: var(--portal-primary-700) !important;
+    color: white !important;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.home-search-submit .q-icon {
+    font-size: 17px;
+}
+
+@media (max-width: 620px) {
+    .home-search-command {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .home-search-submit {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}
