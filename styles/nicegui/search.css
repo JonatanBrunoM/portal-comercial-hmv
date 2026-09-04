@@ -264,3 +264,136 @@
         align-self: center;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 15 · Pesquisa Inteligente
+   ========================================================================== */
+
+.portal-search-hero {
+    min-height: 300px;
+    padding: 34px 32px;
+}
+
+.portal-search-question {
+    font-size: clamp(1.65rem, 2.8vw, 2.65rem);
+}
+
+.portal-search-helper {
+    max-width: 760px;
+}
+
+.portal-search-interpretation {
+    width: 100%;
+    min-height: 34px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.portal-search-interpretation-label {
+    margin-right: 2px;
+    color: var(--portal-ink-500);
+    font-size: .61rem;
+    font-weight: 650;
+}
+
+.portal-search-interpretation-chip {
+    padding: 5px 9px;
+    border: 1px solid #c9dfea;
+    border-radius: 999px;
+    background: var(--portal-primary-50);
+    color: var(--portal-primary-700);
+    font-size: .57rem;
+    font-weight: 760;
+}
+
+.portal-search-interpretation-chip.is-relaxed {
+    border-color: #e7d8bd;
+    background: #fffaf0;
+    color: #8a641e;
+}
+
+.portal-search-results {
+    gap: 8px;
+}
+
+.portal-search-result {
+    min-height: 108px;
+    padding: 16px 18px;
+}
+
+.portal-search-result.is-featured {
+    min-height: 126px;
+    border-color: #acd1e3;
+    background:
+        linear-gradient(135deg, rgba(0, 86, 145, .045), transparent 55%),
+        var(--portal-white);
+    box-shadow: 0 14px 34px rgba(19, 51, 73, .07);
+}
+
+.portal-search-result.is-featured .portal-search-result-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--portal-primary-700);
+    color: white;
+}
+
+.portal-search-result-meta {
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+}
+
+.portal-search-result-best {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: var(--portal-primary-100);
+    color: var(--portal-primary-800);
+    font-size: .5rem;
+    font-weight: 850;
+    letter-spacing: .07em;
+}
+
+.portal-search-result-reason {
+    margin-top: 7px;
+    color: var(--portal-ink-400);
+    font-size: .56rem;
+    font-weight: 620;
+}
+
+.portal-search-more-heading {
+    width: 100%;
+    margin: 8px 0 1px;
+    padding: 0 4px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.portal-search-more-title {
+    color: var(--portal-ink-700);
+    font-size: .67rem;
+    font-weight: 760;
+}
+
+.portal-search-more-count {
+    color: var(--portal-ink-400);
+    font-size: .58rem;
+}
+
+@media (max-width: 760px) {
+    .portal-search-hero {
+        min-height: 270px;
+        padding: 28px 18px;
+    }
+
+    .portal-search-interpretation {
+        align-items: flex-start;
+    }
+
+    .portal-search-result.is-featured {
+        min-height: 112px;
+    }
+}
