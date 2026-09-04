@@ -58,10 +58,24 @@ class RankedSearchResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ConversationalAnswer:
+    title: str
+    lead: str
+    bullets: tuple[str, ...]
+    note: str
+    confidence: str
+    source_route: str
+    source_label: str
+
+
+@dataclass(frozen=True, slots=True)
 class SearchResponse:
     query: str
+    corrected_query: str
+    corrections: tuple[tuple[str, str], ...]
     interpreted_as: tuple[str, ...]
     results: tuple[RankedSearchResult, ...]
+    answer: ConversationalAnswer | None = None
     relaxed: bool = False
 
 
@@ -349,6 +363,155 @@ def _tokens(value: str) -> list[str]:
     ]
 
 
+
+def _edit_distance(a: str, b: str) -> int:
+    """Damerau-Levenshtein simples para tolerar troca de letras adjacentes."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+
+    rows = len(a) + 1
+    cols = len(b) + 1
+    matrix = [[0] * cols for _ in range(rows)]
+
+    for i in range(rows):
+        matrix[i][0] = i
+    for j in range(cols):
+        matrix[0][j] = j
+
+    for i in range(1, rows):
+        for j in range(1, cols):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            matrix[i][j] = min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost,
+            )
+            if (
+                i > 1
+                and j > 1
+                and a[i - 1] == b[j - 2]
+                and a[i - 2] == b[j - 1]
+            ):
+                matrix[i][j] = min(
+                    matrix[i][j],
+                    matrix[i - 2][j - 2] + cost,
+                )
+
+    return matrix[-1][-1]
+
+
+def _max_typo_distance(token: str) -> int:
+    size = len(token)
+    if size <= 3:
+        return 0
+    if size <= 5:
+        return 1
+    if size <= 8:
+        return 2
+    return 3
+
+
+def _search_vocabulary(results: list[SearchResult]) -> set[str]:
+    vocabulary: set[str] = set()
+
+    for aliases in _INTENT_ALIASES.values():
+        for alias in aliases:
+            vocabulary.update(_tokens(alias))
+
+    for item in results:
+        # Título e subtítulo têm maior valor semântico e normalmente contêm
+        # nomes de operadoras, planos, setores e tipos de informação.
+        vocabulary.update(_tokens(item.title))
+        vocabulary.update(_tokens(item.subtitle))
+
+        # Também aprende palavras relevantes do conteúdo cadastrado.
+        for token in _tokens(item.description):
+            if len(token) >= 4:
+                vocabulary.add(token)
+
+    return vocabulary
+
+
+def _best_token_correction(
+    token: str,
+    vocabulary: set[str],
+) -> tuple[str, float] | None:
+    if len(token) <= 3 or token in vocabulary:
+        return None
+
+    max_distance = _max_typo_distance(token)
+    candidates: list[tuple[float, int, str]] = []
+
+    # Restringe por comprimento antes de calcular similaridade.
+    for candidate in vocabulary:
+        if abs(len(candidate) - len(token)) > max_distance:
+            continue
+
+        distance = _edit_distance(token, candidate)
+        if distance > max_distance:
+            continue
+
+        ratio = SequenceMatcher(None, token, candidate).ratio()
+
+        # Tolerância propositalmente maior que a versão anterior, mas ainda
+        # exige proximidade suficiente para não "inventar" termos.
+        min_ratio = 0.66 if len(token) >= 7 else 0.72
+        if ratio < min_ratio:
+            continue
+
+        score = ratio - (distance * 0.035)
+        candidates.append((score, distance, candidate))
+
+    if not candidates:
+        return None
+
+    candidates.sort(reverse=True)
+    best_score, _distance, best = candidates[0]
+
+    # Se existem duas opções quase empatadas, prefere não autocorrigir.
+    if len(candidates) > 1:
+        second_score = candidates[1][0]
+        if best_score - second_score < 0.045:
+            return None
+
+    return best, best_score
+
+
+def _correct_query(
+    query: str,
+    results: list[SearchResult],
+) -> tuple[str, tuple[tuple[str, str], ...]]:
+    vocabulary = _search_vocabulary(results)
+    normalized = normalize(query)
+    raw_tokens = re.findall(r"[a-z0-9]+", normalized)
+
+    corrected_tokens: list[str] = []
+    corrections: list[tuple[str, str]] = []
+
+    for token in raw_tokens:
+        if token in _STOPWORDS or token.isdigit():
+            corrected_tokens.append(token)
+            continue
+
+        correction = _best_token_correction(token, vocabulary)
+        if correction is None:
+            corrected_tokens.append(token)
+            continue
+
+        replacement, _score = correction
+        corrected_tokens.append(replacement)
+        if replacement != token:
+            corrections.append((token, replacement))
+
+    corrected_query = " ".join(corrected_tokens).strip()
+    return corrected_query or normalized, tuple(corrections)
+
+
+
 def _intent_kinds(query: str) -> tuple[str, ...]:
     normalized_query = normalize(query)
     tokens = set(_tokens(query))
@@ -396,7 +559,7 @@ def _field_score(
             (SequenceMatcher(None, token, candidate).ratio() for candidate in field_tokens),
             default=0.0,
         )
-        if best_ratio >= 0.84:
+        if best_ratio >= 0.72:
             score += fuzzy_weight * best_ratio
 
     phrase = " ".join(query_tokens)
@@ -494,7 +657,7 @@ def _rank_item(
             (SequenceMatcher(None, token, candidate).ratio() for candidate in searchable_tokens),
             default=0.0,
         )
-        if best >= 0.84:
+        if best >= 0.72:
             matched_tokens += 1
 
     if query_tokens:
@@ -519,6 +682,243 @@ def _rank_item(
     return score, reason, matched_tokens
 
 
+
+def _compact(value: str, *, limit: int = 230) -> str:
+    value = " ".join(str(value or "").split())
+    if len(value) <= limit:
+        return value
+    return value[: limit - 1].rstrip(" ,.;:-") + "…"
+
+
+def _unique_lines(*values: str) -> tuple[str, ...]:
+    output: list[str] = []
+    seen: set[str] = set()
+
+    for value in values:
+        clean = _compact(value)
+        key = normalize(clean)
+        if not clean or not key or key in seen:
+            continue
+        seen.add(key)
+        output.append(clean)
+
+    return tuple(output)
+
+
+def _answer_confidence(
+    matches: tuple[RankedSearchResult, ...],
+) -> str:
+    if not matches:
+        return "baixa"
+
+    first = matches[0].score
+    second = matches[1].score if len(matches) > 1 else 0
+    gap = first - second
+
+    if first >= 105 and gap >= 14:
+        return "alta"
+    if first >= 62:
+        return "média"
+    return "baixa"
+
+
+def _build_conversational_answer(
+    query: str,
+    matches: tuple[RankedSearchResult, ...],
+    *,
+    interpreted_as: tuple[str, ...],
+    corrections: tuple[tuple[str, str], ...],
+) -> ConversationalAnswer | None:
+    if not matches:
+        return None
+
+    first = matches[0]
+    item = first.item
+    confidence = _answer_confidence(matches)
+
+    # Se os primeiros resultados estão muito próximos, não afirma que existe
+    # uma única resposta correta.
+    ambiguous = (
+        len(matches) > 1
+        and first.score - matches[1].score < 10
+        and matches[1].item.kind == item.kind
+    )
+
+    kind = item.kind
+
+    if kind == "Portais":
+        title = (
+            "Encontrei mais de um acesso possível."
+            if ambiguous
+            else "Este é o acesso mais provável."
+        )
+        lead = (
+            f"O Portal Comercial relacionou sua pergunta ao portal "
+            f"“{item.title}”"
+            + (f" ({item.subtitle})." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(
+            item.description,
+            "Abra o registro para consultar instruções e, quando permitido, "
+            "as credenciais protegidas do acesso.",
+        )
+
+    elif kind == "Autorizações":
+        title = (
+            "Encontrei mais de uma regra de autorização."
+            if ambiguous
+            else "Esta é a orientação de autorização mais relevante."
+        )
+        lead = (
+            f"Para sua pergunta, o cadastro priorizou “{item.title}”"
+            + (f", no contexto {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Elegibilidade":
+        title = (
+            "Encontrei orientações possíveis de elegibilidade."
+            if ambiguous
+            else "Esta é a orientação de elegibilidade mais provável."
+        )
+        lead = (
+            f"O resultado mais relacionado é “{item.title}”"
+            + (f" para {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Contatos":
+        title = (
+            "Encontrei mais de um contato possível."
+            if ambiguous
+            else "Este é o contato mais provável."
+        )
+        lead = (
+            f"O contato priorizado é “{item.title}”"
+            + (f" — {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Documentos":
+        title = (
+            "Encontrei mais de um documento relacionado."
+            if ambiguous
+            else "Este é o documento mais relacionado à sua pergunta."
+        )
+        lead = (
+            f"O Portal priorizou “{item.title}”"
+            + (f" no contexto {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Coberturas":
+        title = (
+            "Encontrei mais de uma informação de cobertura."
+            if ambiguous
+            else "Esta é a informação de cobertura mais relacionada."
+        )
+        lead = (
+            f"O cadastro priorizou “{item.title}”"
+            + (f" para {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Contingências":
+        title = (
+            "Há mais de uma contingência relacionada."
+            if ambiguous
+            else "Há uma contingência relacionada à sua pergunta."
+        )
+        lead = (
+            f"A ocorrência mais relevante é “{item.title}”"
+            + (f" — {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Consultores":
+        title = (
+            "Encontrei mais de um consultor relacionado."
+            if ambiguous
+            else "Este é o consultor mais relacionado."
+        )
+        lead = (
+            f"O Portal priorizou “{item.title}”"
+            + (f" — {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Planos":
+        title = (
+            "Encontrei mais de um plano relacionado."
+            if ambiguous
+            else "Este é o plano mais relacionado."
+        )
+        lead = (
+            f"O resultado priorizado é “{item.title}”"
+            + (f" da operadora {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    elif kind == "Operadoras":
+        title = (
+            "Encontrei operadoras relacionadas."
+            if ambiguous
+            else "Esta é a operadora mais relacionada."
+        )
+        lead = f"O resultado priorizado é “{item.title}”."
+        bullets = _unique_lines(item.subtitle, item.description)
+
+    elif kind == "Comunicados":
+        title = (
+            "Encontrei comunicados relacionados."
+            if ambiguous
+            else "Este comunicado parece responder melhor à sua busca."
+        )
+        lead = (
+            f"O comunicado priorizado é “{item.title}”"
+            + (f" — {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    else:
+        title = "Encontrei uma orientação relacionada."
+        lead = (
+            f"O resultado que melhor corresponde à sua pergunta é "
+            f"“{item.title}”"
+            + (f" — {item.subtitle}." if item.subtitle else ".")
+        )
+        bullets = _unique_lines(item.description)
+
+    note_parts: list[str] = [
+        "Resposta montada somente com informações cadastradas no Portal Comercial."
+    ]
+    if corrections:
+        correction_text = ", ".join(
+            f"“{source}” → “{target}”"
+            for source, target in corrections[:3]
+        )
+        note_parts.append(f"Corrigi automaticamente: {correction_text}.")
+    if confidence == "baixa":
+        note_parts.append(
+            "A correspondência ainda é ampla; confira o registro antes de orientar o atendimento."
+        )
+    elif ambiguous:
+        note_parts.append(
+            "Existem resultados próximos; confira também as alternativas abaixo."
+        )
+
+    return ConversationalAnswer(
+        title=title,
+        lead=lead,
+        bullets=bullets[:3],
+        note=" ".join(note_parts),
+        confidence=confidence,
+        source_route=item.route,
+        source_label=f"Abrir {item.eyebrow.lower()}",
+    )
+
+
+
 def search_catalog_smart(
     results: list[SearchResult],
     query: str,
@@ -528,13 +928,23 @@ def search_catalog_smart(
 ) -> SearchResponse:
     clean_query = str(query or "").strip()
     if len(normalize(clean_query)) < 2:
-        return SearchResponse(clean_query, (), ())
+        return SearchResponse(
+            query=clean_query,
+            corrected_query=clean_query,
+            corrections=(),
+            interpreted_as=(),
+            results=(),
+            answer=None,
+        )
 
-    query_tokens = _tokens(clean_query)
+    corrected_query, corrections = _correct_query(clean_query, results)
+    query_for_search = corrected_query or clean_query
+
+    query_tokens = _tokens(query_for_search)
     if not query_tokens:
-        query_tokens = _tokens(normalize(clean_query))
+        query_tokens = _tokens(normalize(query_for_search))
 
-    intent_kinds = _intent_kinds(clean_query)
+    intent_kinds = _intent_kinds(query_for_search)
     operator_terms = _operator_terms(results)
 
     pool = [
@@ -547,33 +957,43 @@ def search_catalog_smart(
     for item in pool:
         score, reason, matched_tokens = _rank_item(
             item,
-            query=clean_query,
+            query=query_for_search,
             query_tokens=query_tokens,
             intent_kinds=intent_kinds,
             operator_terms=operator_terms,
         )
 
-        # Primeira passagem: boa cobertura ou intenção explícita.
-        required_matches = 1 if len(query_tokens) <= 2 else 2
+        # Com a correção ortográfica, podemos aceitar uma cobertura um pouco
+        # mais ampla sem perder segurança.
+        required_matches = 1 if len(query_tokens) <= 3 else 2
         intent_match = item.kind in intent_kinds
-        if score >= 22 and (matched_tokens >= required_matches or intent_match):
-            ranked.append(RankedSearchResult(item=item, score=score, reason=reason))
+        if score >= 18 and (matched_tokens >= required_matches or intent_match):
+            ranked.append(
+                RankedSearchResult(
+                    item=item,
+                    score=score,
+                    reason=reason,
+                )
+            )
 
-    relaxed = False
+    relaxed = bool(corrections)
 
-    # Se a busca natural não encontrou nada, relaxa a exigência para tolerar
-    # erros de digitação ou frases muito abertas.
+    # Segunda passagem deliberadamente mais tolerante para perguntas com
+    # muitos erros ou linguagem coloquial.
     if not ranked:
         relaxed = True
         for item in pool:
             score, reason, matched_tokens = _rank_item(
                 item,
-                query=clean_query,
+                query=query_for_search,
                 query_tokens=query_tokens,
                 intent_kinds=intent_kinds,
                 operator_terms=operator_terms,
             )
-            if score >= 13 and (matched_tokens >= 1 or item.kind in intent_kinds):
+            if score >= 9.5 and (
+                matched_tokens >= 1
+                or item.kind in intent_kinds
+            ):
                 ranked.append(
                     RankedSearchResult(
                         item=item,
@@ -594,7 +1014,6 @@ def search_catalog_smart(
     if intent_kinds:
         interpreted.extend(intent_kinds[:3])
 
-    # Mostra também a operadora reconhecida quando seu nome aparece na consulta.
     query_token_set = set(query_tokens)
     for item in results:
         if item.kind != "Operadoras":
@@ -606,10 +1025,21 @@ def search_catalog_smart(
                 interpreted.insert(0, label)
             break
 
+    final_results = tuple(ranked[:limit])
+    interpreted_tuple = tuple(interpreted[:4])
+
     return SearchResponse(
         query=clean_query,
-        interpreted_as=tuple(interpreted[:4]),
-        results=tuple(ranked[:limit]),
+        corrected_query=query_for_search,
+        corrections=corrections,
+        interpreted_as=interpreted_tuple,
+        results=final_results,
+        answer=_build_conversational_answer(
+            clean_query,
+            final_results,
+            interpreted_as=interpreted_tuple,
+            corrections=corrections,
+        ),
         relaxed=relaxed,
     )
 
