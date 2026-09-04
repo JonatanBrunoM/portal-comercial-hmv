@@ -1538,3 +1538,88 @@
         padding-bottom: 10px;
     }
 }
+
+/* ==========================================================================
+   Etapa 16 · Refinamento geral do shell e cabeçalhos
+   ========================================================================== */
+
+/*
+ * Os cabeçalhos genéricos das páginas antigas estavam grandes em comparação
+ * com a Home e a nova Pesquisa. A hierarquia permanece clara, mas mais densa.
+ */
+.portal-page-header {
+    margin-bottom: 24px;
+}
+
+.portal-page-eyebrow {
+    font-size: .61rem;
+    letter-spacing: .13em;
+}
+
+.portal-page-title {
+    max-width: 900px;
+    margin-top: 7px;
+    font-size: clamp(1.8rem, 3.2vw, 3.15rem);
+    line-height: 1.03;
+    letter-spacing: -.045em;
+}
+
+.portal-page-description {
+    max-width: 780px;
+    margin-top: 11px;
+    font-size: clamp(.82rem, 1.25vw, .98rem);
+    line-height: 1.58;
+}
+
+/*
+ * Em vez de deixar muito espaço vazio no final das páginas curtas,
+ * o conteúdo ganha uma altura mínima coerente com o viewport.
+ */
+.portal-spa-page {
+    min-height: calc(100dvh - var(--portal-topbar-height) - 52px);
+}
+
+/* Transição SPA ainda mais sutil após o ganho de performance. */
+.portal-spa-page {
+    animation-duration: 110ms;
+}
+
+/* Links e ações comuns */
+.portal-app-shell a,
+.portal-app-shell .q-btn {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Densidade específica para notebooks. */
+@media (max-height: 820px) and (min-width: 861px) {
+    .portal-page-header {
+        margin-bottom: 18px;
+    }
+
+    .portal-page-title {
+        font-size: clamp(1.7rem, 2.8vw, 2.65rem);
+    }
+
+    .portal-page-description {
+        margin-top: 8px;
+        font-size: .82rem;
+    }
+
+    .portal-spa-page {
+        min-height: calc(100dvh - var(--portal-topbar-height) - 38px);
+    }
+}
+
+@media (max-width: 860px) {
+    .portal-page-header {
+        margin-bottom: 18px;
+    }
+
+    .portal-page-title {
+        font-size: clamp(1.65rem, 7vw, 2.35rem);
+    }
+
+    .portal-page-description {
+        font-size: .8rem;
+    }
+}
