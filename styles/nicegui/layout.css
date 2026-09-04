@@ -627,3 +627,364 @@
         cursor: pointer;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 14D · Identidade institucional, perfil e alinhamento da topbar
+   ========================================================================== */
+
+/* Sidebar */
+.portal-brand {
+    align-items: flex-start;
+    gap: 9px;
+    padding: 2px 8px 22px;
+}
+
+.portal-brand-hmv-logo {
+    width: 168px;
+    height: 74px;
+    overflow: hidden;
+    border-radius: 0;
+    filter: brightness(0) invert(1);
+    opacity: .98;
+}
+
+.portal-brand-hmv-logo .q-img__image {
+    object-fit: contain !important;
+    object-position: left center !important;
+}
+
+.portal-brand-title {
+    margin-left: 2px;
+    color: rgba(255, 255, 255, .72);
+    font-size: .61rem;
+    font-weight: 850;
+    letter-spacing: .17em;
+}
+
+/* Avatar real do Google */
+.portal-user-avatar {
+    position: relative;
+    display: grid;
+    flex: 0 0 auto;
+    overflow: hidden;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--portal-primary-100);
+    color: var(--portal-primary-900);
+}
+
+.portal-user-avatar.is-sidebar {
+    width: 42px;
+    height: 42px;
+}
+
+.portal-user-avatar.is-compact {
+    width: 34px;
+    height: 34px;
+}
+
+.portal-user-avatar-image {
+    width: 100%;
+    height: 100%;
+}
+
+.portal-user-avatar-image .q-img__container,
+.portal-user-avatar-image .q-img__image {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50%;
+    object-fit: cover !important;
+}
+
+.portal-user-avatar-initials {
+    font-size: .7rem;
+    font-weight: 850;
+}
+
+.portal-profile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.portal-profile-email {
+    max-width: 100%;
+    overflow: hidden;
+    color: rgba(255,255,255,.52);
+    font-size: .59rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-profile-role {
+    margin-top: 2px;
+    font-size: .58rem;
+}
+
+/* Topbar: três zonas alinhadas */
+.portal-topbar {
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) minmax(280px, 420px) minmax(190px, 1fr);
+    height: 58px;
+    padding: 0 24px;
+    align-items: center;
+    gap: 18px;
+}
+
+.portal-topbar-left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.portal-topbar-hmv-logo {
+    width: 112px;
+    height: 38px;
+    flex: 0 0 auto;
+}
+
+.portal-topbar-hmv-logo .q-img__image {
+    object-fit: contain !important;
+    object-position: left center !important;
+}
+
+.portal-topbar-divider {
+    width: 1px;
+    height: 23px;
+    flex: 0 0 auto;
+    background: var(--portal-ink-200);
+}
+
+.portal-topbar-context {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.portal-topbar-context-label {
+    max-width: 160px;
+    overflow: hidden;
+    color: var(--portal-ink-600);
+    font-size: .71rem;
+    font-weight: 720;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-topbar-search {
+    width: 100%;
+    height: 38px;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 30px;
+    align-items: center;
+    gap: 7px;
+    padding: 0 4px 0 11px;
+}
+
+.portal-topbar-search-input,
+.portal-topbar-search-input .q-field,
+.portal-topbar-search-input .q-field__inner,
+.portal-topbar-search-input .q-field__control-container {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.portal-topbar-search-input .q-field__inner,
+.portal-topbar-search-input .q-field__control,
+.portal-topbar-search-input .q-field__control-container,
+.portal-topbar-search-input .q-field__native {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.portal-topbar-search-input .q-field__native {
+    display: flex;
+    align-items: center;
+    line-height: 36px !important;
+}
+
+.portal-topbar-search-button {
+    align-self: center;
+    justify-self: center;
+}
+
+/* Perfil na topbar */
+.portal-user-trigger {
+    min-width: 0;
+    justify-self: end;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, auto) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 7px 4px 5px !important;
+    border-radius: 13px !important;
+    color: var(--portal-ink-800) !important;
+}
+
+.portal-user-trigger:hover {
+    background: var(--portal-surface-muted) !important;
+}
+
+.portal-user-trigger-copy {
+    min-width: 0;
+    gap: 0;
+    text-align: left;
+}
+
+.portal-user-trigger-name {
+    max-width: 105px;
+    overflow: hidden;
+    font-size: .69rem;
+    font-weight: 760;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--portal-ink-900);
+}
+
+.portal-user-trigger-role {
+    margin-top: 1px;
+    font-size: .56rem;
+    color: var(--portal-ink-500);
+}
+
+.portal-user-trigger-chevron {
+    font-size: 17px;
+    color: var(--portal-ink-400);
+}
+
+.portal-user-menu {
+    min-width: 280px !important;
+    padding: 8px !important;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 16px !important;
+    box-shadow: var(--portal-shadow-md);
+}
+
+.portal-user-menu-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 10px;
+}
+
+.portal-user-menu-copy {
+    min-width: 0;
+    gap: 1px;
+}
+
+.portal-user-menu-name {
+    overflow: hidden;
+    font-size: .76rem;
+    font-weight: 780;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--portal-ink-950);
+}
+
+.portal-user-menu-email {
+    overflow: hidden;
+    font-size: .63rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--portal-ink-500);
+}
+
+.portal-user-menu-role {
+    margin-top: 4px;
+    width: fit-content;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: var(--portal-primary-50);
+    color: var(--portal-primary-700);
+    font-size: .55rem;
+    font-weight: 760;
+}
+
+.portal-user-menu-separator {
+    margin: 4px 2px;
+}
+
+.portal-user-menu-action {
+    display: flex;
+    min-height: 40px;
+    padding: 0 10px;
+    align-items: center;
+    gap: 9px;
+    border-radius: 10px;
+    color: var(--portal-ink-700) !important;
+    font-size: .68rem;
+    font-weight: 700;
+    text-decoration: none !important;
+}
+
+.portal-user-menu-action:hover {
+    background: var(--portal-surface-muted);
+    color: var(--portal-primary-800) !important;
+}
+
+.portal-user-menu-action .q-icon {
+    font-size: 18px;
+}
+
+/* Mais proximidade entre topbar e conteúdo */
+.portal-content {
+    padding-top: 14px;
+}
+
+@media (max-width: 1180px) {
+    .portal-topbar {
+        grid-template-columns: minmax(145px, .75fr) minmax(240px, 360px) auto;
+        gap: 12px;
+        padding-inline: 18px;
+    }
+
+    .portal-topbar-hmv-logo {
+        display: none;
+    }
+
+    .portal-topbar-divider {
+        display: none;
+    }
+}
+
+@media (max-width: 930px) {
+    .portal-user-trigger-copy,
+    .portal-user-trigger-chevron {
+        display: none;
+    }
+
+    .portal-topbar {
+        grid-template-columns: minmax(100px, .5fr) minmax(220px, 1fr) auto;
+    }
+}
+
+@media (max-width: 860px) {
+    .portal-topbar-left {
+        display: none;
+    }
+
+    .portal-topbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+    }
+
+    .portal-topbar-search {
+        max-width: 520px;
+        justify-self: end;
+    }
+}
+
+@media (max-width: 560px) {
+    .portal-topbar {
+        padding-inline: 12px;
+    }
+
+    .portal-topbar-search {
+        height: 36px;
+    }
+}
