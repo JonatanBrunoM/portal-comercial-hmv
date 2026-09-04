@@ -397,3 +397,207 @@
         min-height: 112px;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 15A · Camada conversacional + tolerância ampliada a erros
+   ========================================================================== */
+
+.portal-conversation-container {
+    width: 100%;
+    margin-top: 14px;
+}
+
+.portal-conversation-answer {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: 24px 26px;
+    border: 1px solid #b9d7e5;
+    border-radius: 22px;
+    background:
+        radial-gradient(
+            circle at 92% 8%,
+            rgba(0, 86, 145, .08),
+            transparent 26%
+        ),
+        linear-gradient(145deg, #f5fafc 0%, #ffffff 68%);
+    box-shadow: 0 16px 42px rgba(14, 58, 86, .08);
+}
+
+.portal-conversation-answer::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--portal-primary-700);
+    content: "";
+}
+
+.portal-conversation-answer.confidence-baixa::before {
+    background: #bb8b2d;
+}
+
+.portal-conversation-answer-top {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.portal-conversation-avatar {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: var(--portal-primary-700);
+    color: white;
+    box-shadow: 0 8px 20px rgba(0, 86, 145, .18);
+}
+
+.portal-conversation-avatar .q-icon {
+    font-size: 21px;
+}
+
+.portal-conversation-heading {
+    min-width: 0;
+    gap: 3px;
+}
+
+.portal-conversation-kicker {
+    color: var(--portal-primary-700);
+    font-size: .55rem;
+    font-weight: 850;
+    letter-spacing: .14em;
+}
+
+.portal-conversation-title {
+    color: var(--portal-ink-950);
+    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    line-height: 1.2;
+    font-weight: 790;
+    letter-spacing: -.02em;
+}
+
+.portal-conversation-confidence {
+    padding: 6px 9px;
+    border: 1px solid #c7deea;
+    border-radius: 999px;
+    background: rgba(255,255,255,.78);
+    color: var(--portal-primary-700);
+    font-size: .55rem;
+    font-weight: 760;
+    white-space: nowrap;
+}
+
+.confidence-baixa .portal-conversation-confidence {
+    border-color: #eadabc;
+    color: #8d681f;
+}
+
+.portal-conversation-lead {
+    max-width: 940px;
+    margin-top: 17px;
+    color: var(--portal-ink-900);
+    font-size: .82rem;
+    line-height: 1.65;
+    font-weight: 590;
+}
+
+.portal-conversation-points {
+    max-width: 980px;
+    margin-top: 12px;
+    gap: 8px;
+}
+
+.portal-conversation-point {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    color: var(--portal-ink-700);
+    font-size: .72rem;
+    line-height: 1.55;
+}
+
+.portal-conversation-point .q-icon {
+    margin-top: 1px;
+    color: var(--portal-primary-600);
+    font-size: 16px;
+}
+
+.portal-conversation-footer {
+    width: 100%;
+    margin-top: 18px;
+    padding-top: 15px;
+    border-top: 1px solid var(--portal-ink-100);
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.portal-conversation-note {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+    color: var(--portal-ink-500);
+    font-size: .59rem;
+    line-height: 1.45;
+}
+
+.portal-conversation-note .q-icon {
+    margin-top: 1px;
+    color: var(--portal-primary-600);
+    font-size: 15px;
+}
+
+.portal-conversation-source {
+    flex: 0 0 auto;
+    min-height: 38px !important;
+    padding: 0 13px !important;
+    border-radius: 11px !important;
+    background: var(--portal-primary-700) !important;
+    color: white !important;
+    font-size: .62rem;
+    font-weight: 760;
+}
+
+.portal-search-interpretation-chip.is-correction {
+    border-color: #d9d1ef;
+    background: #f8f5ff;
+    color: #66518f;
+}
+
+.portal-search-more-heading {
+    margin-top: 17px;
+}
+
+@media (max-width: 760px) {
+    .portal-conversation-answer {
+        padding: 20px 18px;
+        border-radius: 18px;
+    }
+
+    .portal-conversation-answer-top {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .portal-conversation-confidence {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .portal-conversation-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .portal-conversation-source {
+        width: 100%;
+    }
+}
