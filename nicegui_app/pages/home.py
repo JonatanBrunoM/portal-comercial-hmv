@@ -1,160 +1,286 @@
-
+from __future__ import annotations
 
 from nicegui import ui
 
 from nicegui_app.layout import portal_layout
+from nicegui_app.services.home_service import (
+    HomeCommunication,
+    HomeContingency,
+    HomeData,
+    HomeMetric,
+    get_home_data,
+)
 
 
-def _metric(icon: str, label: str, value: str, detail: str) -> None:
-    with ui.element("article").classes("portal-metric-card"):
-        with ui.row().classes("portal-metric-head"):
-            with ui.element("div").classes("portal-metric-icon"):
-                ui.icon(icon)
-            ui.label(label).classes("portal-metric-label")
+QUICK_ACCESS = (
+    (
+        "domain",
+        "Operadoras",
+        "Planos, regras, coberturas e orientações.",
+        "/operadoras",
+    ),
+    (
+        "vpn_key",
+        "Portais e acessos",
+        "Credenciais e instruções para os portais externos.",
+        "/portais",
+    ),
+    (
+        "description",
+        "Documentos",
+        "Manuais, formulários e referências institucionais.",
+        "/documentos",
+    ),
+    (
+        "contacts",
+        "Contatos",
+        "Canais de apoio para cada necessidade.",
+        "/contatos",
+    ),
+    (
+        "support_agent",
+        "Consultores",
+        "Responsáveis e carteiras das operadoras.",
+        "/consultores",
+    ),
+)
 
-        ui.label(value).classes("portal-metric-value")
-        ui.label(detail).classes("portal-metric-detail")
+
+def _first_name(user: dict) -> str:
+    name = str(user.get("name") or "").strip()
+    return name.split()[0] if name else ""
 
 
-def _feature_card(
+def _metric_card(item: HomeMetric) -> None:
+    with ui.button(
+        on_click=lambda route=item.route: ui.navigate.to(route),
+    ).props("flat no-caps").classes("home-metric-card"):
+        with ui.element("div").classes("home-metric-icon"):
+            ui.icon(item.icon)
+        with ui.element("div").classes("home-metric-copy"):
+            ui.label(str(item.value)).classes("home-metric-value")
+            ui.label(item.label).classes("home-metric-label")
+            ui.label(item.detail).classes("home-metric-detail")
+        ui.icon("north_east").classes("home-metric-arrow")
+
+
+def _quick_card(
     icon: str,
     title: str,
     description: str,
-    *,
-    featured: bool = False,
+    route: str,
 ) -> None:
-    classes = "portal-feature-card"
-    if featured:
+    with ui.button(
+        on_click=lambda: ui.navigate.to(route),
+    ).props("flat no-caps").classes("home-quick-card"):
+        with ui.element("div").classes("home-quick-icon"):
+            ui.icon(icon)
+        with ui.column().classes("home-quick-copy"):
+            ui.label(title).classes("home-quick-title")
+            ui.label(description).classes("home-quick-description")
+        ui.icon("arrow_forward").classes("home-quick-arrow")
+
+
+def _communication_card(item: HomeCommunication) -> None:
+    classes = "home-update-card"
+    if item.featured:
         classes += " is-featured"
 
-    with ui.element("article").classes(classes):
-        with ui.element("div").classes("portal-feature-icon"):
-            ui.icon(icon)
-        ui.label(title).classes("portal-feature-title")
-        ui.label(description).classes("portal-feature-description")
+    with ui.button(
+        on_click=lambda: ui.navigate.to(item.route),
+    ).props("flat no-caps").classes(classes):
+        with ui.row().classes("home-update-meta"):
+            ui.label(item.operator_name).classes("home-update-operator")
+            if item.featured:
+                ui.label("DESTAQUE").classes("home-update-badge")
+            elif item.category:
+                ui.label(item.category).classes("home-update-badge is-soft")
 
-        with ui.button(
-            "Explorar",
+        ui.label(item.title).classes("home-update-title")
+        if item.summary:
+            ui.label(item.summary).classes("home-update-description")
+
+        with ui.row().classes("home-update-footer"):
+            ui.label(item.priority).classes("home-update-priority")
+            with ui.row().classes("home-update-link"):
+                ui.label("Ler comunicado")
+                ui.icon("arrow_forward")
+
+
+def _contingency_card(item: HomeContingency) -> None:
+    with ui.button(
+        on_click=lambda: ui.navigate.to(item.route),
+    ).props("flat no-caps").classes("home-alert-card"):
+        with ui.element("div").classes("home-alert-indicator"):
+            ui.icon("warning_amber")
+
+        with ui.column().classes("home-alert-copy"):
+            with ui.row().classes("home-alert-meta"):
+                ui.label(item.operator_name).classes("home-alert-operator")
+                ui.label(item.status).classes("home-alert-status")
+                if item.priority:
+                    ui.label(item.priority).classes("home-alert-priority")
+
+            ui.label(item.title).classes("home-alert-title")
+            detail = item.alternative_guidance or item.description
+            if detail:
+                ui.label(detail).classes("home-alert-description")
+
+        ui.icon("arrow_forward").classes("home-alert-arrow")
+
+
+def _empty_state(
+    *,
+    icon: str,
+    title: str,
+    description: str,
+    route: str,
+    action: str,
+) -> None:
+    with ui.element("div").classes("home-empty-state"):
+        with ui.element("div").classes("home-empty-icon"):
+            ui.icon(icon)
+        with ui.column().classes("home-empty-copy"):
+            ui.label(title).classes("home-empty-title")
+            ui.label(description).classes("home-empty-description")
+        ui.button(
+            action,
             icon="arrow_forward",
-            on_click=lambda: ui.notify(
-                f"{title}: será conectado nas próximas etapas.",
-                type="info",
-                position="top",
-            ),
-        ).props("flat no-caps").classes("portal-feature-action"):
-            pass
+            on_click=lambda: ui.navigate.to(route),
+        ).props("flat no-caps").classes("home-empty-action")
+
+
+def _render_home_data(data: HomeData) -> None:
+    with ui.element("section").classes("home-metrics-grid"):
+        for metric in data.metrics:
+            _metric_card(metric)
+
+    with ui.element("section").classes("home-workspace-grid"):
+        with ui.element("article").classes("home-panel home-updates-panel"):
+            with ui.row().classes("home-panel-heading"):
+                with ui.column().classes("home-panel-heading-copy"):
+                    ui.label("ATUALIZAÇÕES").classes("home-section-kicker")
+                    ui.label("O que merece sua atenção").classes("home-section-title")
+                ui.button(
+                    "Todos",
+                    icon="arrow_forward",
+                    on_click=lambda: ui.navigate.to("/comunicados"),
+                ).props("flat no-caps").classes("home-text-action")
+
+            if data.communications:
+                with ui.column().classes("home-updates-list"):
+                    for item in data.communications:
+                        _communication_card(item)
+            else:
+                _empty_state(
+                    icon="mark_email_read",
+                    title="Nenhum comunicado vigente.",
+                    description=(
+                        "Quando houver uma comunicação publicada para o período, "
+                        "ela aparecerá aqui."
+                    ),
+                    route="/comunicados",
+                    action="Ver comunicados",
+                )
+
+        with ui.element("article").classes("home-panel home-alerts-panel"):
+            with ui.row().classes("home-panel-heading"):
+                with ui.column().classes("home-panel-heading-copy"):
+                    ui.label("OPERAÇÃO AGORA").classes("home-section-kicker")
+                    ui.label("Contingências vigentes").classes("home-section-title")
+                ui.button(
+                    "Todas",
+                    icon="arrow_forward",
+                    on_click=lambda: ui.navigate.to("/contingencias"),
+                ).props("flat no-caps").classes("home-text-action")
+
+            if data.contingencies:
+                with ui.column().classes("home-alerts-list"):
+                    for item in data.contingencies:
+                        _contingency_card(item)
+            else:
+                _empty_state(
+                    icon="verified",
+                    title="Nenhuma contingência vigente.",
+                    description=(
+                        "A operação não possui alertas ativos para o período neste momento."
+                    ),
+                    route="/contingencias",
+                    action="Consultar histórico",
+                )
 
 
 def render_home(user: dict) -> None:
+    first_name = _first_name(user)
+
+    try:
+        data = get_home_data()
+    except Exception:
+        data = HomeData(metrics=(), communications=(), contingencies=())
+
     with portal_layout(
         user=user,
         active="home",
-        page_eyebrow="CENTRAL DE INFORMAÇÃO COMERCIAL",
-        page_title="Um único ponto de partida.",
-        page_description=(
-            "A nova estrutura do Portal Comercial começa aqui: "
-            "mais clara, consistente e preparada para crescer."
-        ),
     ):
-        with ui.element("section").classes("portal-hero-panel"):
-            with ui.element("div").classes("portal-hero-copy"):
-                with ui.row().classes("portal-status-badge"):
-                    ui.element("span").classes("portal-status-dot")
-                    ui.label("Nova geração em desenvolvimento")
+        with ui.element("section").classes("home-hero"):
+            with ui.element("div").classes("home-hero-glow home-hero-glow-one"):
+                pass
+            with ui.element("div").classes("home-hero-glow home-hero-glow-two"):
+                pass
 
+            with ui.element("div").classes("home-hero-content"):
+                ui.label("PORTAL COMERCIAL").classes("home-hero-kicker")
+                greeting = f"Olá, {first_name}." if first_name else "Olá."
+                ui.label(greeting).classes("home-hero-greeting")
                 ui.label(
-                    "Informação certa, no momento em que a operação precisa."
-                ).classes("portal-hero-title")
-
+                    "Encontre a informação que a operação precisa, sem perder tempo."
+                ).classes("home-hero-title")
                 ui.label(
-                    "Esta etapa valida o Design System, o layout responsivo "
-                    "e os componentes que serão reutilizados em todo o portal."
-                ).classes("portal-hero-description")
+                    "Operadoras, portais, documentos, contatos e orientações "
+                    "reunidos em um único ponto de consulta."
+                ).classes("home-hero-description")
 
-                with ui.row().classes("portal-hero-actions"):
-                    with ui.button(
-                        "Pesquisar no portal",
-                        icon="search",
-                        on_click=lambda: ui.notify(
-                            "A pesquisa será conectada em uma próxima etapa.",
-                            type="info",
-                            position="top",
-                        ),
-                    ).props("unelevated no-caps").classes("portal-button-primary"):
-                        pass
+                with ui.button(
+                    on_click=lambda: ui.navigate.to("/pesquisa"),
+                ).props("flat no-caps").classes("home-search-command"):
+                    with ui.element("div").classes("home-search-icon"):
+                        ui.icon("search")
+                    with ui.column().classes("home-search-copy"):
+                        ui.label("Pesquisar no Portal Comercial").classes(
+                            "home-search-title"
+                        )
+                        ui.label(
+                            "Operadora, autorização, elegibilidade, portal, contato..."
+                        ).classes("home-search-placeholder")
+                    with ui.element("div").classes("home-search-shortcut"):
+                        ui.label("ABRIR")
+                        ui.icon("arrow_forward")
 
-                    with ui.button(
-                        "Ver operadoras",
-                        icon="domain",
-                        on_click=lambda: ui.navigate.to("/operadoras"),
-                    ).props("flat no-caps").classes("portal-button-secondary"):
-                        pass
-
-            with ui.element("div").classes("portal-hero-visual"):
-                with ui.element("div").classes("portal-orbit portal-orbit-one"):
+            with ui.element("div").classes("home-hero-mark"):
+                with ui.element("div").classes("home-hero-mark-ring ring-one"):
                     pass
-                with ui.element("div").classes("portal-orbit portal-orbit-two"):
+                with ui.element("div").classes("home-hero-mark-ring ring-two"):
                     pass
-                with ui.element("div").classes("portal-hero-symbol"):
+                with ui.element("div").classes("home-hero-mark-core"):
                     ui.icon("hub")
-                ui.label("INFORMAÇÃO").classes("portal-orbit-label label-one")
-                ui.label("ACESSO").classes("portal-orbit-label label-two")
-                ui.label("DECISÃO").classes("portal-orbit-label label-three")
+                ui.label("CONSULTAR").classes("home-mark-label mark-a")
+                ui.label("ORIENTAR").classes("home-mark-label mark-b")
+                ui.label("DECIDIR").classes("home-mark-label mark-c")
 
-        with ui.element("section").classes("portal-metrics-grid"):
-            _metric("domain", "Operadoras", "03", "Base de desenvolvimento")
-            _metric("vpn_key", "Portais", "—", "Integração na próxima fase")
-            _metric("description", "Documentos", "—", "Estrutura preparada")
-            _metric("verified_user", "Ambiente", "POC", "NiceGUI + Render")
+        if data.metrics:
+            _render_home_data(data)
 
-        with ui.element("section").classes("portal-section"):
-            with ui.row().classes("portal-section-heading"):
-                with ui.column().classes("portal-section-heading-copy"):
-                    ui.label("ACESSOS PRINCIPAIS").classes("portal-section-kicker")
-                    ui.label("Tudo começa por uma necessidade.").classes(
-                        "portal-section-title"
+        with ui.element("section").classes("home-quick-section"):
+            with ui.row().classes("home-section-heading"):
+                with ui.column().classes("home-section-heading-copy"):
+                    ui.label("ATALHOS").classes("home-section-kicker")
+                    ui.label("Acesso direto ao que você mais usa").classes(
+                        "home-section-title"
                     )
                 ui.label(
-                    "A fundação visual já está pronta para receber os "
-                    "módulos reais do portal."
-                ).classes("portal-section-note")
+                    "Entre no módulo certo sem percorrer menus intermediários."
+                ).classes("home-section-note")
 
-            with ui.element("div").classes("portal-feature-grid"):
-                _feature_card(
-                    "domain",
-                    "Operadoras",
-                    "Planos, regras, contatos, portais e orientações reunidos "
-                    "em uma única central.",
-                    featured=True,
-                )
-                _feature_card(
-                    "vpn_key",
-                    "Portais e acessos",
-                    "Acesso rápido às plataformas externas utilizadas pela operação.",
-                )
-                _feature_card(
-                    "description",
-                    "Documentos",
-                    "Materiais institucionais, manuais e referências para consulta.",
-                )
-                _feature_card(
-                    "support_agent",
-                    "Contatos e consultores",
-                    "Encontre rapidamente quem pode apoiar cada necessidade.",
-                )
-
-        with ui.element("section").classes("portal-foundation-strip"):
-            with ui.element("div").classes("portal-foundation-icon"):
-                ui.icon("architecture")
-            with ui.column().classes("portal-foundation-copy"):
-                ui.label("FUNDAÇÃO NICEGUI").classes("portal-foundation-kicker")
-                ui.label(
-                    "Design System e layout compartilhado ativos."
-                ).classes("portal-foundation-title")
-                ui.label(
-                    "Cores, tipografia, espaçamento, componentes e responsividade "
-                    "agora pertencem ao portal — não ao framework."
-                ).classes("portal-foundation-description")
-            with ui.row().classes("portal-foundation-tags"):
-                for tag in ("Desktop", "Tablet", "Mobile", "Componentes"):
-                    ui.label(tag).classes("portal-tag")
+            with ui.element("div").classes("home-quick-grid"):
+                for item in QUICK_ACCESS:
+                    _quick_card(*item)
