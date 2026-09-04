@@ -1224,3 +1224,317 @@
         min-width: 0 !important;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 14F · Correção estrutural do perfil
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Sidebar
+   A sidebar deixa de rolar inteira. Somente o miolo de navegação rola.
+   Assim marca e perfil nunca ficam cortados.
+   -------------------------------------------------------------------------- */
+
+.portal-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
+}
+
+.portal-sidebar-brand-area {
+    flex: 0 0 auto;
+    padding: 0;
+}
+
+.portal-sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 18px 16px;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.22) transparent;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255,255,255,.18);
+}
+
+.portal-sidebar-admin-section {
+    margin-top: 18px;
+}
+
+.portal-sidebar-footer {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 10px 18px 14px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(0, 70, 105, 0) 0%,
+            rgba(0, 70, 105, .92) 24%,
+            rgba(0, 70, 105, 1) 100%
+        );
+}
+
+.portal-profile {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: 38px minmax(0, 1fr) 28px !important;
+    align-items: center !important;
+    gap: 9px !important;
+    margin: 0 !important;
+    padding: 9px 10px !important;
+    overflow: hidden !important;
+}
+
+.portal-profile .portal-user-avatar.is-sidebar {
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+}
+
+.portal-profile-copy {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+.portal-profile-name,
+.portal-profile-role {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}
+
+.portal-profile-name {
+    font-size: .63rem !important;
+}
+
+.portal-profile-role {
+    font-size: .54rem !important;
+}
+
+.portal-logout-link {
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Topbar
+   ui.button/Quasar coloca os filhos dentro de .q-btn__content.
+   O grid agora é aplicado no elemento correto, evitando avatar/nome cortados.
+   -------------------------------------------------------------------------- */
+
+.portal-user-trigger {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 190px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 4px 7px !important;
+    overflow: visible !important;
+    border-radius: 13px !important;
+}
+
+.portal-user-trigger > .q-btn__content {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) 18px !important;
+    align-items: center !important;
+    justify-content: initial !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+}
+
+.portal-user-trigger .portal-user-avatar.is-compact {
+    display: grid !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    overflow: hidden !important;
+    place-items: center !important;
+    border-radius: 50% !important;
+}
+
+.portal-user-trigger .portal-user-avatar-image,
+.portal-user-trigger .portal-user-avatar-image .q-img__container,
+.portal-user-trigger .portal-user-avatar-image .q-img__image {
+    inset: 0 !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+}
+
+.portal-user-trigger-copy {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    gap: 0 !important;
+}
+
+.portal-user-trigger-name,
+.portal-user-trigger-role {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.15 !important;
+}
+
+.portal-user-trigger-name {
+    font-size: .65rem !important;
+}
+
+.portal-user-trigger-role {
+    margin-top: 2px !important;
+    font-size: .53rem !important;
+}
+
+.portal-user-trigger-chevron {
+    display: block !important;
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    font-size: 17px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Menu de conta
+   O próprio q-menu recebe dimensões fechadas, sem barra interna horizontal.
+   -------------------------------------------------------------------------- */
+
+.portal-user-menu {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+}
+
+.portal-user-menu-header {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+    padding: 9px !important;
+}
+
+.portal-user-menu-header .portal-user-avatar.is-sidebar {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+}
+
+.portal-user-menu-copy {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+.portal-user-menu-name,
+.portal-user-menu-email {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}
+
+.portal-user-menu-action {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+@media (max-width: 1180px) {
+    .portal-user-trigger {
+        max-width: 165px !important;
+    }
+}
+
+@media (max-width: 930px) {
+    .portal-user-trigger {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        padding: 4px !important;
+    }
+
+    .portal-user-trigger > .q-btn__content {
+        grid-template-columns: 34px !important;
+        justify-content: center !important;
+    }
+
+    .portal-user-trigger-copy,
+    .portal-user-trigger-chevron {
+        display: none !important;
+    }
+}
+
+@media (max-height: 820px) and (min-width: 861px) {
+    .portal-sidebar-scroll {
+        padding-bottom: 10px;
+    }
+
+    .portal-sidebar-admin-section {
+        margin-top: 12px;
+    }
+
+    .portal-sidebar-footer {
+        padding-top: 8px;
+        padding-bottom: 10px;
+    }
+}
