@@ -104,23 +104,25 @@ def render_pesquisa(user: dict) -> None:
     with portal_layout(
         user=user,
         active="search",
-        page_eyebrow="PESQUISA INTELIGENTE",
-        page_title="Pergunte ao Portal Comercial.",
-        page_description=(
-            "Faça uma pergunta como faria para uma pessoa. O Portal interpreta "
-            "intenção, contexto e erros de escrita e monta uma resposta "
-            "usando somente o conteúdo cadastrado."
-        ),
     ):
-        with ui.element("section").classes("portal-search-hero"):
-            with ui.element("div").classes("portal-search-orb"):
-                ui.icon("travel_explore")
+        with ui.element("section").classes("portal-search-workspace"):
+            with ui.element("div").classes("portal-search-intro"):
+                with ui.row().classes("portal-search-intro-top"):
+                    with ui.element("div").classes("portal-search-intro-icon"):
+                        ui.icon("travel_explore")
 
-            ui.label("O que você precisa saber?").classes("portal-search-question")
-            ui.label(
-                'Você pode escrever normalmente: “onde vejo a senha da Unimed?”, '
-                '“qual telefone da Cassi?” ou “como faço autorização no Bradesco?”.'
-            ).classes("portal-search-helper")
+                    with ui.column().classes("portal-search-intro-copy"):
+                        ui.label("PESQUISA INTELIGENTE").classes(
+                            "portal-search-kicker"
+                        )
+                        ui.label(
+                            "O que você precisa encontrar?"
+                        ).classes("portal-search-question")
+                        ui.label(
+                            "Pergunte do seu jeito. O Portal interpreta o contexto "
+                            "e procura a informação mais provável entre os registros "
+                            "oficiais cadastrados."
+                        ).classes("portal-search-helper")
 
             with ui.element("div").classes("portal-search-box"):
                 initial_query = str(
@@ -130,16 +132,22 @@ def render_pesquisa(user: dict) -> None:
                     ) or ""
                 ).strip()
 
+                ui.icon("search").classes("portal-search-box-leading")
                 search = ui.input(
                     placeholder=(
-                        "Ex.: senha do portal Unimed, telefone Cassi, "
-                        "autorização Bradesco..."
+                        "Ex.: como faço autorização na Unimed?"
                     ),
                     value=initial_query,
                 ).props(
                     "borderless clearable autofocus autocomplete='off'"
                 ).classes("portal-search-input")
-                ui.icon("search").classes("portal-search-box-icon")
+
+                search_button = ui.button(
+                    "Pesquisar",
+                    icon="arrow_forward",
+                ).props("unelevated no-caps").classes(
+                    "portal-search-submit"
+                )
 
             with ui.row().classes("portal-search-suggestions"):
                 ui.label("Experimente:").classes(
@@ -158,7 +166,7 @@ def render_pesquisa(user: dict) -> None:
                             search.set_value(value),
                             search.run_method("focus"),
                         ),
-                    ).props("outline rounded no-caps").classes(
+                    ).props("flat rounded no-caps").classes(
                         "portal-search-suggestion"
                     )
 
@@ -186,15 +194,16 @@ def render_pesquisa(user: dict) -> None:
         results_container = ui.element("div").classes("portal-search-results")
 
         with ui.element("section").classes("portal-search-start") as start_state:
-            ui.icon("hub")
-            ui.label("Uma busca, todo o portal.").classes(
-                "portal-search-start-title"
-            )
-            ui.label(
-                f"O catálogo atual reúne {len(catalog)} registros pesquisáveis "
-                f"em {len(kinds) - 1} áreas. Você não precisa saber em qual "
-                "módulo a informação está."
-            ).classes("portal-search-start-description")
+            with ui.row().classes("portal-search-start-inner"):
+                ui.icon("verified_user")
+                ui.label(
+                    f"{len(catalog)} informações pesquisáveis em "
+                    f"{len(kinds) - 1} áreas do Portal."
+                ).classes("portal-search-start-description")
+                ui.element("span").classes("portal-search-start-dot")
+                ui.label(
+                    "A resposta usa somente conteúdo cadastrado."
+                ).classes("portal-search-start-description")
 
         def refresh() -> None:
             query = str(search.value or "")
@@ -289,6 +298,8 @@ def render_pesquisa(user: dict) -> None:
                 for match in matches:
                     _result_card(match)
 
+        search_button.on_click(refresh)
+        search.on("keydown.enter", refresh)
         search.on_value_change(lambda _: refresh())
         category.on_value_change(lambda _: refresh())
 
