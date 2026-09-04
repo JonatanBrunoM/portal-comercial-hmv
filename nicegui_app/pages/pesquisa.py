@@ -55,8 +55,13 @@ def render_pesquisa(user: dict) -> None:
             ).classes("portal-search-helper")
 
             with ui.element("div").classes("portal-search-box"):
+                initial_query = str(
+                    ui.context.client.storage.pop("portal_home_search_query", "") or ""
+                ).strip()
+
                 search = ui.input(
-                    placeholder="Ex.: Unimed autorização, portal elegibilidade, contato..."
+                    placeholder="Ex.: Unimed autorização, portal elegibilidade, contato...",
+                    value=initial_query,
                 ).props(
                     "borderless clearable autofocus"
                 ).classes("portal-search-input")
@@ -121,3 +126,6 @@ def render_pesquisa(user: dict) -> None:
 
         search.on_value_change(lambda _: refresh())
         category.on_value_change(lambda _: refresh())
+
+        if initial_query:
+            refresh()
