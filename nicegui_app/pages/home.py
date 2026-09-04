@@ -240,21 +240,40 @@ def render_home(user: dict) -> None:
                     "reunidos em um único ponto de consulta."
                 ).classes("home-hero-description")
 
-                with ui.button(
-                    on_click=lambda: ui.navigate.to("/pesquisa"),
-                ).props("flat no-caps").classes("home-search-command"):
+                def submit_home_search() -> None:
+                    query = str(home_search.value or "").strip()
+                    if len(query) < 2:
+                        ui.notify(
+                            "Digite pelo menos 2 caracteres para pesquisar.",
+                            type="info",
+                            position="top",
+                        )
+                        home_search.run_method("focus")
+                        return
+
+                    # A consulta é transferida para a página de Pesquisa.
+                    # O resultado não é renderizado na Home.
+                    ui.context.client.storage["portal_home_search_query"] = query
+                    ui.navigate.to("/pesquisa")
+
+                with ui.element("div").classes("home-search-command"):
                     with ui.element("div").classes("home-search-icon"):
                         ui.icon("search")
-                    with ui.column().classes("home-search-copy"):
-                        ui.label("Pesquisar no Portal Comercial").classes(
-                            "home-search-title"
-                        )
-                        ui.label(
+
+                    home_search = ui.input(
+                        placeholder=(
                             "Operadora, autorização, elegibilidade, portal, contato..."
-                        ).classes("home-search-placeholder")
-                    with ui.element("div").classes("home-search-shortcut"):
-                        ui.label("ABRIR")
-                        ui.icon("arrow_forward")
+                        )
+                    ).props(
+                        "borderless dense autocomplete='off'"
+                    ).classes("home-search-input")
+                    home_search.on("keydown.enter", submit_home_search)
+
+                    ui.button(
+                        "Pesquisar",
+                        icon="arrow_forward",
+                        on_click=submit_home_search,
+                    ).props("unelevated no-caps").classes("home-search-submit")
 
             with ui.element("div").classes("home-hero-mark"):
                 with ui.element("div").classes("home-hero-mark-ring ring-one"):
