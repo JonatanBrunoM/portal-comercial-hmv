@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from difflib import SequenceMatcher
+import re
 import unicodedata
 from typing import Any
 
@@ -46,6 +48,21 @@ class SearchResult:
     route: str
     icon: str
     search_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class RankedSearchResult:
+    item: SearchResult
+    score: float
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class SearchResponse:
+    query: str
+    interpreted_as: tuple[str, ...]
+    results: tuple[RankedSearchResult, ...]
+    relaxed: bool = False
 
 
 def _operator_maps(catalog: dict[str, list[dict[str, Any]]]) -> tuple[dict[str, str], dict[str, str]]:
@@ -247,30 +264,363 @@ def get_search_catalog() -> list[SearchResult]:
     return results
 
 
-def search_catalog(results: list[SearchResult], query: str, kind: str = "Tudo") -> list[SearchResult]:
-    term = normalize(query)
-    if len(term) < 2:
-        return []
 
-    words = [word for word in term.split() if word]
-    matches = [
-        item for item in results
-        if (kind == "Tudo" or item.kind == kind)
-        and all(word in item.search_text for word in words)
+# ---------------------------------------------------------------------------
+# Pesquisa Inteligente
+# ---------------------------------------------------------------------------
+
+_STOPWORDS = {
+    "a", "ao", "aos", "as", "com", "como", "da", "das", "de", "do", "dos",
+    "e", "em", "eu", "me", "meu", "minha", "na", "nas", "no", "nos", "o",
+    "os", "ou", "para", "pela", "pelas", "pelo", "pelos", "por", "preciso",
+    "quero", "qual", "quais", "que", "se", "sobre", "um", "uma",
+}
+
+_INTENT_ALIASES: dict[str, tuple[str, ...]] = {
+    "Portais": (
+        "acesso", "acessar", "entrar", "login", "logar", "portal", "site",
+        "senha", "usuario", "credencial",
+    ),
+    "Autorizações": (
+        "autorizar", "autorizacao", "autorizacoes", "guia", "liberacao",
+        "liberar", "pre autorizacao", "preautorizacao",
+    ),
+    "Elegibilidade": (
+        "elegibilidade", "elegivel", "elegibilidade do paciente", "validar carteira",
+        "validar carteirinha", "carteira", "carteirinha",
+    ),
+    "Contatos": (
+        "contato", "telefone", "ramal", "whatsapp", "email", "e-mail", "falar",
+        "central", "atendimento",
+    ),
+    "Consultores": (
+        "consultor", "consultora", "executivo", "executiva", "gestor da conta",
+        "gerente da conta",
+    ),
+    "Documentos": (
+        "documento", "documentos", "formulario", "formulário", "manual", "arquivo",
+        "anexo", "termo",
+    ),
+    "Coberturas": (
+        "cobertura", "coberto", "cobre", "acomodacao", "acomodação",
+        "acompanhante", "restricao", "restrição",
+    ),
+    "Planos": (
+        "plano", "planos", "produto", "produtos",
+    ),
+    "Operadoras": (
+        "operadora", "operadoras", "convenio", "convênio", "convenios", "convênios",
+    ),
+    "Comunicados": (
+        "comunicado", "comunicados", "aviso", "avisos", "novidade", "atualizacao",
+        "atualização",
+    ),
+    "Contingências": (
+        "contingencia", "contingência", "contingencias", "contingências",
+        "indisponivel", "indisponível", "fora do ar", "instabilidade", "falha",
+    ),
+    "Dicas operacionais": (
+        "dica", "dicas", "orientacao", "orientação", "procedimento", "como fazer",
+    ),
+}
+
+_KIND_PRIORITY = {
+    "Portais": 8,
+    "Autorizações": 8,
+    "Elegibilidade": 8,
+    "Contatos": 7,
+    "Documentos": 7,
+    "Coberturas": 7,
+    "Contingências": 7,
+    "Operadoras": 6,
+    "Planos": 6,
+    "Consultores": 6,
+    "Comunicados": 5,
+    "Dicas operacionais": 5,
+}
+
+
+def _tokens(value: str) -> list[str]:
+    normalized = normalize(value)
+    return [
+        token
+        for token in re.findall(r"[a-z0-9]+", normalized)
+        if len(token) > 1 and token not in _STOPWORDS
     ]
 
-    def score(item: SearchResult) -> tuple[int, str]:
-        title = normalize(item.title)
-        subtitle = normalize(item.subtitle)
-        points = 0
-        if term == title:
-            points += 100
-        elif title.startswith(term):
-            points += 70
-        elif term in title:
-            points += 50
-        if term in subtitle:
-            points += 20
-        return (-points, item.title.lower())
 
-    return sorted(matches, key=score)
+def _intent_kinds(query: str) -> tuple[str, ...]:
+    normalized_query = normalize(query)
+    tokens = set(_tokens(query))
+    found: list[str] = []
+
+    for kind, aliases in _INTENT_ALIASES.items():
+        for alias in aliases:
+            normalized_alias = normalize(alias)
+            alias_tokens = set(_tokens(normalized_alias))
+            if (
+                normalized_alias in normalized_query
+                or (alias_tokens and alias_tokens.issubset(tokens))
+            ):
+                found.append(kind)
+                break
+
+    return tuple(found)
+
+
+def _field_score(
+    query_tokens: list[str],
+    field: str,
+    *,
+    exact_weight: float,
+    prefix_weight: float,
+    fuzzy_weight: float,
+) -> float:
+    if not query_tokens or not field:
+        return 0.0
+
+    normalized_field = normalize(field)
+    field_tokens = _tokens(field)
+    score = 0.0
+
+    for token in query_tokens:
+        if token in field_tokens:
+            score += exact_weight
+            continue
+
+        if any(candidate.startswith(token) or token.startswith(candidate) for candidate in field_tokens):
+            score += prefix_weight
+            continue
+
+        best_ratio = max(
+            (SequenceMatcher(None, token, candidate).ratio() for candidate in field_tokens),
+            default=0.0,
+        )
+        if best_ratio >= 0.84:
+            score += fuzzy_weight * best_ratio
+
+    phrase = " ".join(query_tokens)
+    if phrase and phrase in normalized_field:
+        score += exact_weight * 1.35
+
+    return score
+
+
+def _operator_terms(results: list[SearchResult]) -> set[str]:
+    terms: set[str] = set()
+    for item in results:
+        if item.kind != "Operadoras":
+            continue
+        for token in _tokens(f"{item.title} {item.subtitle}"):
+            if len(token) >= 3:
+                terms.add(token)
+    return terms
+
+
+def _rank_item(
+    item: SearchResult,
+    *,
+    query: str,
+    query_tokens: list[str],
+    intent_kinds: tuple[str, ...],
+    operator_terms: set[str],
+) -> tuple[float, str, int]:
+    title_score = _field_score(
+        query_tokens,
+        item.title,
+        exact_weight=22,
+        prefix_weight=15,
+        fuzzy_weight=10,
+    )
+    subtitle_score = _field_score(
+        query_tokens,
+        item.subtitle,
+        exact_weight=15,
+        prefix_weight=10,
+        fuzzy_weight=7,
+    )
+    description_score = _field_score(
+        query_tokens,
+        item.description,
+        exact_weight=7,
+        prefix_weight=4.5,
+        fuzzy_weight=3,
+    )
+    body_score = _field_score(
+        query_tokens,
+        item.search_text,
+        exact_weight=3.2,
+        prefix_weight=2.2,
+        fuzzy_weight=1.4,
+    )
+
+    score = title_score + subtitle_score + description_score + body_score
+
+    normalized_query = normalize(query)
+    normalized_title = normalize(item.title)
+    normalized_subtitle = normalize(item.subtitle)
+
+    if normalized_query == normalized_title:
+        score += 90
+    elif normalized_title.startswith(normalized_query):
+        score += 52
+    elif normalized_query and normalized_query in normalized_title:
+        score += 34
+
+    if normalized_query and normalized_query in normalized_subtitle:
+        score += 16
+
+    if item.kind in intent_kinds:
+        score += 38 + _KIND_PRIORITY.get(item.kind, 0)
+
+    # Quando a busca contém o nome de uma operadora, valoriza fortemente
+    # registros relacionados a ela.
+    query_operator_tokens = operator_terms.intersection(query_tokens)
+    subtitle_tokens = set(_tokens(item.subtitle))
+    title_tokens = set(_tokens(item.title))
+    operator_hits = len(query_operator_tokens.intersection(subtitle_tokens | title_tokens))
+    if operator_hits:
+        score += 34 * operator_hits
+
+    matched_tokens = 0
+    searchable_tokens = set(_tokens(
+        f"{item.title} {item.subtitle} {item.description} {item.search_text}"
+    ))
+    for token in query_tokens:
+        if token in searchable_tokens:
+            matched_tokens += 1
+            continue
+        best = max(
+            (SequenceMatcher(None, token, candidate).ratio() for candidate in searchable_tokens),
+            default=0.0,
+        )
+        if best >= 0.84:
+            matched_tokens += 1
+
+    if query_tokens:
+        coverage = matched_tokens / len(query_tokens)
+        score += coverage * 24
+    else:
+        coverage = 0
+
+    if item.kind in intent_kinds and operator_hits:
+        reason = f"{item.kind} relacionado à operadora pesquisada"
+    elif item.kind in intent_kinds:
+        reason = f"Corresponde à intenção de {item.kind.lower()}"
+    elif operator_hits:
+        reason = "Relacionado à operadora pesquisada"
+    elif title_score >= subtitle_score and title_score > 0:
+        reason = "Correspondência forte no título"
+    elif subtitle_score > 0:
+        reason = "Correspondência no contexto"
+    else:
+        reason = "Termos encontrados no conteúdo"
+
+    return score, reason, matched_tokens
+
+
+def search_catalog_smart(
+    results: list[SearchResult],
+    query: str,
+    kind: str = "Tudo",
+    *,
+    limit: int = 60,
+) -> SearchResponse:
+    clean_query = str(query or "").strip()
+    if len(normalize(clean_query)) < 2:
+        return SearchResponse(clean_query, (), ())
+
+    query_tokens = _tokens(clean_query)
+    if not query_tokens:
+        query_tokens = _tokens(normalize(clean_query))
+
+    intent_kinds = _intent_kinds(clean_query)
+    operator_terms = _operator_terms(results)
+
+    pool = [
+        item
+        for item in results
+        if kind == "Tudo" or item.kind == kind
+    ]
+
+    ranked: list[RankedSearchResult] = []
+    for item in pool:
+        score, reason, matched_tokens = _rank_item(
+            item,
+            query=clean_query,
+            query_tokens=query_tokens,
+            intent_kinds=intent_kinds,
+            operator_terms=operator_terms,
+        )
+
+        # Primeira passagem: boa cobertura ou intenção explícita.
+        required_matches = 1 if len(query_tokens) <= 2 else 2
+        intent_match = item.kind in intent_kinds
+        if score >= 22 and (matched_tokens >= required_matches or intent_match):
+            ranked.append(RankedSearchResult(item=item, score=score, reason=reason))
+
+    relaxed = False
+
+    # Se a busca natural não encontrou nada, relaxa a exigência para tolerar
+    # erros de digitação ou frases muito abertas.
+    if not ranked:
+        relaxed = True
+        for item in pool:
+            score, reason, matched_tokens = _rank_item(
+                item,
+                query=clean_query,
+                query_tokens=query_tokens,
+                intent_kinds=intent_kinds,
+                operator_terms=operator_terms,
+            )
+            if score >= 13 and (matched_tokens >= 1 or item.kind in intent_kinds):
+                ranked.append(
+                    RankedSearchResult(
+                        item=item,
+                        score=score,
+                        reason=reason,
+                    )
+                )
+
+    ranked.sort(
+        key=lambda match: (
+            -match.score,
+            -_KIND_PRIORITY.get(match.item.kind, 0),
+            match.item.title.casefold(),
+        )
+    )
+
+    interpreted: list[str] = []
+    if intent_kinds:
+        interpreted.extend(intent_kinds[:3])
+
+    # Mostra também a operadora reconhecida quando seu nome aparece na consulta.
+    query_token_set = set(query_tokens)
+    for item in results:
+        if item.kind != "Operadoras":
+            continue
+        name_tokens = set(_tokens(f"{item.title} {item.subtitle}"))
+        if name_tokens.intersection(query_token_set):
+            label = item.title
+            if label and label not in interpreted:
+                interpreted.insert(0, label)
+            break
+
+    return SearchResponse(
+        query=clean_query,
+        interpreted_as=tuple(interpreted[:4]),
+        results=tuple(ranked[:limit]),
+        relaxed=relaxed,
+    )
+
+
+def search_catalog(
+    results: list[SearchResult],
+    query: str,
+    kind: str = "Tudo",
+) -> list[SearchResult]:
+    """Compatibilidade com chamadas antigas."""
+    return [
+        match.item
+        for match in search_catalog_smart(results, query, kind).results
+    ]
