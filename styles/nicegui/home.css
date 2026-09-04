@@ -731,3 +731,236 @@
         width: 100%;
     }
 }
+
+/* ==========================================================================
+   Etapa 14B · Home mais compacta em telas menores
+   Mantém a identidade visual, mas reduz a ocupação vertical dos cards.
+   ========================================================================== */
+
+/* Hero principal: menos altura e respiro excessivo no desktop */
+.home-hero {
+    min-height: 320px;
+    padding: clamp(28px, 3vw, 46px);
+    gap: 34px;
+}
+
+.home-hero-kicker {
+    margin-bottom: 11px;
+}
+
+.home-hero-greeting {
+    margin-bottom: 4px;
+    font-size: clamp(16px, 1.45vw, 20px);
+}
+
+.home-hero-title {
+    max-width: 720px;
+    font-size: clamp(32px, 3.35vw, 50px);
+    line-height: 1.01;
+}
+
+.home-hero-description {
+    max-width: 650px;
+    margin-top: 15px;
+    font-size: clamp(14px, 1.15vw, 16px);
+    line-height: 1.52;
+}
+
+.home-search-command {
+    min-height: 66px;
+    margin-top: 22px;
+    padding: 8px 10px 8px 12px !important;
+}
+
+.home-search-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+}
+
+.home-search-icon .q-icon {
+    font-size: 21px;
+}
+
+.home-search-input .q-field__control,
+.home-search-input .q-field__native,
+.home-search-input .q-field__marginal {
+    min-height: 42px !important;
+    height: 42px !important;
+}
+
+.home-search-submit {
+    min-height: 38px !important;
+    padding: 0 13px !important;
+}
+
+.home-hero-mark {
+    width: min(27vw, 280px);
+}
+
+.home-hero-mark-core {
+    width: 88px;
+    height: 88px;
+    border-radius: 25px;
+}
+
+.home-hero-mark-core .q-icon {
+    font-size: 42px;
+}
+
+/* Indicadores */
+.home-metrics-grid {
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.home-metric-card {
+    min-height: 96px;
+    gap: 12px;
+    padding: 15px 16px !important;
+}
+
+.home-metric-icon {
+    width: 38px;
+    height: 38px;
+}
+
+.home-metric-value {
+    font-size: 23px;
+}
+
+/* Blocos de comunicados e contingências */
+.home-workspace-grid {
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.home-panel {
+    padding: 21px;
+}
+
+.home-updates-list,
+.home-alerts-list {
+    margin-top: 15px;
+    gap: 8px;
+}
+
+.home-update-card {
+    padding: 14px 15px !important;
+}
+
+.home-alert-card {
+    padding: 13px 14px !important;
+}
+
+.home-update-title,
+.home-alert-title {
+    margin-top: 7px;
+    font-size: 14px;
+}
+
+.home-update-description,
+.home-alert-description {
+    margin-top: 4px;
+}
+
+/* Atalhos */
+.home-quick-section {
+    margin-top: 12px;
+    padding-top: 21px;
+}
+
+.home-quick-grid {
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.home-quick-card {
+    min-height: 126px;
+    padding: 15px !important;
+}
+
+/*
+ * Notebooks e monitores com pouca altura (ex.: 1366x768):
+ * reduz mais um pouco sem transformar a Home em layout "apertado".
+ */
+@media (max-height: 820px) and (min-width: 761px) {
+    .home-hero {
+        min-height: 290px;
+        padding: 26px 34px;
+        gap: 26px;
+        border-radius: 24px;
+    }
+
+    .home-hero-kicker {
+        margin-bottom: 8px;
+        font-size: 10px;
+    }
+
+    .home-hero-greeting {
+        font-size: 17px;
+    }
+
+    .home-hero-title {
+        max-width: 680px;
+        font-size: clamp(31px, 3.05vw, 44px);
+    }
+
+    .home-hero-description {
+        max-width: 620px;
+        margin-top: 11px;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    .home-search-command {
+        min-height: 60px;
+        margin-top: 17px;
+    }
+
+    .home-search-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .home-search-input .q-field__control,
+    .home-search-input .q-field__native,
+    .home-search-input .q-field__marginal {
+        min-height: 38px !important;
+        height: 38px !important;
+    }
+
+    .home-search-submit {
+        min-height: 36px !important;
+    }
+
+    .home-hero-mark {
+        width: 235px;
+    }
+
+    .home-hero-mark-core {
+        width: 78px;
+        height: 78px;
+    }
+
+    .home-hero-mark-core .q-icon {
+        font-size: 37px;
+    }
+
+    .home-metrics-grid {
+        margin-top: 11px;
+    }
+
+    .home-metric-card {
+        min-height: 88px;
+        padding: 13px 14px !important;
+    }
+
+    .home-panel {
+        padding: 18px;
+    }
+
+    .home-quick-card {
+        min-height: 116px;
+    }
+}
