@@ -188,7 +188,6 @@ def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
 
             with ui.column().classes("portal-profile-copy"):
                 ui.label(name).classes("portal-profile-name")
-                ui.label(email or role).classes("portal-profile-email")
                 ui.label(role).classes("portal-profile-role")
 
             with ui.link(target="/logout").classes("portal-logout-link"):
