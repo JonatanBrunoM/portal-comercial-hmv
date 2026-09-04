@@ -1,198 +1,531 @@
-.portal-search-hero {
-    display: flex;
+/* ==========================================================================
+   Etapa 15B · Pesquisa Inteligente
+   Layout compacto, orientado à tarefa e responsivo
+   ========================================================================== */
+
+.portal-search-workspace {
+    position: relative;
     width: 100%;
-    min-height: 360px;
-    padding: 44px 36px;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 28px;
+    padding: 24px 28px 22px;
+    overflow: hidden;
+    border: 1px solid rgba(184, 207, 220, .88);
+    border-radius: 24px;
     background:
-        radial-gradient(circle at 50% 0%, rgba(0, 86, 145, .13), transparent 24rem),
-        linear-gradient(180deg, #fbfdfe 0%, var(--portal-white) 100%);
-    box-shadow: var(--portal-shadow-xs);
-    text-align: center;
+        radial-gradient(circle at 88% 0%, rgba(45, 143, 198, .11), transparent 23rem),
+        linear-gradient(135deg, #f7fbfd 0%, #ffffff 64%);
+    box-shadow: 0 10px 30px rgba(20, 61, 84, .055);
 }
 
-.portal-search-orb {
+.portal-search-intro {
+    width: 100%;
+}
+
+.portal-search-intro-top {
+    width: 100%;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.portal-search-intro-icon {
     display: grid;
-    width: 58px;
-    height: 58px;
-    margin-bottom: 18px;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    margin-top: 2px;
     place-items: center;
     border: 1px solid rgba(0, 86, 145, .12);
-    border-radius: 18px;
-    background: var(--portal-primary-50);
+    border-radius: 13px;
+    background: #eef7fb;
     color: var(--portal-primary-700);
 }
 
-.portal-search-orb .q-icon {
-    font-size: 29px;
+.portal-search-intro-icon .q-icon {
+    font-size: 21px;
+}
+
+.portal-search-intro-copy {
+    min-width: 0;
+    gap: 3px;
+}
+
+.portal-search-kicker {
+    color: var(--portal-primary-700);
+    font-size: .59rem;
+    font-weight: 850;
+    letter-spacing: .14em;
 }
 
 .portal-search-question {
     color: var(--portal-primary-950);
-    font-size: clamp(1.75rem, 3.4vw, 3rem);
+    font-size: clamp(1.55rem, 2.45vw, 2.25rem);
     font-weight: 790;
-    letter-spacing: -.045em;
+    letter-spacing: -.04em;
+    line-height: 1.08;
 }
 
 .portal-search-helper {
-    max-width: 680px;
-    margin-top: 8px;
+    max-width: 780px;
+    margin-top: 4px;
     color: var(--portal-ink-500);
-    font-size: .76rem;
-    line-height: 1.6;
+    font-size: .72rem;
+    line-height: 1.55;
 }
 
 .portal-search-box {
     position: relative;
-    display: flex;
-    width: min(760px, 100%);
-    min-height: 64px;
-    margin-top: 28px;
+    display: grid;
+    width: min(920px, 100%);
+    min-height: 58px;
+    margin-top: 20px;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
     align-items: center;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 18px;
-    background: var(--portal-white);
-    box-shadow: 0 16px 38px rgba(19, 51, 73, .09);
+    gap: 8px;
+    padding: 6px 7px 6px 17px;
+    border: 1px solid #c8dce7;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(19, 51, 73, .075);
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.portal-search-box:focus-within {
+    border-color: rgba(0, 104, 169, .48);
+    box-shadow:
+        0 0 0 3px rgba(0, 104, 169, .07),
+        0 14px 32px rgba(19, 51, 73, .08);
+}
+
+.portal-search-box-leading {
+    color: var(--portal-primary-650, var(--portal-primary-700));
+    font-size: 21px;
 }
 
 .portal-search-input {
     width: 100%;
-    padding: 0 52px 0 16px;
+    min-width: 0;
+    padding: 0;
     text-align: left;
 }
 
-.portal-search-input .q-field__native {
-    font-size: .84rem;
+.portal-search-input .q-field__control {
+    min-height: 44px !important;
 }
 
-.portal-search-box-icon {
-    position: absolute;
-    right: 19px;
-    color: var(--portal-primary-600);
-    font-size: 22px;
-    pointer-events: none;
+.portal-search-input .q-field__native {
+    color: var(--portal-ink-900);
+    font-size: .79rem;
+    font-weight: 540;
+}
+
+.portal-search-input .q-field__native::placeholder {
+    color: #829aa8;
+    opacity: 1;
+}
+
+.portal-search-submit {
+    min-height: 42px !important;
+    padding: 0 15px !important;
+    border-radius: 12px !important;
+    background: var(--portal-primary-700) !important;
+    color: white !important;
+    font-size: .63rem !important;
+    font-weight: 760 !important;
 }
 
 .portal-search-suggestions {
-    margin-top: 17px;
+    width: 100%;
+    margin-top: 10px;
     align-items: center;
-    justify-content: center;
-    gap: 7px;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
 .portal-search-suggestions-label {
     margin-right: 3px;
     color: var(--portal-ink-400);
-    font-size: .61rem;
+    font-size: .57rem;
 }
 
 .portal-search-suggestion {
-    min-height: 28px !important;
-    padding: 0 10px !important;
-    color: var(--portal-primary-700) !important;
-    font-size: .59rem !important;
+    min-height: 25px !important;
+    padding: 0 8px !important;
+    color: var(--portal-primary-650, var(--portal-primary-700)) !important;
+    background: transparent !important;
+    font-size: .55rem !important;
+    font-weight: 650 !important;
+}
+
+.portal-search-suggestion:hover {
+    background: var(--portal-primary-50) !important;
 }
 
 .portal-search-controls {
     width: 100%;
-    margin-top: 24px;
+    min-height: 40px;
+    margin-top: 13px;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
 }
 
 .portal-search-category {
-    width: 210px;
+    width: 190px;
+}
+
+.portal-search-category .q-field__control {
+    min-height: 38px !important;
 }
 
 .portal-search-count {
     color: var(--portal-ink-500);
-    font-size: .68rem;
+    font-size: .62rem;
 }
 
-.portal-search-results {
+.portal-search-interpretation {
     display: flex;
     width: 100%;
-    margin-top: 12px;
-    flex-direction: column;
+    min-height: 31px;
+    margin-top: 7px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.portal-search-interpretation-label {
+    margin-right: 2px;
+    color: var(--portal-ink-500);
+    font-size: .58rem;
+    font-weight: 650;
+}
+
+.portal-search-interpretation-chip {
+    padding: 4px 8px;
+    border: 1px solid #c9dfea;
+    border-radius: 999px;
+    background: var(--portal-primary-50);
+    color: var(--portal-primary-700);
+    font-size: .54rem;
+    font-weight: 760;
+}
+
+.portal-search-interpretation-chip.is-relaxed {
+    border-color: #e7d8bd;
+    background: #fffaf0;
+    color: #8a641e;
+}
+
+.portal-search-interpretation-chip.is-correction {
+    border-color: #d9d1ef;
+    background: #f8f5ff;
+    color: #66518f;
+}
+
+/* Estado inicial: informação auxiliar, não um segundo protagonista. */
+.portal-search-start {
+    width: 100%;
+    margin-top: 8px;
+    padding: 11px 14px;
+    border: 1px dashed #d3e1e8;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, .48);
+}
+
+.portal-search-start-inner {
+    width: 100%;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.portal-search-start-inner > .q-icon {
+    color: var(--portal-primary-500);
+    font-size: 16px;
+}
+
+.portal-search-start-description {
+    color: var(--portal-ink-500);
+    font-size: .59rem;
+    line-height: 1.4;
+}
+
+.portal-search-start-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--portal-ink-300);
+}
+
+/* Resposta conversacional */
+.portal-conversation-container {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.portal-conversation-answer {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: 19px 21px;
+    border: 1px solid #b9d7e5;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 94% 5%, rgba(0, 86, 145, .07), transparent 22rem),
+        linear-gradient(145deg, #f7fbfd 0%, #ffffff 70%);
+    box-shadow: 0 11px 28px rgba(14, 58, 86, .06);
+}
+
+.portal-conversation-answer::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--portal-primary-700);
+    content: "";
+}
+
+.portal-conversation-answer.confidence-baixa::before {
+    background: #bb8b2d;
+}
+
+.portal-conversation-answer-top {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
     gap: 10px;
 }
 
-.portal-search-result {
+.portal-conversation-avatar {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--portal-primary-700);
+    color: white;
+}
+
+.portal-conversation-avatar .q-icon {
+    font-size: 18px;
+}
+
+.portal-conversation-heading {
+    min-width: 0;
+    gap: 1px;
+}
+
+.portal-conversation-kicker {
+    color: var(--portal-primary-700);
+    font-size: .51rem;
+    font-weight: 850;
+    letter-spacing: .13em;
+}
+
+.portal-conversation-title {
+    color: var(--portal-ink-950);
+    font-size: clamp(.98rem, 1.4vw, 1.18rem);
+    line-height: 1.2;
+    font-weight: 790;
+    letter-spacing: -.018em;
+}
+
+.portal-conversation-confidence {
+    padding: 5px 8px;
+    border: 1px solid #c7deea;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .8);
+    color: var(--portal-primary-700);
+    font-size: .51rem;
+    font-weight: 760;
+    white-space: nowrap;
+}
+
+.confidence-baixa .portal-conversation-confidence {
+    border-color: #eadabc;
+    color: #8d681f;
+}
+
+.portal-conversation-lead {
+    max-width: 940px;
+    margin-top: 13px;
+    color: var(--portal-ink-900);
+    font-size: .74rem;
+    line-height: 1.55;
+    font-weight: 590;
+}
+
+.portal-conversation-points {
+    max-width: 980px;
+    margin-top: 9px;
+    gap: 5px;
+}
+
+.portal-conversation-point {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 17px minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+    color: var(--portal-ink-700);
+    font-size: .66rem;
+    line-height: 1.48;
+}
+
+.portal-conversation-point .q-icon {
+    margin-top: 1px;
+    color: var(--portal-primary-600);
+    font-size: 14px;
+}
+
+.portal-conversation-footer {
+    width: 100%;
+    margin-top: 13px;
+    padding-top: 11px;
+    border-top: 1px solid var(--portal-ink-100);
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.portal-conversation-note {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 15px minmax(0, 1fr);
+    align-items: start;
+    gap: 6px;
+    color: var(--portal-ink-500);
+    font-size: .54rem;
+    line-height: 1.4;
+}
+
+.portal-conversation-note .q-icon {
+    margin-top: 1px;
+    color: var(--portal-primary-600);
+    font-size: 14px;
+}
+
+.portal-conversation-source {
+    flex: 0 0 auto;
+    min-height: 34px !important;
+    padding: 0 11px !important;
+    border-radius: 10px !important;
+    background: var(--portal-primary-700) !important;
+    color: white !important;
+    font-size: .57rem !important;
+    font-weight: 760 !important;
+}
+
+/* Resultados relacionados */
+.portal-search-results {
     display: flex;
     width: 100%;
-    min-height: 126px;
-    padding: 19px 20px;
+    margin-top: 9px;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.portal-search-more-heading {
+    width: 100%;
+    margin: 7px 0 0;
+    padding: 0 3px;
     align-items: center;
-    gap: 16px;
+    justify-content: space-between;
+}
+
+.portal-search-more-title {
+    color: var(--portal-ink-700);
+    font-size: .63rem;
+    font-weight: 760;
+}
+
+.portal-search-more-count {
+    color: var(--portal-ink-400);
+    font-size: .54rem;
+}
+
+.portal-search-result {
+    display: grid;
+    width: 100%;
+    min-height: 92px;
+    padding: 13px 15px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
     border: 1px solid var(--portal-ink-200);
-    border-radius: 17px;
+    border-radius: 14px;
     background: var(--portal-white);
-    transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
 .portal-search-result:hover {
-    border-color: rgba(0, 86, 145, .28);
-    box-shadow: 0 10px 28px rgba(19, 51, 73, .06);
+    border-color: rgba(0, 86, 145, .26);
+    box-shadow: 0 8px 22px rgba(19, 51, 73, .055);
     transform: translateY(-1px);
 }
 
 .portal-search-result-icon {
     display: grid;
-    width: 46px;
-    height: 46px;
-    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--portal-primary-50);
     color: var(--portal-primary-700);
 }
 
 .portal-search-result-icon .q-icon {
-    font-size: 22px;
+    font-size: 19px;
 }
 
 .portal-search-result-copy {
     min-width: 0;
-    flex: 1 1 auto;
-    gap: 1px;
+    gap: 0;
+}
+
+.portal-search-result-meta {
+    width: 100%;
+    align-items: center;
+    gap: 7px;
 }
 
 .portal-search-result-eyebrow {
     color: var(--portal-primary-600);
-    font-size: .55rem;
+    font-size: .5rem;
     font-weight: 820;
-    letter-spacing: .11em;
+    letter-spacing: .1em;
 }
 
 .portal-search-result-title {
-    margin-top: 3px;
+    margin-top: 2px;
     color: var(--portal-primary-950);
-    font-size: .92rem;
+    font-size: .82rem;
     font-weight: 780;
 }
 
 .portal-search-result-subtitle {
-    margin-top: 2px;
+    margin-top: 1px;
     color: var(--portal-primary-700);
-    font-size: .64rem;
+    font-size: .59rem;
     font-weight: 680;
 }
 
 .portal-search-result-description {
     display: -webkit-box;
-    max-width: 900px;
-    margin-top: 6px;
+    max-width: 920px;
+    margin-top: 4px;
     overflow: hidden;
     color: var(--portal-ink-500);
-    font-size: .65rem;
-    line-height: 1.5;
+    font-size: .59rem;
+    line-height: 1.42;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+}
+
+.portal-search-result-reason {
+    margin-top: 5px;
+    color: var(--portal-ink-400);
+    font-size: .51rem;
+    font-weight: 620;
 }
 
 .portal-search-result-action {
@@ -200,47 +533,73 @@
     color: var(--portal-primary-700) !important;
 }
 
-.portal-search-start,
 .portal-search-empty {
     display: grid;
     width: 100%;
-    min-height: 240px;
-    margin-top: 12px;
-    padding: 34px;
+    min-height: 150px;
+    padding: 25px;
     place-items: center;
     align-content: center;
     border: 1px dashed var(--portal-ink-200);
-    border-radius: 20px;
+    border-radius: 16px;
     text-align: center;
 }
 
-.portal-search-start > .q-icon,
 .portal-search-empty > .q-icon {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     color: var(--portal-primary-300);
-    font-size: 38px;
+    font-size: 31px;
 }
 
-.portal-search-start-title,
 .portal-search-empty-title {
     color: var(--portal-primary-950);
-    font-size: 1rem;
+    font-size: .9rem;
     font-weight: 770;
 }
 
-.portal-search-start-description,
 .portal-search-empty-description {
     max-width: 520px;
-    margin-top: 6px;
+    margin-top: 5px;
     color: var(--portal-ink-500);
-    font-size: .7rem;
-    line-height: 1.6;
+    font-size: .64rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+    .portal-search-workspace {
+        padding: 21px 22px 19px;
+    }
+
+    .portal-search-controls {
+        margin-top: 11px;
+    }
 }
 
 @media (max-width: 760px) {
-    .portal-search-hero {
-        min-height: 330px;
-        padding: 34px 20px;
+    .portal-search-workspace {
+        padding: 18px 16px;
+        border-radius: 18px;
+    }
+
+    .portal-search-intro-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+    }
+
+    .portal-search-question {
+        font-size: 1.45rem;
+    }
+
+    .portal-search-box {
+        min-height: 54px;
+        margin-top: 16px;
+        grid-template-columns: 24px minmax(0, 1fr);
+        padding: 5px 13px;
+    }
+
+    .portal-search-submit {
+        display: none !important;
     }
 
     .portal-search-suggestions {
@@ -256,331 +615,17 @@
         width: 100%;
     }
 
-    .portal-search-result {
-        align-items: flex-start;
+    .portal-search-count {
+        padding-left: 2px;
     }
 
-    .portal-search-result-action {
-        align-self: center;
-    }
-}
-
-
-/* ==========================================================================
-   Etapa 15 · Pesquisa Inteligente
-   ========================================================================== */
-
-.portal-search-hero {
-    min-height: 300px;
-    padding: 34px 32px;
-}
-
-.portal-search-question {
-    font-size: clamp(1.65rem, 2.8vw, 2.65rem);
-}
-
-.portal-search-helper {
-    max-width: 760px;
-}
-
-.portal-search-interpretation {
-    width: 100%;
-    min-height: 34px;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 7px;
-}
-
-.portal-search-interpretation-label {
-    margin-right: 2px;
-    color: var(--portal-ink-500);
-    font-size: .61rem;
-    font-weight: 650;
-}
-
-.portal-search-interpretation-chip {
-    padding: 5px 9px;
-    border: 1px solid #c9dfea;
-    border-radius: 999px;
-    background: var(--portal-primary-50);
-    color: var(--portal-primary-700);
-    font-size: .57rem;
-    font-weight: 760;
-}
-
-.portal-search-interpretation-chip.is-relaxed {
-    border-color: #e7d8bd;
-    background: #fffaf0;
-    color: #8a641e;
-}
-
-.portal-search-results {
-    gap: 8px;
-}
-
-.portal-search-result {
-    min-height: 108px;
-    padding: 16px 18px;
-}
-
-.portal-search-result.is-featured {
-    min-height: 126px;
-    border-color: #acd1e3;
-    background:
-        linear-gradient(135deg, rgba(0, 86, 145, .045), transparent 55%),
-        var(--portal-white);
-    box-shadow: 0 14px 34px rgba(19, 51, 73, .07);
-}
-
-.portal-search-result.is-featured .portal-search-result-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--portal-primary-700);
-    color: white;
-}
-
-.portal-search-result-meta {
-    width: 100%;
-    align-items: center;
-    gap: 8px;
-}
-
-.portal-search-result-best {
-    padding: 4px 7px;
-    border-radius: 999px;
-    background: var(--portal-primary-100);
-    color: var(--portal-primary-800);
-    font-size: .5rem;
-    font-weight: 850;
-    letter-spacing: .07em;
-}
-
-.portal-search-result-reason {
-    margin-top: 7px;
-    color: var(--portal-ink-400);
-    font-size: .56rem;
-    font-weight: 620;
-}
-
-.portal-search-more-heading {
-    width: 100%;
-    margin: 8px 0 1px;
-    padding: 0 4px;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.portal-search-more-title {
-    color: var(--portal-ink-700);
-    font-size: .67rem;
-    font-weight: 760;
-}
-
-.portal-search-more-count {
-    color: var(--portal-ink-400);
-    font-size: .58rem;
-}
-
-@media (max-width: 760px) {
-    .portal-search-hero {
-        min-height: 270px;
-        padding: 28px 18px;
+    .portal-search-start-dot {
+        display: none;
     }
 
-    .portal-search-interpretation {
-        align-items: flex-start;
-    }
-
-    .portal-search-result.is-featured {
-        min-height: 112px;
-    }
-}
-
-
-/* ==========================================================================
-   Etapa 15A · Camada conversacional + tolerância ampliada a erros
-   ========================================================================== */
-
-.portal-conversation-container {
-    width: 100%;
-    margin-top: 14px;
-}
-
-.portal-conversation-answer {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    padding: 24px 26px;
-    border: 1px solid #b9d7e5;
-    border-radius: 22px;
-    background:
-        radial-gradient(
-            circle at 92% 8%,
-            rgba(0, 86, 145, .08),
-            transparent 26%
-        ),
-        linear-gradient(145deg, #f5fafc 0%, #ffffff 68%);
-    box-shadow: 0 16px 42px rgba(14, 58, 86, .08);
-}
-
-.portal-conversation-answer::before {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: var(--portal-primary-700);
-    content: "";
-}
-
-.portal-conversation-answer.confidence-baixa::before {
-    background: #bb8b2d;
-}
-
-.portal-conversation-answer-top {
-    width: 100%;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-}
-
-.portal-conversation-avatar {
-    width: 44px;
-    height: 44px;
-    display: grid;
-    place-items: center;
-    border-radius: 14px;
-    background: var(--portal-primary-700);
-    color: white;
-    box-shadow: 0 8px 20px rgba(0, 86, 145, .18);
-}
-
-.portal-conversation-avatar .q-icon {
-    font-size: 21px;
-}
-
-.portal-conversation-heading {
-    min-width: 0;
-    gap: 3px;
-}
-
-.portal-conversation-kicker {
-    color: var(--portal-primary-700);
-    font-size: .55rem;
-    font-weight: 850;
-    letter-spacing: .14em;
-}
-
-.portal-conversation-title {
-    color: var(--portal-ink-950);
-    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
-    line-height: 1.2;
-    font-weight: 790;
-    letter-spacing: -.02em;
-}
-
-.portal-conversation-confidence {
-    padding: 6px 9px;
-    border: 1px solid #c7deea;
-    border-radius: 999px;
-    background: rgba(255,255,255,.78);
-    color: var(--portal-primary-700);
-    font-size: .55rem;
-    font-weight: 760;
-    white-space: nowrap;
-}
-
-.confidence-baixa .portal-conversation-confidence {
-    border-color: #eadabc;
-    color: #8d681f;
-}
-
-.portal-conversation-lead {
-    max-width: 940px;
-    margin-top: 17px;
-    color: var(--portal-ink-900);
-    font-size: .82rem;
-    line-height: 1.65;
-    font-weight: 590;
-}
-
-.portal-conversation-points {
-    max-width: 980px;
-    margin-top: 12px;
-    gap: 8px;
-}
-
-.portal-conversation-point {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 18px minmax(0, 1fr);
-    align-items: start;
-    gap: 8px;
-    color: var(--portal-ink-700);
-    font-size: .72rem;
-    line-height: 1.55;
-}
-
-.portal-conversation-point .q-icon {
-    margin-top: 1px;
-    color: var(--portal-primary-600);
-    font-size: 16px;
-}
-
-.portal-conversation-footer {
-    width: 100%;
-    margin-top: 18px;
-    padding-top: 15px;
-    border-top: 1px solid var(--portal-ink-100);
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.portal-conversation-note {
-    min-width: 0;
-    flex: 1 1 auto;
-    display: grid;
-    grid-template-columns: 16px minmax(0, 1fr);
-    align-items: start;
-    gap: 7px;
-    color: var(--portal-ink-500);
-    font-size: .59rem;
-    line-height: 1.45;
-}
-
-.portal-conversation-note .q-icon {
-    margin-top: 1px;
-    color: var(--portal-primary-600);
-    font-size: 15px;
-}
-
-.portal-conversation-source {
-    flex: 0 0 auto;
-    min-height: 38px !important;
-    padding: 0 13px !important;
-    border-radius: 11px !important;
-    background: var(--portal-primary-700) !important;
-    color: white !important;
-    font-size: .62rem;
-    font-weight: 760;
-}
-
-.portal-search-interpretation-chip.is-correction {
-    border-color: #d9d1ef;
-    background: #f8f5ff;
-    color: #66518f;
-}
-
-.portal-search-more-heading {
-    margin-top: 17px;
-}
-
-@media (max-width: 760px) {
     .portal-conversation-answer {
-        padding: 20px 18px;
-        border-radius: 18px;
+        padding: 17px 15px;
+        border-radius: 15px;
     }
 
     .portal-conversation-answer-top {
@@ -599,5 +644,40 @@
 
     .portal-conversation-source {
         width: 100%;
+    }
+
+    .portal-search-result {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+        padding: 12px;
+        gap: 9px;
+    }
+
+    .portal-search-result-icon {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-search-intro-top {
+        gap: 10px;
+    }
+
+    .portal-search-intro-icon {
+        display: none;
+    }
+
+    .portal-search-helper {
+        font-size: .67rem;
+    }
+
+    .portal-search-result {
+        grid-template-columns: 34px minmax(0, 1fr);
+    }
+
+    .portal-search-result-action {
+        grid-column: 2;
+        justify-self: end;
+        margin-top: -29px;
     }
 }
