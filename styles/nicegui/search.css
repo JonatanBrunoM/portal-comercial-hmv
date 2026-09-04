@@ -795,3 +795,145 @@ body:has(.portal-search-workspace) .portal-spa-page {
         width: calc(100% - 20px) !important;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 15D · Filtro integrado ao design da Pesquisa
+   ========================================================================== */
+
+.portal-search-filter-wrap {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.portal-search-filter-label {
+    color: var(--portal-ink-400);
+    font-size: .56rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.portal-search-filter-button {
+    min-width: 154px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border: 1px solid #cbdde7 !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    color: var(--portal-ink-700) !important;
+    box-shadow: none !important;
+    transition:
+        border-color .15s ease,
+        background-color .15s ease,
+        box-shadow .15s ease;
+}
+
+.portal-search-filter-button:hover {
+    border-color: rgba(0, 86, 145, .32) !important;
+    background: #fff !important;
+    box-shadow: 0 5px 14px rgba(19, 51, 73, .05) !important;
+}
+
+.portal-search-filter-button > .q-btn__content {
+    width: 100%;
+    min-width: 0;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: nowrap !important;
+}
+
+.portal-search-filter-icon {
+    color: var(--portal-primary-650, var(--portal-primary-700));
+    font-size: 16px;
+}
+
+.portal-search-filter-value {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--portal-ink-800);
+    font-size: .62rem;
+    font-weight: 720;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-search-filter-chevron {
+    color: var(--portal-ink-400);
+    font-size: 16px;
+}
+
+.portal-search-filter-menu {
+    width: 226px !important;
+    min-width: 226px !important;
+    max-width: min(226px, calc(100vw - 24px)) !important;
+    max-height: 315px !important;
+    padding: 7px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 16px 40px rgba(19, 51, 73, .13) !important;
+    scrollbar-width: thin;
+}
+
+.portal-search-filter-menu-title {
+    padding: 7px 10px 8px;
+    color: var(--portal-ink-400);
+    font-size: .5rem;
+    font-weight: 850;
+    letter-spacing: .11em;
+}
+
+.portal-search-filter-option {
+    width: 100% !important;
+    min-height: 35px !important;
+    padding: 0 9px !important;
+    justify-content: flex-start !important;
+    border-radius: 9px !important;
+    color: var(--portal-ink-700) !important;
+}
+
+.portal-search-filter-option:hover {
+    background: var(--portal-primary-50) !important;
+    color: var(--portal-primary-800) !important;
+}
+
+.portal-search-filter-option > .q-btn__content {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 17px minmax(0, 1fr);
+    justify-content: start !important;
+    gap: 7px;
+}
+
+.portal-search-filter-option-icon {
+    color: var(--portal-primary-500);
+    font-size: 14px;
+}
+
+.portal-search-filter-option-label {
+    overflow: hidden;
+    font-size: .61rem;
+    font-weight: 650;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .portal-search-filter-wrap {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .portal-search-filter-button {
+        width: min(190px, 62vw) !important;
+    }
+}
