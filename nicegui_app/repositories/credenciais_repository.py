@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from nicegui_app.data.supabase_client import rest_insert, rest_select, rest_update
+from nicegui_app.data.supabase_client import rest_insert, rest_rpc, rest_select, rest_update
 
 
 def list_credentials_by_portal(portal_id: str, *, active_only: bool = False) -> list[dict[str, Any]]:
@@ -93,3 +93,44 @@ def append_credential_audit(
             "dados_novos": metadata or {},
         },
     )
+
+
+
+def rotate_credential_atomic(
+    *,
+    credential_id: str,
+    actor_id: str,
+    encrypted_password: str,
+    login: str,
+    identification: str,
+    access_tip: str | None,
+    notes: str | None,
+    status: str,
+    blocked_passwords: int,
+    password_rule: str | None,
+    change_reason: str,
+    changed_at: str,
+) -> dict[str, Any] | None:
+    """Arquiva a versão atual e troca a senha em uma única transação Postgres."""
+    data = rest_rpc(
+        "portal_rotate_credential",
+        {
+            "p_credential_id": credential_id,
+            "p_actor_id": actor_id,
+            "p_encrypted_password": encrypted_password,
+            "p_login": login,
+            "p_identification": identification,
+            "p_access_tip": access_tip,
+            "p_notes": notes,
+            "p_status": status,
+            "p_blocked_passwords": blocked_passwords,
+            "p_password_rule": password_rule,
+            "p_change_reason": change_reason,
+            "p_changed_at": changed_at,
+        },
+    )
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        return dict(data[0])
+    if isinstance(data, dict):
+        return dict(data)
+    return None
