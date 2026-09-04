@@ -127,12 +127,26 @@ def _nav_button(
 
 
 def _brand() -> None:
-    with ui.row().classes("portal-brand"):
-        with ui.element("div").classes("portal-brand-mark"):
-            ui.icon("local_hospital")
-        with ui.column().classes("portal-brand-copy"):
-            ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
-            ui.label("Hospital Moinhos de Vento").classes("portal-brand-subtitle")
+    with ui.column().classes("portal-brand"):
+        ui.image(
+            "https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png"
+        ).classes("portal-brand-hmv-logo")
+        ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
+
+
+
+def _user_avatar(user: dict, *, compact: bool = False) -> None:
+    name = str(user.get("name") or "").strip()
+    email = str(user.get("email") or "").strip()
+    picture = str(user.get("picture") or "").strip()
+    size_class = "is-compact" if compact else "is-sidebar"
+
+    with ui.element("div").classes(f"portal-user-avatar {size_class}"):
+        if picture:
+            ui.image(picture).classes("portal-user-avatar-image")
+        else:
+            ui.label(_initials(name, email)).classes("portal-user-avatar-initials")
+
 
 
 def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
@@ -169,18 +183,23 @@ def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
                         navigation=navigation,
                     )
 
-        with ui.row().classes("portal-profile"):
-            ui.avatar(_initials(name, email)).classes("portal-profile-avatar")
+        with ui.element("div").classes("portal-profile"):
+            _user_avatar(user)
+
             with ui.column().classes("portal-profile-copy"):
                 ui.label(name).classes("portal-profile-name")
+                ui.label(email or role).classes("portal-profile-email")
                 ui.label(role).classes("portal-profile-role")
+
             with ui.link(target="/logout").classes("portal-logout-link"):
                 ui.icon("logout").classes("portal-profile-more")
 
 
 def _topbar(user: dict, navigation: PortalNavigationState) -> None:
-    name = str(user.get("name") or "").strip()
+    name = str(user.get("name") or "").strip() or "Usuário institucional"
     email = str(user.get("email") or "").strip()
+    role = "Administrador" if user.get("role") == "admin" else "Usuário"
+    first_name = name.split()[0] if name else "Perfil"
 
     def submit_global_search() -> None:
         query = str(global_search.value or "").strip()
@@ -198,19 +217,20 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
         ui.navigate.to("/pesquisa")
 
     with ui.element("header").classes("portal-topbar"):
-        with ui.row().classes("portal-mobile-brand"):
-            with ui.element("div").classes("portal-mobile-brand-mark"):
-                ui.icon("local_hospital")
-            ui.label("Portal Comercial").classes("portal-mobile-brand-title")
+        # Identidade/contexto
+        with ui.element("div").classes("portal-topbar-left"):
+            ui.image(
+                "https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png"
+            ).classes("portal-topbar-hmv-logo")
+            with ui.element("div").classes("portal-topbar-divider"):
+                pass
+            with ui.row().classes("portal-topbar-context"):
+                context_label = ui.label("Início").classes(
+                    "portal-topbar-context-label"
+                )
+                navigation.bind_context_label(context_label)
 
-        with ui.row().classes("portal-topbar-context"):
-            ui.icon("chevron_right").classes("portal-topbar-context-icon")
-            context_label = ui.label("Início").classes("portal-topbar-context-label")
-            navigation.bind_context_label(context_label)
-
-        with ui.element("div").classes("portal-topbar-spacer"):
-            pass
-
+        # Pesquisa central
         with ui.element("div").classes("portal-topbar-search"):
             ui.icon("search").classes("portal-topbar-search-icon")
             global_search = ui.input(
@@ -226,8 +246,27 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
                 "flat round dense aria-label='Pesquisar'"
             ).classes("portal-topbar-search-button")
 
-        with ui.element("div").classes("portal-topbar-user"):
-            ui.avatar(_initials(name, email)).classes("portal-topbar-avatar")
+        # Perfil / conta
+        with ui.button().props("flat no-caps").classes("portal-user-trigger"):
+            _user_avatar(user, compact=True)
+            with ui.column().classes("portal-user-trigger-copy"):
+                ui.label(first_name).classes("portal-user-trigger-name")
+                ui.label(role).classes("portal-user-trigger-role")
+            ui.icon("expand_more").classes("portal-user-trigger-chevron")
+
+            with ui.menu().classes("portal-user-menu"):
+                with ui.element("div").classes("portal-user-menu-header"):
+                    _user_avatar(user)
+                    with ui.column().classes("portal-user-menu-copy"):
+                        ui.label(name).classes("portal-user-menu-name")
+                        ui.label(email).classes("portal-user-menu-email")
+                        ui.label(role).classes("portal-user-menu-role")
+
+                ui.separator().classes("portal-user-menu-separator")
+
+                with ui.link(target="/logout").classes("portal-user-menu-action"):
+                    ui.icon("logout")
+                    ui.label("Sair da conta")
 
 
 def _mobile_navigation(navigation: PortalNavigationState) -> None:
