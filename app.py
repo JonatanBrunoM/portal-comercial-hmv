@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import Request
@@ -36,7 +37,40 @@ from nicegui_app.pages.operadoras import (
 )
 from nicegui_app.theme import apply_theme
 from nicegui_app.layout import portal_shell, spa_content_mode
-from nicegui_app.data.supabase_client import warm_public_data_cache
+from nicegui_app.data.supabase_client import warm_public_data_cache, get_supabase_server_key, get_supabase_url
+
+
+logger = logging.getLogger(__name__)
+
+
+def _validate_production_configuration() -> None:
+    """Falha cedo quando um deploy real está sem uma proteção obrigatória."""
+    if not os.getenv("RENDER", "").strip():
+        return
+
+    required = {
+        "PORTAL_SESSION_SECRET": os.getenv("PORTAL_SESSION_SECRET", "").strip(),
+        "PORTAL_CREDENTIALS_FERNET_KEY": os.getenv("PORTAL_CREDENTIALS_FERNET_KEY", "").strip(),
+        "GOOGLE_CLIENT_ID": os.getenv("GOOGLE_CLIENT_ID", "").strip(),
+        "GOOGLE_CLIENT_SECRET": os.getenv("GOOGLE_CLIENT_SECRET", "").strip(),
+        "PORTAL_BASE_URL": os.getenv("PORTAL_BASE_URL", "").strip(),
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise RuntimeError(
+            "Configuração de produção incompleta. Variáveis ausentes: "
+            + ", ".join(missing)
+        )
+
+    # Também valida Supabase sem registrar URL/chave.
+    get_supabase_url()
+    get_supabase_server_key()
+
+
+@app.on_startup
+async def validate_production_security() -> None:
+    _validate_production_configuration()
+    logger.info("Validação de segurança do ambiente concluída.")
 
 
 @app.on_startup
