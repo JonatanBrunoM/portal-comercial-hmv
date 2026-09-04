@@ -17,6 +17,7 @@ from nicegui_app.repositories.credenciais_repository import (
     list_credential_history,
     list_credentials_by_portal,
     update_credential,
+    rotate_credential_atomic,
 )
 from nicegui_app.security.credentials_crypto import (
     CredentialCryptoConfigurationError,
@@ -84,6 +85,7 @@ def _audit(
     credential_id: str,
     description: str,
     metadata: dict[str, Any] | None = None,
+    required: bool = False,
 ) -> None:
     """Auditoria sem senha, ciphertext ou conteúdo sensível."""
     try:
@@ -101,6 +103,10 @@ def _audit(
             action,
             credential_id,
         )
+        if required:
+            raise CredentialSecurityError(
+                "Não foi possível registrar o acesso seguro. A senha não foi liberada."
+            ) from None
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,6 +184,7 @@ def reveal_password(
         credential_id=credential_id,
         description="Acesso autorizado à senha de portal.",
         metadata={"portal_id": _text(row, "portal_id")},
+        required=True,
     )
     return password
 
@@ -323,45 +330,57 @@ def save_credential(
         payload["senha_alterada_em"] = now
 
     if credential_id and password_changed:
-        # Só depois de todas as validações a versão atual vai ao histórico.
-        append_credential_history(
-            {
-                "credencial_id": credential_id,
-                "alterado_por": actor_id,
-                "login": _text(previous, "login"),
-                "senha_criptografada": _text(previous, "senha_criptografada"),
-                "motivo_alteracao": change_reason,
-                "dica_acesso": _text(previous, "dica_acesso") or None,
-            }
-        )
+        if not actor_id:
+            raise CredentialSecurityError(
+                "Não foi possível identificar o administrador responsável pela alteração."
+            )
 
-    saved = (
-        update_credential(credential_id, payload)
-        if credential_id
-        else create_credential(
-            {
-                **payload,
-                "senha_criptografada": payload["senha_criptografada"],
-                "senha_alterada_em": now,
-            }
+        # Produção: histórico + atualização + auditoria acontecem na MESMA
+        # transação Postgres. Se qualquer etapa falhar, nenhuma delas persiste.
+        saved = rotate_credential_atomic(
+            credential_id=credential_id,
+            actor_id=actor_id,
+            encrypted_password=payload["senha_criptografada"],
+            login=login,
+            identification=identification,
+            access_tip=payload["dica_acesso"],
+            notes=payload["observacoes"],
+            status=status,
+            blocked_passwords=blocked_passwords,
+            password_rule=payload["regra_senha_observacao"],
+            change_reason=change_reason,
+            changed_at=now,
         )
-    )
+    else:
+        saved = (
+            update_credential(credential_id, payload)
+            if credential_id
+            else create_credential(
+                {
+                    **payload,
+                    "senha_criptografada": payload["senha_criptografada"],
+                    "senha_alterada_em": now,
+                }
+            )
+        )
 
     if not saved:
         raise RuntimeError("Não foi possível confirmar o salvamento da credencial.")
 
-    _audit(
-        actor_id=actor_id,
-        action="Atualização de credencial" if credential_id else "Cadastro de credencial",
-        credential_id=str(saved.get("id") or credential_id or ""),
-        description="Credencial de portal alterada pela Administração.",
-        metadata={
-            "portal_id": portal_id,
-            "identificacao": identification,
-            "status": status,
-            "senha_alterada": password_changed,
-        },
-    )
+    # A rotação de senha já foi auditada dentro da transação RPC.
+    if not (credential_id and password_changed):
+        _audit(
+            actor_id=actor_id,
+            action="Atualização de credencial" if credential_id else "Cadastro de credencial",
+            credential_id=str(saved.get("id") or credential_id or ""),
+            description="Credencial de portal alterada pela Administração.",
+            metadata={
+                "portal_id": portal_id,
+                "identificacao": identification,
+                "status": status,
+                "senha_alterada": password_changed,
+            },
+        )
 
 
 def get_admin_history(
