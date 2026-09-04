@@ -170,12 +170,48 @@ def render_pesquisa(user: dict) -> None:
                         "portal-search-suggestion"
                     )
 
+        category_state = {"value": "Tudo"}
+
         with ui.row().classes("portal-search-controls"):
-            category = ui.select(
-                kinds,
-                value="Tudo",
-                label="Pesquisar em",
-            ).props("outlined dense").classes("portal-search-category")
+            with ui.element("div").classes("portal-search-filter-wrap"):
+                ui.label("Pesquisar em").classes("portal-search-filter-label")
+
+                with ui.button().props(
+                    "flat no-caps"
+                ).classes("portal-search-filter-button") as filter_button:
+                    ui.icon("tune").classes("portal-search-filter-icon")
+                    filter_value = ui.label("Tudo").classes(
+                        "portal-search-filter-value"
+                    )
+                    ui.icon("expand_more").classes(
+                        "portal-search-filter-chevron"
+                    )
+
+                    with ui.menu().classes("portal-search-filter-menu") as filter_menu:
+                        ui.label("FILTRAR RESULTADOS").classes(
+                            "portal-search-filter-menu-title"
+                        )
+
+                        for kind_name in kinds:
+                            def select_kind(
+                                value: str = kind_name,
+                            ) -> None:
+                                category_state["value"] = value
+                                filter_value.set_text(value)
+                                filter_menu.close()
+                                refresh()
+
+                            with ui.button(
+                                on_click=select_kind,
+                            ).props("flat no-caps").classes(
+                                "portal-search-filter-option"
+                            ):
+                                ui.icon(
+                                    "check" if kind_name == "Tudo" else "radio_button_unchecked"
+                                ).classes("portal-search-filter-option-icon")
+                                ui.label(kind_name).classes(
+                                    "portal-search-filter-option-label"
+                                )
 
             result_count = ui.label(
                 "Digite pelo menos 2 caracteres para pesquisar."
@@ -224,7 +260,7 @@ def render_pesquisa(user: dict) -> None:
             response = search_catalog_smart(
                 catalog,
                 query,
-                category.value or "Tudo",
+                category_state["value"],
             )
 
             if response.interpreted_as or response.relaxed:
@@ -301,7 +337,6 @@ def render_pesquisa(user: dict) -> None:
         search_button.on_click(refresh)
         search.on("keydown.enter", refresh)
         search.on_value_change(lambda _: refresh())
-        category.on_value_change(lambda _: refresh())
 
         if initial_query:
             refresh()
