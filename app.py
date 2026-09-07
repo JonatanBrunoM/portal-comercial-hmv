@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -41,9 +42,14 @@ from nicegui_app.theme import apply_theme
 from nicegui_app.layout import portal_shell, spa_content_mode
 from nicegui_app.data.supabase_client import warm_public_data_cache, get_supabase_server_key, get_supabase_url
 from nicegui_app.production_readiness import get_readiness_report
+from nicegui_app.brand import BRAND_FAVICON
 
 
 logger = logging.getLogger(__name__)
+
+BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = BASE_DIR / "assets"
+app.add_static_files("/assets", str(ASSETS_DIR))
 
 
 @app.middleware("http")
@@ -362,7 +368,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         host="0.0.0.0",
         port=int(os.getenv("PORT", "8080")),
         title="Portal Comercial | Hospital Moinhos de Vento",
-        favicon="https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png",
+        favicon=BRAND_FAVICON,
         reload=False,
         show=False,
         storage_secret=_storage_secret(),
