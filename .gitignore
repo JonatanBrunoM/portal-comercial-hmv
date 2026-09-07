@@ -1,4 +1,37 @@
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Ambientes locais
+.venv/
+venv/
+env/
+
+# Segredos / ambiente
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs e artefatos temporários
+*.log
+logs/
+tmp/
+temp/
+
+# Build / coverage
+dist/
+build/
+htmlcov/
+.coverage
