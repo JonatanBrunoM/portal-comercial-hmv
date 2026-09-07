@@ -1707,3 +1707,369 @@
         width: calc(100% - 20px);
     }
 }
+
+
+/* ==========================================================================
+   Etapa 20.2B · Sidebar adaptativa
+   --------------------------------------------------------------------------
+   Estratégia:
+   - telas largas: sidebar completa;
+   - notebook / desktop compacto: sidebar recolhida e expansível no hover;
+   - celular/tablet estreito: sidebar desktop inexiste e fica somente
+     a navegação móvel.
+   - a expansão ocorre por sobreposição; o conteúdo não "salta" de largura.
+   ========================================================================== */
+
+:root {
+    --portal-sidebar-collapsed-width: 76px;
+    --portal-sidebar-expanded-width: 268px;
+    --portal-sidebar-motion: 220ms cubic-bezier(.2, .72, .2, 1);
+}
+
+/* Garantias estruturais */
+.portal-sidebar {
+    box-sizing: border-box;
+    transition:
+        width var(--portal-sidebar-motion),
+        padding var(--portal-sidebar-motion),
+        box-shadow var(--portal-sidebar-motion);
+    will-change: width;
+}
+
+.portal-sidebar-brand-area,
+.portal-sidebar-scroll,
+.portal-sidebar-footer {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Logo compacta: existe no DOM, mas só aparece no modo recolhido. */
+.portal-brand-mini-logo {
+    display: none;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+}
+
+.portal-brand-mini-logo .q-img__image {
+    object-fit: contain !important;
+}
+
+/* Desktop amplo: mantém a experiência atual em largura confortável. */
+@media (min-width: 1500px) {
+    :root {
+        --portal-sidebar-width: var(--portal-sidebar-expanded-width);
+    }
+
+    .portal-sidebar {
+        width: var(--portal-sidebar-expanded-width);
+    }
+
+    .portal-main-shell {
+        width: calc(100vw - var(--portal-sidebar-expanded-width));
+        margin-left: var(--portal-sidebar-expanded-width);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Notebook / desktop intermediário
+   -------------------------------------------------------------------------- */
+@media (min-width: 861px) and (max-width: 1499px) {
+    :root {
+        /* Todo o restante do layout passa a reservar somente 76px. */
+        --portal-sidebar-width: var(--portal-sidebar-collapsed-width);
+    }
+
+    .portal-sidebar {
+        width: var(--portal-sidebar-collapsed-width);
+        padding: 18px 11px 14px;
+        overflow-x: hidden;
+        box-shadow: 1px 0 0 rgba(255,255,255,.03);
+    }
+
+    /*
+     * A sidebar cresce SOBRE a área principal.
+     * Não alteramos margin-left no hover, portanto a página não sofre reflow.
+     */
+    .portal-sidebar:hover,
+    .portal-sidebar:focus-within {
+        width: var(--portal-sidebar-expanded-width);
+        padding-inline: 18px;
+        box-shadow: 18px 0 38px rgba(0, 38, 63, .17);
+    }
+
+    .portal-main-shell {
+        width: calc(100vw - var(--portal-sidebar-collapsed-width));
+        margin-left: var(--portal-sidebar-collapsed-width);
+        transition: none;
+    }
+
+    /* -------------------- marca -------------------- */
+    .portal-brand {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        min-height: 58px;
+        padding: 0 0 18px;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .portal-brand-hmv-logo,
+    .portal-brand-title {
+        display: none;
+        opacity: 0;
+    }
+
+    .portal-brand-mini-logo {
+        display: block;
+        opacity: 1;
+    }
+
+    .portal-sidebar:hover .portal-brand,
+    .portal-sidebar:focus-within .portal-brand {
+        min-height: auto;
+        padding: 2px 8px 22px;
+        align-items: flex-start;
+        gap: 9px;
+    }
+
+    .portal-sidebar:hover .portal-brand-hmv-logo,
+    .portal-sidebar:focus-within .portal-brand-hmv-logo {
+        display: block;
+        opacity: .98;
+    }
+
+    .portal-sidebar:hover .portal-brand-title,
+    .portal-sidebar:focus-within .portal-brand-title {
+        display: block;
+        opacity: 1;
+    }
+
+    .portal-sidebar:hover .portal-brand-mini-logo,
+    .portal-sidebar:focus-within .portal-brand-mini-logo {
+        display: none;
+    }
+
+    /* -------------------- seção / navegação -------------------- */
+    .portal-nav-section-label {
+        height: 18px;
+        padding: 0;
+        margin: 5px 0 6px;
+        overflow: hidden;
+        text-align: center;
+        white-space: nowrap;
+        color: transparent;
+        font-size: 0;
+    }
+
+    .portal-nav-section-label::after {
+        display: inline-block;
+        width: 22px;
+        height: 1px;
+        margin-top: 8px;
+        background: rgba(255,255,255,.16);
+        content: "";
+    }
+
+    .portal-sidebar:hover .portal-nav-section-label,
+    .portal-sidebar:focus-within .portal-nav-section-label {
+        height: auto;
+        padding: 0 14px;
+        margin: 5px 0 6px;
+        text-align: left;
+        color: rgba(255,255,255,.40);
+        font-size: .61rem;
+    }
+
+    .portal-sidebar:hover .portal-nav-section-label::after,
+    .portal-sidebar:focus-within .portal-nav-section-label::after {
+        display: none;
+    }
+
+    .portal-nav-list {
+        align-items: center;
+    }
+
+    .portal-nav-item {
+        width: 50px !important;
+        min-width: 50px !important;
+        height: 45px;
+        min-height: 45px !important;
+        padding: 0 !important;
+        border-radius: 12px !important;
+    }
+
+    .portal-nav-item > .q-btn__content {
+        display: grid !important;
+        width: 100%;
+        height: 100%;
+        grid-template-columns: 1fr;
+        place-items: center;
+        gap: 0;
+        overflow: hidden;
+    }
+
+    .portal-nav-icon {
+        margin: 0 !important;
+        font-size: 20px !important;
+    }
+
+    .portal-nav-label {
+        display: none;
+        opacity: 0;
+    }
+
+    .portal-nav-item.is-active::after {
+        right: 4px;
+    }
+
+    .portal-sidebar:hover .portal-nav-list,
+    .portal-sidebar:focus-within .portal-nav-list {
+        align-items: stretch;
+    }
+
+    .portal-sidebar:hover .portal-nav-item,
+    .portal-sidebar:focus-within .portal-nav-item {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 42px;
+        min-height: 42px !important;
+        padding: 0 12px !important;
+    }
+
+    .portal-sidebar:hover .portal-nav-item > .q-btn__content,
+    .portal-sidebar:focus-within .portal-nav-item > .q-btn__content {
+        display: grid !important;
+        grid-template-columns: 24px minmax(0, 1fr);
+        justify-items: start;
+        gap: 10px;
+    }
+
+    .portal-sidebar:hover .portal-nav-label,
+    .portal-sidebar:focus-within .portal-nav-label {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        opacity: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* -------------------- perfil -------------------- */
+    .portal-sidebar-footer {
+        display: flex;
+        justify-content: center;
+    }
+
+    .portal-profile {
+        width: 50px;
+        min-width: 50px;
+        min-height: 52px;
+        margin-top: 10px;
+        padding: 5px !important;
+        grid-template-columns: 1fr;
+        place-items: center;
+        gap: 0;
+        border-radius: 13px;
+    }
+
+    .portal-profile .portal-user-avatar.is-sidebar {
+        width: 38px;
+        height: 38px;
+    }
+
+    .portal-profile-copy,
+    .portal-profile .portal-logout-link {
+        display: none;
+    }
+
+    .portal-sidebar:hover .portal-sidebar-footer,
+    .portal-sidebar:focus-within .portal-sidebar-footer {
+        display: block;
+    }
+
+    .portal-sidebar:hover .portal-profile,
+    .portal-sidebar:focus-within .portal-profile {
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        padding: 10px 10px !important;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        place-items: initial;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .portal-sidebar:hover .portal-profile-copy,
+    .portal-sidebar:focus-within .portal-profile-copy,
+    .portal-sidebar:hover .portal-profile .portal-logout-link,
+    .portal-sidebar:focus-within .portal-profile .portal-logout-link {
+        display: flex;
+    }
+
+    .portal-sidebar:hover .portal-profile .portal-logout-link,
+    .portal-sidebar:focus-within .portal-profile .portal-logout-link {
+        display: grid;
+    }
+
+    /* Evita que a largura compacta crie rolagem horizontal. */
+    .portal-sidebar-scroll {
+        overflow-x: hidden;
+    }
+
+    /* Conteúdo usa todo o espaço que sobrou após os 76px compactos. */
+    .portal-content {
+        width: calc(100% - 36px);
+        max-width: var(--portal-content-max);
+        min-width: 0;
+        margin-inline: auto;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile: somente UM sistema de navegação
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+    .portal-sidebar,
+    .portal-spa-shell .portal-sidebar {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .portal-main-shell,
+    .portal-spa-shell .portal-main-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .portal-mobile-nav,
+    .portal-spa-shell .portal-mobile-nav {
+        display: grid !important;
+    }
+}
+
+/* Telefones menores: reforça espaço para a barra inferior sem duplicar menu. */
+@media (max-width: 520px) {
+    .portal-content {
+        width: calc(100% - 20px);
+        padding-bottom: 98px;
+    }
+
+    .portal-mobile-nav {
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        height: 66px;
+        border-radius: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-sidebar {
+        transition: none;
+    }
+}
