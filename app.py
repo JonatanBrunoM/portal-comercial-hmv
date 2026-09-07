@@ -2,6 +2,7 @@ import logging
 import os
 
 from fastapi import Request
+from fastapi.responses import JSONResponse
 from nicegui import app, ui
 from starlette.responses import RedirectResponse
 
@@ -39,9 +40,38 @@ from nicegui_app.pages.operadoras import (
 from nicegui_app.theme import apply_theme
 from nicegui_app.layout import portal_shell, spa_content_mode
 from nicegui_app.data.supabase_client import warm_public_data_cache, get_supabase_server_key, get_supabase_url
+from nicegui_app.production_readiness import get_readiness_report
 
 
 logger = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def portal_security_headers(request: Request, call_next):
+    """Cabeçalhos defensivos sem interferir no runtime do NiceGUI."""
+    response = await call_next(request)
+
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(), payment=()"
+    )
+
+    if os.getenv("RENDER", "").strip():
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+
+    # Respostas de autenticação e readiness não devem ser armazenadas por proxy.
+    if request.url.path.startswith("/auth/") or request.url.path in {
+        "/login",
+        "/logout",
+        "/ready",
+    }:
+        response.headers["Cache-Control"] = "no-store"
+
+    return response
 
 
 def _validate_production_configuration() -> None:
@@ -85,6 +115,31 @@ async def warm_portal_cache() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "application": "portal-comercial-nicegui-poc"}
+
+
+@app.get("/ready")
+def readiness() -> JSONResponse:
+    """Readiness operacional para homologação e troubleshooting.
+
+    Não retorna segredos, URLs, chaves ou detalhes internos do Supabase.
+    """
+    report = get_readiness_report()
+    payload = {
+        "status": "ready" if report.ok else "not_ready",
+        "checks": [
+            {
+                "name": check.name,
+                "ok": check.ok,
+                "detail": check.detail,
+            }
+            for check in report.checks
+        ],
+    }
+    return JSONResponse(
+        content=payload,
+        status_code=200 if report.ok else 503,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get("/auth/google/login")
