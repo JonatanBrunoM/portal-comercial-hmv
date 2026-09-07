@@ -42,79 +42,140 @@ def _operator_mark(operator: OperadoraPreview) -> None:
     if operator.logo_url:
         ui.image(operator.logo_url).classes("portal-operator-logo-image")
         return
-    initials = "".join(word[0] for word in operator.short_name.split() if word)[:2].upper() or "OP"
+
+    initials = (
+        "".join(word[0] for word in operator.short_name.split() if word)[:2].upper()
+        or "OP"
+    )
     ui.label(initials).classes("portal-operator-initials")
 
 
-def _operator_card(operator: OperadoraPreview) -> None:
-    with ui.element("article").classes("portal-operator-card"):
-        with ui.row().classes("portal-operator-card-top"):
-            with ui.element("div").classes("portal-operator-mark"):
-                _operator_mark(operator)
-            with ui.element("div").classes(
-                "portal-operator-status is-active" if _is_active(operator.status)
-                else "portal-operator-status"
-            ):
-                ui.element("span").classes("portal-operator-status-dot")
-                ui.label(operator.status)
+def _operator_directory_row(operator: OperadoraPreview) -> None:
+    website = _safe_external_url(operator.site_url)
 
-        with ui.column().classes("portal-operator-card-copy"):
-            ui.label(operator.short_name).classes("portal-operator-card-title")
+    with ui.element("article").classes("portal-operator-directory-row"):
+        with ui.element("div").classes("portal-operator-directory-mark"):
+            _operator_mark(operator)
+
+        with ui.column().classes("portal-operator-directory-copy"):
+            with ui.row().classes("portal-operator-directory-heading"):
+                ui.label(operator.short_name).classes("portal-operator-directory-title")
+                with ui.element(
+                    "span"
+                ).classes(
+                    "portal-operator-status is-active"
+                    if _is_active(operator.status)
+                    else "portal-operator-status"
+                ):
+                    ui.element("span").classes("portal-operator-status-dot")
+                    ui.label(operator.status)
+
             if operator.name != operator.short_name:
-                ui.label(operator.name).classes("portal-operator-card-name")
-            if operator.code:
-                ui.label(f"Código {operator.code}").classes("portal-operator-card-code")
+                ui.label(operator.name).classes("portal-operator-directory-name")
+
+            with ui.row().classes("portal-operator-directory-meta"):
+                if operator.code:
+                    with ui.element("span").classes("portal-operator-directory-meta-item"):
+                        ui.icon("tag")
+                        ui.label(operator.code)
+
+                with ui.element("span").classes("portal-operator-directory-meta-item"):
+                    ui.icon("hub")
+                    ui.label("Central de informações")
+
             ui.label(
                 operator.observations
-                or "Consulte planos, portais, orientações e informações vinculadas."
-            ).classes("portal-operator-card-description")
+                or (
+                    "Planos, acessos, documentos, contatos, autorizações, "
+                    "coberturas e orientações relacionadas."
+                )
+            ).classes("portal-operator-directory-description")
 
-        with ui.row().classes("portal-operator-card-footer"):
+        with ui.column().classes("portal-operator-directory-actions"):
             ui.button(
-                "Abrir operadora",
+                "Consultar",
                 icon="arrow_forward",
-                on_click=lambda oid=operator.operator_id: ui.navigate.to(f"/operadoras/{oid}"),
-            ).props("flat no-caps").classes("portal-operator-open-button")
+                on_click=lambda oid=operator.operator_id: ui.navigate.to(
+                    f"/operadoras/{oid}"
+                ),
+            ).props("unelevated no-caps").classes("portal-operator-primary-action")
+
+            if website:
+                ui.link(
+                    "Site da operadora",
+                    target=website,
+                    new_tab=True,
+                ).classes("portal-operator-secondary-action")
 
 
 def render_operadoras(user: dict) -> None:
     operators = get_operadoras_preview()
-    with portal_layout(
-        user=user,
-        active="operators",
-        page_eyebrow="CENTRAL DE OPERADORAS",
-        page_title="Encontre a operadora. Acesse a informação.",
-        page_description="Consulte a base institucional de operadoras e avance para todas as informações relacionadas.",
-    ):
-        active_count = sum(1 for op in operators if _is_active(op.status))
-        with ui.element("section").classes("portal-operators-summary"):
-            with ui.element("div").classes("portal-operators-summary-main"):
-                ui.label("BASE ATUAL").classes("portal-section-kicker")
-                ui.label(f"{len(operators):02d} operadoras cadastradas").classes("portal-operators-summary-value")
-                ui.label("Dados carregados diretamente do Supabase.").classes("portal-operators-summary-description")
-            with ui.row().classes("portal-operators-summary-stats"):
-                for value, label in ((active_count, "Ativas"), (len(operators)-active_count, "Outros status")):
-                    with ui.column().classes("portal-operators-mini-stat"):
-                        ui.label(str(value).zfill(2)).classes("portal-operators-mini-value")
-                        ui.label(label).classes("portal-operators-mini-label")
 
-        with ui.element("section").classes("portal-operators-toolbar"):
-            search = ui.input(placeholder="Buscar por nome, nome curto ou código").props(
-                "outlined dense clearable prepend-icon=search"
-            ).classes("portal-operators-search")
-            status = ui.select(
-                options=["Todos", "Ativo", "Outros"], value="Todos", label="Status"
-            ).props("outlined dense").classes("portal-operators-filter")
+    with portal_layout(user=user, active="operators"):
+        with ui.element("section").classes("portal-operators-intro"):
+            with ui.column().classes("portal-operators-intro-copy"):
+                ui.label("CENTRAL DE OPERADORAS").classes("portal-section-kicker")
+                ui.label(
+                    "Qual operadora você precisa consultar?"
+                ).classes("portal-operators-title")
+                ui.label(
+                    "Escolha uma operadora para acessar, em um só lugar, "
+                    "as informações necessárias para conduzir o atendimento."
+                ).classes("portal-operators-description")
 
-        results_label = ui.label("").classes("portal-operators-result-label")
-        cards = ui.element("div").classes("portal-operators-grid")
+            with ui.element("div").classes("portal-operators-intro-mark"):
+                ui.icon("domain")
 
-        def refresh_cards() -> None:
+        with ui.element("section").classes("portal-operators-controls"):
+            with ui.element("div").classes("portal-operators-search-wrap"):
+                ui.icon("search").classes("portal-operators-search-icon")
+                search = ui.input(
+                    placeholder="Buscar operadora por nome ou código..."
+                ).props(
+                    "borderless dense clearable autocomplete='off'"
+                ).classes("portal-operators-search")
+
+            filter_state = {"value": "Todos"}
+            filter_buttons: dict[str, Any] = {}
+
+            with ui.element("div").classes("portal-operators-filter-group"):
+                for value, label in (
+                    ("Todos", "Todas"),
+                    ("Ativo", "Ativas"),
+                    ("Outros", "Outras"),
+                ):
+                    button = ui.button(
+                        label,
+                        on_click=lambda selected=value: set_filter(selected),
+                    ).props("flat no-caps").classes("portal-operators-filter-button")
+                    filter_buttons[value] = button
+
+        with ui.row().classes("portal-operators-list-heading"):
+            with ui.column().classes("portal-operators-list-heading-copy"):
+                ui.label("OPERADORAS DISPONÍVEIS").classes("portal-section-kicker")
+                results_label = ui.label("").classes("portal-operators-result-label")
+            ui.label(
+                "Abra uma operadora para consultar todas as informações vinculadas."
+            ).classes("portal-operators-list-note")
+
+        directory = ui.element("div").classes("portal-operators-directory")
+
+        def refresh() -> None:
             term = _normalized(search.value or "")
-            selected = status.value or "Todos"
-            filtered = []
+            selected = filter_state["value"]
+
+            filtered: list[OperadoraPreview] = []
             for operator in operators:
-                haystack = _normalized(" ".join((operator.name, operator.short_name, operator.code)))
+                haystack = _normalized(
+                    " ".join(
+                        (
+                            operator.name,
+                            operator.short_name,
+                            operator.code,
+                            operator.observations,
+                        )
+                    )
+                )
                 status_ok = (
                     selected == "Todos"
                     or (selected == "Ativo" and _is_active(operator.status))
@@ -122,19 +183,38 @@ def render_operadoras(user: dict) -> None:
                 )
                 if (not term or term in haystack) and status_ok:
                     filtered.append(operator)
-            results_label.set_text(f"{len(filtered)} operadora(s) encontrada(s)")
-            cards.clear()
-            with cards:
+
+            for value, button in filter_buttons.items():
+                button.classes(
+                    add="is-selected" if value == selected else "",
+                    remove="" if value == selected else "is-selected",
+                )
+
+            count = len(filtered)
+            results_label.set_text(
+                f"{count} operadora{'s' if count != 1 else ''} encontrada"
+                f"{'s' if count != 1 else ''}"
+            )
+
+            directory.clear()
+            with directory:
                 if not filtered:
-                    _empty("Nenhuma operadora encontrada.", "Revise a busca ou altere o filtro de status.", "search_off")
-                else:
-                    for operator in filtered:
-                        _operator_card(operator)
+                    _empty(
+                        "Nenhuma operadora encontrada.",
+                        "Tente outro nome ou ajuste o filtro.",
+                        "search_off",
+                    )
+                    return
 
-        search.on_value_change(lambda _: refresh_cards())
-        status.on_value_change(lambda _: refresh_cards())
-        refresh_cards()
+                for operator in filtered:
+                    _operator_directory_row(operator)
 
+        def set_filter(value: str) -> None:
+            filter_state["value"] = value
+            refresh()
+
+        search.on_value_change(lambda _: refresh())
+        refresh()
 
 def _empty(title: str, description: str, icon: str = "inventory_2") -> None:
     with ui.element("div").classes("portal-operators-empty"):
