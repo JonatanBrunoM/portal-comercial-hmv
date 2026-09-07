@@ -3,10 +3,9 @@ from __future__ import annotations
 from nicegui import ui
 
 from nicegui_app.auth.google_oauth import google_oauth_is_configured
+from nicegui_app.brand import BRAND_LOGO_WHITE
 from nicegui_app.theme import apply_theme
 
-
-OFFICIAL_HMV_LOGO = "https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png"
 
 ERROR_MESSAGES = {
     "config": "O login institucional ainda não foi configurado no servidor.",
@@ -23,24 +22,29 @@ def render_login(error: str | None = None) -> None:
 
     with ui.element("main").classes("portal-login-shell"):
         with ui.element("section").classes("portal-login-brand-panel"):
-            with ui.element("div").classes("portal-login-brand-content"):
-                ui.image(OFFICIAL_HMV_LOGO).classes("portal-login-hmv-logo")
+            with ui.element("div").classes("portal-login-brand-glow"):
+                pass
 
-                ui.label("PORTAL COMERCIAL").classes("portal-login-product-kicker")
-                ui.label(
-                    "A informação certa, no momento em que a operação precisa."
-                ).classes("portal-login-headline")
-                ui.label(
-                    "Um único ambiente para consultar operadoras, acessos, "
-                    "documentos, contatos, regras e orientações comerciais."
-                ).classes("portal-login-description")
+            with ui.element("div").classes("portal-login-brand-content"):
+                with ui.element("header").classes("portal-login-brand-header"):
+                    ui.image(BRAND_LOGO_WHITE).classes("portal-login-hmv-logo")
+                    ui.label("PORTAL COMERCIAL").classes("portal-login-product-kicker")
+
+                with ui.element("div").classes("portal-login-message"):
+                    ui.label(
+                        "A informação certa, quando a operação precisa."
+                    ).classes("portal-login-headline")
+                    ui.label(
+                        "Um ambiente único para consultar operadoras, acessos, "
+                        "documentos, contatos e orientações comerciais."
+                    ).classes("portal-login-description")
 
                 with ui.element("div").classes("portal-login-capabilities"):
                     for icon, title, detail in (
                         (
                             "search",
                             "Consulta centralizada",
-                            "Encontre informações sem percorrer arquivos e planilhas.",
+                            "Encontre a informação sem percorrer arquivos e planilhas.",
                         ),
                         (
                             "vpn_key",
@@ -50,15 +54,15 @@ def render_login(error: str | None = None) -> None:
                         (
                             "campaign",
                             "Operação atualizada",
-                            "Comunicados e contingências no mesmo fluxo de trabalho.",
+                            "Comunicados e contingências no mesmo fluxo.",
                         ),
                     ):
-                        with ui.element("div").classes("portal-login-capability"):
+                        with ui.element("article").classes("portal-login-capability"):
                             with ui.element("div").classes(
                                 "portal-login-capability-icon"
                             ):
                                 ui.icon(icon)
-                            with ui.column().classes(
+                            with ui.element("div").classes(
                                 "portal-login-capability-copy"
                             ):
                                 ui.label(title).classes(
@@ -68,59 +72,62 @@ def render_login(error: str | None = None) -> None:
                                     "portal-login-capability-detail"
                                 )
 
+            with ui.element("div").classes("portal-login-brand-signature"):
+                ui.icon("shield")
+                ui.label("Ambiente institucional · Hospital Moinhos de Vento")
+
         with ui.element("section").classes("portal-login-access-panel"):
             with ui.element("div").classes("portal-login-access-wrap"):
-                ui.label("PORTAL COMERCIAL").classes("portal-login-mobile-product")
-
-                with ui.element("div").classes("portal-login-card"):
-                    with ui.element("div").classes("portal-login-card-icon"):
-                        ui.icon("verified_user")
-
-                    ui.label("Acesso institucional").classes("portal-login-kicker")
-                    ui.label("Entre para continuar").classes("portal-login-title")
+                with ui.element("div").classes("portal-login-access-intro"):
+                    ui.label("ACESSO INSTITUCIONAL").classes("portal-login-kicker")
+                    ui.label("Bem-vindo ao Portal Comercial").classes(
+                        "portal-login-title"
+                    )
                     ui.label(
-                        "Use sua conta Google do Hospital Moinhos de Vento. "
-                        "Não é necessário criar uma nova senha."
+                        "Entre com sua conta corporativa para acessar informações "
+                        "e ferramentas da operação."
                     ).classes("portal-login-card-description")
 
-                    if error in ERROR_MESSAGES:
-                        with ui.row().classes("portal-login-alert"):
-                            ui.icon("info_outline")
-                            ui.label(ERROR_MESSAGES[error])
+                if error in ERROR_MESSAGES:
+                    with ui.element("div").classes("portal-login-alert"):
+                        ui.icon("info_outline")
+                        ui.label(ERROR_MESSAGES[error])
 
-                    if not google_oauth_is_configured():
-                        with ui.row().classes("portal-login-config-warning"):
-                            ui.icon("settings")
-                            ui.label(
-                                "As variáveis do Google OAuth ainda precisam "
-                                "ser configuradas no Render."
+                if not google_oauth_is_configured():
+                    with ui.element("div").classes("portal-login-config-warning"):
+                        ui.icon("settings")
+                        ui.label(
+                            "As variáveis do Google OAuth ainda precisam "
+                            "ser configuradas no Render."
+                        )
+
+                with ui.link(target="/auth/google/login").classes(
+                    "portal-google-login-link"
+                ):
+                    with ui.element("div").classes("portal-google-login-button"):
+                        with ui.element("div").classes("portal-google-symbol"):
+                            ui.label("G")
+                        with ui.element("div").classes("portal-google-login-copy"):
+                            ui.label("Continuar com Google").classes(
+                                "portal-google-login-title"
                             )
-
-                    with ui.link(target="/auth/google/login").classes(
-                        "portal-google-login-link"
-                    ):
-                        with ui.element("div").classes("portal-google-login-button"):
-                            with ui.element("div").classes("portal-google-symbol"):
-                                ui.label("G")
-                            with ui.column().classes("portal-google-login-copy"):
-                                ui.label("Continuar com Google").classes(
-                                    "portal-google-login-title"
-                                )
-                                ui.label("Conta corporativa @hmv.org.br").classes(
-                                    "portal-google-login-subtitle"
-                                )
-                            ui.icon("arrow_forward").classes(
-                                "portal-google-login-arrow"
+                            ui.label("Conta corporativa @hmv.org.br").classes(
+                                "portal-google-login-subtitle"
                             )
+                        ui.icon("arrow_forward").classes(
+                            "portal-google-login-arrow"
+                        )
 
-                    with ui.element("div").classes("portal-login-trust"):
-                        with ui.row().classes("portal-login-trust-item"):
-                            ui.icon("lock")
-                            ui.label("Sessão protegida")
-                        with ui.row().classes("portal-login-trust-item"):
-                            ui.icon("business")
-                            ui.label("Acesso institucional")
+                with ui.element("div").classes("portal-login-access-foot"):
+                    with ui.element("div").classes("portal-login-trust-item"):
+                        ui.icon("lock")
+                        ui.label("Sessão protegida")
+                    with ui.element("div").classes("portal-login-divider-dot"):
+                        pass
+                    with ui.element("div").classes("portal-login-trust-item"):
+                        ui.icon("domain")
+                        ui.label("Somente @hmv.org.br")
 
                 ui.label(
-                    "Hospital Moinhos de Vento · Ambiente interno"
+                    "Não é necessário criar uma nova senha."
                 ).classes("portal-login-footer")
