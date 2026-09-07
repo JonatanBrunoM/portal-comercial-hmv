@@ -1,306 +1,435 @@
-from __future__ import annotations
+from html import escape as html_escape
 
-from nicegui import ui
+import streamlit as st
 
-from nicegui_app.layout import portal_layout
-from nicegui_app.services.home_service import (
-    HomeCommunication,
-    HomeContingency,
-    HomeData,
-    HomeMetric,
-    get_home_data,
-)
+from components.search_results import render_search_results
+from core.dashboard_service import get_dashboard_summary
+from core.search_service import search_global
+from ui.icons import icon
 
 
-SUPPORT_LINKS = (
-    (
-        "contacts",
-        "Contatos",
-        "Centrais, setores e canais de apoio.",
-        "/contatos",
-    ),
-    (
-        "support_agent",
-        "Consultores",
-        "Responsáveis e carteiras das operadoras.",
-        "/consultores",
-    ),
-)
+def _safe(value) -> str:
+    return html_escape(str(value or ""))
 
 
-def _first_name(user: dict) -> str:
-    name = str(user.get("name") or "").strip()
-    return name.split()[0] if name else ""
+def _nav_href(page: str) -> str:
+    slugs = {
+        "Início": "inicio",
+        "Pesquisa": "pesquisa",
+        "Operadoras": "operadoras",
+        "Portais": "portais",
+        "Documentos": "documentos",
+        "Contatos": "contatos",
+        "Consultores": "consultores",
+        "Comunicados": "comunicados",
+        "Contingências": "contingencias",
+        "Administração": "administracao",
+    }
+    return f"?page={slugs.get(page, 'inicio')}"
 
 
-def _module_card(item: HomeMetric) -> None:
-    """Atalho principal da Home.
+def _render_hero(summary) -> None:
+    operators = summary.operadoras if summary else "—"
+    plans = summary.planos if summary else "—"
+    notices = summary.comunicados if summary else "—"
+    contingencies = summary.contingencias if summary else "—"
 
-    O valor numérico do HomeMetric não é exibido de propósito: na Home,
-    estes elementos são navegação e não indicadores de desempenho.
+    st.html(
+        f"""
+        <section class="home-hero">
+            <div class="home-hero-grid">
+                <div class="home-hero-copy">
+                    <div class="home-kicker">
+                        HOSPITAL MOINHOS DE VENTO · COMERCIAL
+                    </div>
+
+                    <h1 class="home-title">
+                        O ponto de partida
+                        <span>da operação comercial.</span>
+                    </h1>
+
+                    <p class="home-description">
+                        Encontre rapidamente a informação certa sobre convênios,
+                        planos, acessos, regras, documentos e contatos para cada atendimento.
+                    </p>
+
+                    <div class="home-hero-context">
+                        <span>Base institucional</span>
+                        <span>Consulta rápida</span>
+                        <span>Informação centralizada</span>
+                    </div>
+                </div>
+
+                <div class="home-hero-status">
+                    <div class="home-status-header">
+                        <div>
+                            <span class="home-status-eyebrow">BASE COMERCIAL</span>
+                            <strong>Visão rápida</strong>
+                        </div>
+                        <span class="home-status-live">
+                            <i></i> Atualizada
+                        </span>
+                    </div>
+
+                    <div class="home-status-grid">
+                        <div class="home-status-metric">
+                            <strong>{_safe(operators)}</strong>
+                            <span>Operadoras</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(plans)}</strong>
+                            <span>Planos</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(notices)}</strong>
+                            <span>Comunicados</span>
+                        </div>
+                        <div class="home-status-metric">
+                            <strong>{_safe(contingencies)}</strong>
+                            <span>Contingências</span>
+                        </div>
+                    </div>
+
+                    <div class="home-status-foot">
+                        Um único lugar para consultar a operação.
+                    </div>
+                </div>
+            </div>
+        </section>
+        """
+    )
+
+
+def _render_search() -> str:
+    st.html(
+        f"""
+        <div class="home-command-card">
+            <div class="home-command-icon">
+                {icon("search")}
+            </div>
+            <div class="home-command-copy">
+                <span>ENCONTRE O QUE PRECISA</span>
+                <strong>Como podemos ajudar?</strong>
+                <small>
+                    Digite uma dúvida, operadora, plano, documento, portal ou contato.
+                </small>
+            </div>
+        </div>
+        """
+    )
+
+    with st.container(key="home_search_shell"):
+        return st.text_input(
+            label="Pesquisa global",
+            placeholder="Ex.: Como faço uma autorização? Onde acesso o portal da operadora?",
+            label_visibility="collapsed",
+            key="home_search",
+        )
+
+
+def _render_primary_actions() -> None:
+    actions = [
+        (
+            "Operadoras",
+            "building",
+            "Convênios e planos",
+            "Consulte regras, coberturas, documentos e informações por operadora.",
+        ),
+        (
+            "Portais",
+            "globe",
+            "Portais e acessos",
+            "Acesse rapidamente os sistemas usados na rotina operacional.",
+        ),
+        (
+            "Documentos",
+            "file",
+            "Documentação",
+            "Confira exigências, validade e orientações documentais.",
+        ),
+        (
+            "Contatos",
+            "phone",
+            "Centrais e responsáveis",
+            "Encontre telefones, e-mails e canais corretos de atendimento.",
+        ),
+    ]
+
+    cards = []
+
+    for page, icon_name, title, description in actions:
+        cards.append(
+            f"""
+            <a class="home-action-card"
+               href="{_nav_href(page)}"
+               target="_self">
+                <div class="home-action-icon">
+                    {icon(icon_name)}
+                </div>
+                <div class="home-action-copy">
+                    <span>{_safe(page).upper()}</span>
+                    <strong>{_safe(title)}</strong>
+                    <p>{_safe(description)}</p>
+                </div>
+                <div class="home-action-go">→</div>
+            </a>
+            """
+        )
+
+    st.html(
+        f"""
+        <section class="home-actions-section">
+            <div class="home-section-heading">
+                <div>
+                    <span>ACESSO DIRETO</span>
+                    <h2>O que você precisa fazer agora?</h2>
+                </div>
+                <p>
+                    Entre pelos caminhos mais usados no dia a dia.
+                </p>
+            </div>
+
+            <div class="home-action-grid">
+                {''.join(cards)}
+            </div>
+        </section>
+        """
+    )
+
+
+def _notice_card(notice) -> str:
+    period = notice.start_date or ""
+    if notice.end_date:
+        period = (
+            f"{period} até {notice.end_date}"
+            if period
+            else f"Até {notice.end_date}"
+        )
+
+    return f"""
+        <article class="home-radar-card home-radar-card-notice">
+            <div class="home-radar-top">
+                <span class="home-radar-type">
+                    {icon("megaphone")} COMUNICADO
+                </span>
+                <span class="home-radar-badge">{_safe(notice.priority)}</span>
+            </div>
+
+            <h3>{_safe(notice.title)}</h3>
+
+            <div class="home-radar-meta">
+                {_safe(notice.operator_name)} · {_safe(notice.category)}
+            </div>
+
+            <p>{_safe(notice.summary)}</p>
+
+            <div class="home-radar-footer">
+                {_safe(period or "Vigência não informada")}
+            </div>
+        </article>
     """
-    with ui.button(
-        on_click=lambda route=item.route: ui.navigate.to(route),
-    ).props("flat no-caps").classes("home-module-card"):
-        with ui.element("div").classes("home-module-icon"):
-            ui.icon(item.icon)
-
-        with ui.column().classes("home-module-copy"):
-            ui.label(item.label).classes("home-module-title")
-            ui.label(item.detail).classes("home-module-detail")
-
-        ui.icon("arrow_forward").classes("home-module-arrow")
 
 
-def _support_link(
-    icon: str,
-    title: str,
-    description: str,
-    route: str,
-) -> None:
-    with ui.button(
-        on_click=lambda target=route: ui.navigate.to(target),
-    ).props("flat no-caps").classes("home-support-link"):
-        with ui.element("div").classes("home-support-icon"):
-            ui.icon(icon)
-        with ui.column().classes("home-support-copy"):
-            ui.label(title).classes("home-support-title")
-            ui.label(description).classes("home-support-description")
-        ui.icon("arrow_forward").classes("home-support-arrow")
+def _contingency_card(item, featured: bool = False) -> str:
+    featured_class = " is-featured" if featured else ""
+
+    return f"""
+        <article class="home-radar-card home-radar-card-alert{featured_class}">
+            <div class="home-radar-top">
+                <span class="home-radar-type">
+                    {icon("warning")} CONTINGÊNCIA
+                </span>
+                <span class="home-radar-badge">{_safe(item.priority)}</span>
+            </div>
+
+            <h3>{_safe(item.event)}</h3>
+
+            <div class="home-radar-meta">
+                {_safe(item.operator_name)} · {_safe(item.unit)}
+            </div>
+
+            <p>{_safe(item.guidance)}</p>
+
+            <div class="home-radar-footer">
+                Status: {_safe(item.status)}
+            </div>
+        </article>
+    """
 
 
-def _communication_row(item: HomeCommunication) -> None:
-    classes = "home-update-row"
-    if item.featured:
-        classes += " is-featured"
+def _render_radar(summary) -> None:
+    contingency_cards = ""
+    notice_cards = ""
 
-    with ui.button(
-        on_click=lambda route=item.route: ui.navigate.to(route),
-    ).props("flat no-caps").classes(classes):
-        with ui.element("div").classes("home-update-rail"):
-            ui.icon("campaign" if item.featured else "article")
+    if summary and summary.contingency_items:
+        contingency_cards = "".join(
+            _contingency_card(
+                item,
+                featured=index == 0,
+            )
+            for index, item in enumerate(summary.contingency_items[:3])
+        )
+    else:
+        contingency_cards = f"""
+            <div class="home-radar-empty">
+                <div class="home-radar-empty-icon">{icon("check")}</div>
+                <div>
+                    <strong>Operação sem contingências ativas</strong>
+                    <span>Nenhum fluxo alternativo exige atenção neste momento.</span>
+                </div>
+            </div>
+        """
 
-        with ui.column().classes("home-update-main"):
-            with ui.row().classes("home-update-meta"):
-                ui.label(item.operator_name).classes("home-update-operator")
-                if item.featured:
-                    ui.label("DESTAQUE").classes("home-update-badge")
-                elif item.category:
-                    ui.label(item.category).classes("home-update-badge is-soft")
+    if summary and summary.notices:
+        notice_cards = "".join(
+            _notice_card(notice)
+            for notice in summary.notices[:3]
+        )
+    else:
+        notice_cards = f"""
+            <div class="home-radar-empty">
+                <div class="home-radar-empty-icon">{icon("check")}</div>
+                <div>
+                    <strong>Sem novos comunicados</strong>
+                    <span>Não há atualizações publicadas neste momento.</span>
+                </div>
+            </div>
+        """
 
-            ui.label(item.title).classes("home-update-title")
+    st.html(
+        f"""
+        <section class="home-radar-section">
+            <div class="home-section-heading">
+                <div>
+                    <span>RADAR OPERACIONAL</span>
+                    <h2>O que merece atenção agora</h2>
+                </div>
+                <p>
+                    Informações relevantes antes de iniciar ou continuar um atendimento.
+                </p>
+            </div>
 
-            if item.summary:
-                ui.label(item.summary).classes("home-update-description")
+            <div class="home-radar-grid">
+                <div class="home-radar-column">
+                    <div class="home-radar-column-head">
+                        <div>
+                            <span>OPERAÇÃO</span>
+                            <strong>Contingências</strong>
+                        </div>
+                        <a href="{_nav_href('Contingências')}" target="_self">
+                            Ver todas →
+                        </a>
+                    </div>
+                    {contingency_cards}
+                </div>
 
-        with ui.column().classes("home-update-side"):
-            ui.label(item.priority).classes("home-update-priority")
-            ui.icon("arrow_forward").classes("home-update-arrow")
-
-
-def _contingency_row(item: HomeContingency) -> None:
-    with ui.button(
-        on_click=lambda route=item.route: ui.navigate.to(route),
-    ).props("flat no-caps").classes("home-alert-row"):
-        with ui.element("div").classes("home-alert-indicator"):
-            ui.icon("warning_amber")
-
-        with ui.column().classes("home-alert-copy"):
-            with ui.row().classes("home-alert-meta"):
-                ui.label(item.operator_name).classes("home-alert-operator")
-                ui.label(item.status).classes("home-alert-status")
-                if item.priority:
-                    ui.label(item.priority).classes("home-alert-priority")
-
-            ui.label(item.title).classes("home-alert-title")
-
-            detail = item.alternative_guidance or item.description
-            if detail:
-                ui.label(detail).classes("home-alert-description")
-
-        ui.icon("arrow_forward").classes("home-alert-arrow")
-
-
-def _empty_state(
-    *,
-    icon: str,
-    title: str,
-    description: str,
-    route: str,
-    action: str,
-) -> None:
-    with ui.element("div").classes("home-empty-state"):
-        with ui.element("div").classes("home-empty-icon"):
-            ui.icon(icon)
-        with ui.column().classes("home-empty-copy"):
-            ui.label(title).classes("home-empty-title")
-            ui.label(description).classes("home-empty-description")
-        ui.button(
-            action,
-            icon="arrow_forward",
-            on_click=lambda: ui.navigate.to(route),
-        ).props("flat no-caps").classes("home-empty-action")
-
-
-def _render_home_data(data: HomeData) -> None:
-    # Navegação principal: mantém os quatro módulos, mas sem números.
-    with ui.element("section").classes("home-module-section"):
-        with ui.row().classes("home-module-heading"):
-            ui.label("ACESSO RÁPIDO").classes("home-section-kicker")
-            ui.label(
-                "Entre direto na informação que procura."
-            ).classes("home-module-heading-note")
-
-        with ui.element("div").classes("home-module-grid"):
-            for metric in data.metrics:
-                _module_card(metric)
-
-    # Atualizações e contingências são informação operacional, não um mural
-    # de cards. As listas têm hierarquia e densidade próprias.
-    with ui.element("section").classes("home-workspace-grid"):
-        with ui.element("article").classes("home-panel home-updates-panel"):
-            with ui.row().classes("home-panel-heading"):
-                with ui.column().classes("home-panel-heading-copy"):
-                    ui.label("ATUALIZAÇÕES").classes("home-section-kicker")
-                    ui.label("O que merece sua atenção").classes("home-section-title")
-                ui.button(
-                    "Ver todos",
-                    icon="arrow_forward",
-                    on_click=lambda: ui.navigate.to("/comunicados"),
-                ).props("flat no-caps").classes("home-text-action")
-
-            if data.communications:
-                with ui.column().classes("home-updates-list"):
-                    for item in data.communications:
-                        _communication_row(item)
-            else:
-                _empty_state(
-                    icon="mark_email_read",
-                    title="Nenhum comunicado vigente.",
-                    description=(
-                        "Quando houver uma comunicação publicada para o período, "
-                        "ela aparecerá aqui."
-                    ),
-                    route="/comunicados",
-                    action="Ver comunicados",
-                )
-
-        with ui.element("article").classes("home-panel home-alerts-panel"):
-            with ui.row().classes("home-panel-heading"):
-                with ui.column().classes("home-panel-heading-copy"):
-                    ui.label("OPERAÇÃO AGORA").classes("home-section-kicker")
-                    ui.label("Contingências vigentes").classes("home-section-title")
-                ui.button(
-                    "Ver todas",
-                    icon="arrow_forward",
-                    on_click=lambda: ui.navigate.to("/contingencias"),
-                ).props("flat no-caps").classes("home-text-action")
-
-            if data.contingencies:
-                with ui.column().classes("home-alerts-list"):
-                    for item in data.contingencies:
-                        _contingency_row(item)
-            else:
-                _empty_state(
-                    icon="verified",
-                    title="Nenhuma contingência vigente.",
-                    description=(
-                        "A operação não possui alertas ativos para o período neste momento."
-                    ),
-                    route="/contingencias",
-                    action="Consultar histórico",
-                )
-
-    # Contatos e consultores continuam acessíveis sem repetir outra grade
-    # inteira de cards já representados na navegação principal/sidebar.
-    with ui.element("section").classes("home-support-section"):
-        with ui.column().classes("home-support-intro"):
-            ui.label("PRECISA DE APOIO?").classes("home-section-kicker")
-            ui.label("Encontre quem pode ajudar").classes("home-support-heading")
-
-        with ui.element("div").classes("home-support-links"):
-            for item in SUPPORT_LINKS:
-                _support_link(*item)
+                <div class="home-radar-column">
+                    <div class="home-radar-column-head">
+                        <div>
+                            <span>ATUALIZAÇÕES</span>
+                            <strong>Comunicados</strong>
+                        </div>
+                        <a href="{_nav_href('Comunicados')}" target="_self">
+                            Ver todos →
+                        </a>
+                    </div>
+                    {notice_cards}
+                </div>
+            </div>
+        </section>
+        """
+    )
 
 
-def render_home(user: dict) -> None:
-    first_name = _first_name(user)
+def _render_secondary_paths() -> None:
+    items = [
+        (
+            "Consultores",
+            "users",
+            "Relacionamento comercial",
+            "Consulte consultores e carteiras de atendimento.",
+        ),
+        (
+            "Comunicados",
+            "megaphone",
+            "Atualizações",
+            "Veja mudanças e orientações publicadas recentemente.",
+        ),
+        (
+            "Contingências",
+            "warning",
+            "Fluxos alternativos",
+            "Confira indisponibilidades e orientações de contingência.",
+        ),
+    ]
+
+    cards = "".join(
+        f"""
+        <a class="home-secondary-card"
+           href="{_nav_href(page)}"
+           target="_self">
+            <span class="home-secondary-icon">{icon(icon_name)}</span>
+            <span class="home-secondary-copy">
+                <small>{_safe(page).upper()}</small>
+                <strong>{_safe(title)}</strong>
+                <p>{_safe(description)}</p>
+            </span>
+            <span class="home-secondary-arrow">→</span>
+        </a>
+        """
+        for page, icon_name, title, description in items
+    )
+
+    st.html(
+        f"""
+        <section class="home-secondary-section">
+            <div class="home-section-heading home-section-heading-compact">
+                <div>
+                    <span>OUTROS CAMINHOS</span>
+                    <h2>Continue explorando</h2>
+                </div>
+            </div>
+
+            <div class="home-secondary-grid">
+                {cards}
+            </div>
+        </section>
+        """
+    )
+
+
+def render_home() -> None:
+    """Renderiza a Home como hall institucional do Portal Comercial."""
 
     try:
-        data = get_home_data()
-    except Exception:
-        data = HomeData(metrics=(), communications=(), contingencies=())
+        summary = get_dashboard_summary()
+        data_error = False
+    except RuntimeError:
+        summary = None
+        data_error = True
 
-    with portal_layout(
-        user=user,
-        active="home",
-    ):
-        with ui.element("section").classes("home-hero"):
-            with ui.element("div").classes("home-hero-glow home-hero-glow-one"):
-                pass
-            with ui.element("div").classes("home-hero-glow home-hero-glow-two"):
-                pass
+    _render_hero(summary)
 
-            with ui.element("div").classes("home-hero-content"):
-                ui.label("PORTAL COMERCIAL").classes("home-hero-kicker")
+    search_query = _render_search()
 
-                greeting = f"Olá, {first_name}." if first_name else "Olá."
-                ui.label(greeting).classes("home-hero-greeting")
+    if data_error:
+        st.warning(
+            "Não foi possível carregar todos os indicadores da página inicial. "
+            "As demais áreas do portal continuam disponíveis."
+        )
 
-                ui.label(
-                    "Encontre a informação que a operação precisa, sem perder tempo."
-                ).classes("home-hero-title")
+    if search_query:
+        with st.spinner("Consultando a base comercial..."):
+            search_results = search_global(
+                query=search_query,
+                limit=12,
+            )
 
-                ui.label(
-                    "Operadoras, portais, documentos, contatos e orientações "
-                    "reunidos em um único ponto de consulta."
-                ).classes("home-hero-description")
+        render_search_results(
+            results=search_results,
+            key_prefix="home_search",
+        )
 
-                def submit_home_search() -> None:
-                    query = str(home_search.value or "").strip()
-                    if len(query) < 2:
-                        ui.notify(
-                            "Digite pelo menos 2 caracteres para pesquisar.",
-                            type="info",
-                            position="top",
-                        )
-                        home_search.run_method("focus")
-                        return
-
-                    ui.context.client.storage["portal_pending_search_query"] = query
-                    ui.navigate.to("/pesquisa")
-
-                with ui.element("div").classes("home-search-command"):
-                    with ui.element("div").classes("home-search-icon"):
-                        ui.icon("search")
-
-                    home_search = ui.input(
-                        placeholder=(
-                            "Ex.: senha Unimed, autorização Bradesco, contato CASSI..."
-                        )
-                    ).props(
-                        "borderless dense autocomplete='off'"
-                    ).classes("home-search-input")
-                    home_search.on("keydown.enter", submit_home_search)
-
-                    ui.button(
-                        "Pesquisar",
-                        icon="arrow_forward",
-                        on_click=submit_home_search,
-                    ).props("unelevated no-caps").classes("home-search-submit")
-
-            # Elemento gráfico discreto: reforça a ideia de central de consulta
-            # sem disputar atenção com a pesquisa.
-            with ui.element("div").classes("home-hero-mark"):
-                with ui.element("div").classes("home-hero-mark-ring ring-one"):
-                    pass
-                with ui.element("div").classes("home-hero-mark-ring ring-two"):
-                    pass
-                with ui.element("div").classes("home-hero-mark-core"):
-                    ui.icon("hub")
-                ui.label("CONSULTAR").classes("home-mark-label mark-a")
-                ui.label("ORIENTAR").classes("home-mark-label mark-b")
-                ui.label("DECIDIR").classes("home-mark-label mark-c")
-
-        if data.metrics:
-            _render_home_data(data)
+    _render_primary_actions()
+    _render_radar(summary)
+    _render_secondary_paths()
