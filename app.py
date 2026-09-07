@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from nicegui import app, ui
 from starlette.responses import RedirectResponse
 
@@ -115,6 +115,16 @@ async def warm_portal_cache() -> None:
     import asyncio
 
     asyncio.create_task(asyncio.to_thread(warm_public_data_cache))
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_file() -> FileResponse:
+    """Fallback tradicional para navegadores que requisitam /favicon.ico."""
+    return FileResponse(
+        ASSETS_DIR / "brand" / "favicon.png",
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @app.get("/health")
