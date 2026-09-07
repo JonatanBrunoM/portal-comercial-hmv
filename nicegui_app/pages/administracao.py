@@ -219,7 +219,11 @@ def render_administracao(user: dict) -> None:
                     with ui.column().classes("portal-admin-panel-title-copy"):
                         ui.label("RASTREABILIDADE").classes("portal-section-kicker")
                         ui.label("Atividade recente").classes("portal-admin-panel-title")
-                    ui.icon("manage_history").classes("portal-admin-panel-head-icon")
+                    ui.button(
+                        "Ver auditoria",
+                        icon="manage_history",
+                        on_click=lambda: ui.navigate.to("/administracao/auditoria"),
+                    ).props("flat no-caps").classes("portal-admin-users-manage-button")
 
                 if logs:
                     with ui.column().classes("portal-admin-audit-list"):
