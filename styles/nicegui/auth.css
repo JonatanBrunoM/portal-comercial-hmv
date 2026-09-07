@@ -1,216 +1,276 @@
+/* ==========================================================================
+   Portal Comercial · Login institucional
+   ========================================================================== */
+
+/* NiceGUI cria um container de página com padding próprio.
+   Nesta rota o login precisa ocupar o viewport inteiro, sem moldura externa. */
+.nicegui-content:has(.portal-login-shell) {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+}
+
+body:has(.portal-login-shell) {
+    overflow: hidden;
+    background: #fff;
+}
+
 .portal-login-shell {
     display: grid;
-    min-height: 100vh;
-    grid-template-columns: minmax(0, 1.1fr) minmax(440px, 0.9fr);
-    background: var(--portal-white);
+    width: 100%;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1.16fr) minmax(430px, .84fr);
+    background: #fff;
 }
+
+/* --------------------------------------------------------------------------
+   Painel institucional
+   -------------------------------------------------------------------------- */
 
 .portal-login-brand-panel {
     position: relative;
     display: flex;
-    min-height: 100vh;
-    padding: clamp(38px, 6vw, 84px);
+    min-width: 0;
+    min-height: 100dvh;
     overflow: hidden;
+    padding: clamp(44px, 5.2vw, 82px);
     align-items: center;
     background:
-        radial-gradient(circle at 74% 28%, rgba(100, 198, 238, 0.16), transparent 20rem),
-        radial-gradient(circle at 15% 88%, rgba(255, 255, 255, 0.08), transparent 24rem),
-        linear-gradient(145deg, #073d5e 0%, #005691 100%);
-    color: var(--portal-white);
+        radial-gradient(circle at 82% 18%, rgba(71, 180, 226, .20), transparent 25rem),
+        radial-gradient(circle at 12% 86%, rgba(255, 255, 255, .08), transparent 25rem),
+        linear-gradient(145deg, #073b5c 0%, #005691 72%, #0870ad 100%);
+    color: #fff;
+}
+
+.portal-login-brand-panel::before {
+    position: absolute;
+    right: -190px;
+    bottom: -255px;
+    width: 610px;
+    height: 610px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 50%;
+    content: "";
 }
 
 .portal-login-brand-panel::after {
     position: absolute;
-    right: -150px;
-    bottom: -190px;
-    width: 480px;
-    height: 480px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    right: -62px;
+    bottom: -130px;
+    width: 350px;
+    height: 350px;
+    border: 1px solid rgba(255, 255, 255, .055);
     border-radius: 50%;
     content: "";
+}
+
+.portal-login-brand-glow {
+    position: absolute;
+    top: 17%;
+    right: 8%;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(70, 178, 224, .09);
+    filter: blur(54px);
+    pointer-events: none;
 }
 
 .portal-login-brand-content {
     position: relative;
     z-index: 2;
-    width: min(720px, 100%);
+    width: min(790px, 100%);
+    margin: auto 0;
 }
 
-.portal-login-brand {
-    align-items: center;
-    gap: 13px;
+.portal-login-brand-header {
+    display: flex;
+    width: fit-content;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
-.portal-login-brand-mark {
-    display: grid;
-    width: 46px;
-    height: 46px;
-    place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.10);
+.portal-login-hmv-logo {
+    width: 190px;
+    height: 78px;
+    opacity: .98;
 }
 
-.portal-login-brand-copy {
-    gap: 1px;
+.portal-login-hmv-logo .q-img__image {
+    object-fit: contain !important;
+    object-position: left center !important;
 }
 
-.portal-login-brand-title {
-    font-size: 0.83rem;
-    font-weight: 850;
-    letter-spacing: 0.08em;
+.portal-login-product-kicker {
+    margin-top: 22px;
+    color: rgba(255, 255, 255, .62);
+    font-size: .67rem;
+    font-weight: 820;
+    letter-spacing: .19em;
 }
 
-.portal-login-brand-subtitle {
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 0.7rem;
+.portal-login-message {
+    margin-top: clamp(36px, 6vh, 66px);
 }
 
 .portal-login-headline {
-    max-width: 700px;
-    margin-top: 76px;
-    font-size: clamp(2.8rem, 5.3vw, 5.5rem);
-    font-weight: 790;
-    letter-spacing: -0.058em;
-    line-height: 0.98;
+    max-width: 760px;
+    color: #fff;
+    font-size: clamp(3rem, 4.7vw, 5.25rem);
+    font-weight: 780;
+    letter-spacing: -.058em;
+    line-height: .99;
 }
 
 .portal-login-description {
-    max-width: 610px;
-    margin-top: 25px;
-    color: rgba(255, 255, 255, 0.68);
-    font-size: clamp(0.98rem, 1.7vw, 1.12rem);
-    line-height: 1.7;
+    max-width: 630px;
+    margin-top: 22px;
+    color: rgba(255, 255, 255, .70);
+    font-size: clamp(.98rem, 1.2vw, 1.12rem);
+    line-height: 1.62;
 }
 
-.portal-login-network {
-    position: relative;
-    width: min(520px, 88%);
-    height: 235px;
-    margin-top: 42px;
-}
-
-.portal-login-network::before,
-.portal-login-network::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    border: 1px dashed rgba(255, 255, 255, 0.16);
-    border-radius: 50%;
-    content: "";
-    transform: translate(-50%, -50%);
-}
-
-.portal-login-network::before {
-    width: 230px;
-    height: 230px;
-}
-
-.portal-login-network::after {
-    width: 390px;
-    height: 190px;
-}
-
-.portal-login-network-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: 3;
+.portal-login-capabilities {
     display: grid;
-    width: 74px;
-    height: 74px;
-    place-items: center;
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 24px;
-    background: rgba(255,255,255,.12);
+    width: min(730px, 100%);
+    margin-top: clamp(34px, 5vh, 52px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.portal-login-capability {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 11px;
+    padding: 15px 14px;
+    border: 1px solid rgba(255, 255, 255, .11);
+    border-radius: 15px;
+    background: rgba(255, 255, 255, .065);
     backdrop-filter: blur(10px);
-    transform: translate(-50%, -50%) rotate(-7deg);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.portal-login-network-center .q-icon {
-    font-size: 34px;
+.portal-login-capability-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .11);
+    color: #fff;
 }
 
-.portal-login-network-node {
+.portal-login-capability-icon .q-icon {
+    font-size: 18px;
+}
+
+.portal-login-capability-copy {
+    min-width: 0;
+}
+
+.portal-login-capability-title {
+    color: rgba(255, 255, 255, .94);
+    font-size: .69rem;
+    font-weight: 760;
+}
+
+.portal-login-capability-detail {
+    margin-top: 3px;
+    color: rgba(255, 255, 255, .56);
+    font-size: .57rem;
+    line-height: 1.45;
+}
+
+.portal-login-brand-signature {
     position: absolute;
-    z-index: 4;
+    z-index: 3;
+    left: clamp(44px, 5.2vw, 82px);
+    bottom: 28px;
     display: flex;
-    padding: 8px 11px;
     align-items: center;
-    gap: 6px;
-    border: 1px solid rgba(255,255,255,.13);
-    border-radius: 999px;
-    background: rgba(255,255,255,.10);
-    color: rgba(255,255,255,.84);
-    backdrop-filter: blur(8px);
+    gap: 7px;
+    color: rgba(255, 255, 255, .42);
+    font-size: .57rem;
 }
 
-.portal-login-network-node .q-icon {
-    font-size: 15px;
+.portal-login-brand-signature .q-icon {
+    font-size: 14px;
 }
 
-.portal-login-network-node .q-label {
-    font-size: .61rem;
-    font-weight: 720;
-}
-
-.node-one { top: 12%; left: 7%; }
-.node-two { top: 26%; right: 1%; }
-.node-three { bottom: 12%; right: 13%; }
-.node-four { bottom: 6%; left: 12%; }
+/* --------------------------------------------------------------------------
+   Acesso
+   -------------------------------------------------------------------------- */
 
 .portal-login-access-panel {
+    position: relative;
     display: grid;
-    min-height: 100vh;
-    padding: 40px;
+    min-width: 0;
+    min-height: 100dvh;
+    padding: clamp(38px, 5vw, 76px);
     place-items: center;
     background:
-        radial-gradient(circle at 80% 20%, rgba(0,86,145,.055), transparent 22rem),
-        var(--portal-bg);
+        radial-gradient(circle at 82% 16%, rgba(0, 86, 145, .065), transparent 22rem),
+        linear-gradient(180deg, #f8fbfc 0%, #f3f7f9 100%);
 }
 
-.portal-login-card {
-    width: min(470px, 100%);
-    padding: clamp(30px, 4vw, 46px);
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 28px;
-    background: rgba(255,255,255,.94);
-    box-shadow: var(--portal-shadow-md);
+.portal-login-access-wrap {
+    width: min(430px, 100%);
+    padding: clamp(34px, 4vw, 48px);
+    border: 1px solid rgba(190, 210, 220, .82);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .88);
+    box-shadow:
+        0 26px 70px rgba(16, 43, 59, .09),
+        0 2px 8px rgba(16, 43, 59, .035);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.portal-login-access-intro {
+    width: 100%;
 }
 
 .portal-login-kicker {
     color: var(--portal-primary-700);
-    font-size: .67rem;
-    font-weight: 850;
-    letter-spacing: .14em;
+    font-size: .64rem;
+    font-weight: 840;
+    letter-spacing: .16em;
 }
 
 .portal-login-title {
-    margin-top: 12px;
+    max-width: 370px;
+    margin-top: 10px;
     color: var(--portal-primary-950);
-    font-size: clamp(2rem, 3.4vw, 3rem);
-    font-weight: 790;
+    font-size: clamp(2rem, 2.8vw, 2.65rem);
+    font-weight: 780;
     letter-spacing: -.045em;
-    line-height: 1.02;
+    line-height: 1.04;
 }
 
 .portal-login-card-description {
+    max-width: 360px;
     margin-top: 14px;
     color: var(--portal-ink-600);
-    font-size: .88rem;
-    line-height: 1.65;
+    font-size: .79rem;
+    line-height: 1.58;
 }
 
 .portal-login-alert,
 .portal-login-config-warning {
+    display: grid;
     width: 100%;
     margin-top: 20px;
-    padding: 12px 13px;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: flex-start;
-    gap: 9px;
-    border-radius: 13px;
-    font-size: .7rem;
-    line-height: 1.5;
+    gap: 8px;
+    padding: 11px 12px;
+    border-radius: 11px;
+    font-size: .66rem;
+    line-height: 1.45;
 }
 
 .portal-login-alert {
@@ -225,133 +285,235 @@
     color: #8c681e;
 }
 
+.portal-login-alert .q-icon,
+.portal-login-config-warning .q-icon {
+    margin-top: 1px;
+    font-size: 16px;
+}
+
 .portal-google-login-link {
     display: block;
     width: 100%;
-    margin-top: 26px;
+    margin-top: 28px;
+    border-radius: 14px;
     text-decoration: none !important;
 }
 
 .portal-google-login-button {
-    display: flex;
+    display: grid;
     width: 100%;
-    min-height: 52px;
-    padding: 0 16px;
+    min-height: 64px;
+    padding: 8px 13px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
-    border: 1px solid var(--portal-ink-200);
+    gap: 11px;
+    border: 1px solid #cbdce4;
     border-radius: 14px;
-    background: var(--portal-white);
+    background: #fff;
     color: var(--portal-primary-950);
-    box-shadow: var(--portal-shadow-xs);
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    box-shadow: 0 2px 7px rgba(16, 43, 59, .035);
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
 }
 
 .portal-google-login-button:hover {
-    border-color: #b9d4e1;
-    box-shadow: var(--portal-shadow-sm);
+    border-color: #9ec7d9;
+    box-shadow: 0 10px 26px rgba(16, 43, 59, .08);
     transform: translateY(-1px);
 }
 
-.portal-google-login-button > .q-label:nth-child(2) {
-    flex: 1 1 auto;
-    font-size: .78rem;
-    font-weight: 760;
-}
-
 .portal-google-symbol {
+    width: 32px;
+    height: 32px;
     display: grid;
-    width: 30px;
-    height: 30px;
     place-items: center;
     border: 1px solid var(--portal-ink-200);
     border-radius: 9px;
     color: #4285f4;
-    font-size: .9rem;
+    font-size: .87rem;
     font-weight: 850;
 }
 
-.portal-login-domain-note {
-    margin-top: 12px;
+.portal-google-login-copy {
+    min-width: 0;
+}
+
+.portal-google-login-title {
+    color: var(--portal-ink-950);
+    font-size: .74rem;
+    font-weight: 780;
+}
+
+.portal-google-login-subtitle {
+    margin-top: 1px;
     color: var(--portal-ink-500);
-    font-size: .65rem;
+    font-size: .57rem;
+}
+
+.portal-google-login-arrow {
+    color: var(--portal-primary-600);
+    font-size: 18px;
+}
+
+.portal-login-access-foot {
+    display: flex;
+    margin-top: 20px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.portal-login-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--portal-ink-500);
+    font-size: .56rem;
+    font-weight: 650;
+}
+
+.portal-login-trust-item .q-icon {
+    color: var(--portal-primary-600);
+    font-size: 13px;
+}
+
+.portal-login-divider-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--portal-ink-300);
+}
+
+.portal-login-footer {
+    margin-top: 13px;
+    color: var(--portal-ink-400);
+    font-size: .56rem;
     text-align: center;
 }
 
-.portal-login-divider {
-    width: 100%;
-    height: 1px;
-    margin: 30px 0 22px;
-    background: var(--portal-ink-100);
-}
+/* --------------------------------------------------------------------------
+   Responsividade
+   -------------------------------------------------------------------------- */
 
-.portal-login-security {
-    align-items: flex-start;
-    gap: 10px;
-    color: var(--portal-primary-700);
-}
-
-.portal-login-security > .q-icon {
-    margin-top: 2px;
-    font-size: 20px;
-}
-
-.portal-login-security-copy {
-    gap: 2px;
-}
-
-.portal-login-security-title {
-    color: var(--portal-primary-950);
-    font-size: .72rem;
-    font-weight: 760;
-}
-
-.portal-login-security-text {
-    color: var(--portal-ink-500);
-    font-size: .63rem;
-    line-height: 1.5;
-}
-
-@media (max-width: 920px) {
+@media (max-width: 1180px) {
     .portal-login-shell {
+        grid-template-columns: minmax(0, 1fr) minmax(400px, .78fr);
+    }
+
+    .portal-login-brand-panel {
+        padding: 44px;
+    }
+
+    .portal-login-brand-signature {
+        left: 44px;
+    }
+
+    .portal-login-headline {
+        font-size: clamp(2.7rem, 5vw, 4rem);
+    }
+
+    .portal-login-capabilities {
+        grid-template-columns: 1fr;
+        max-width: 540px;
+    }
+
+    .portal-login-capability {
+        padding: 10px 12px;
+    }
+}
+
+@media (max-width: 900px) {
+    body:has(.portal-login-shell) {
+        overflow: auto;
+    }
+
+    .portal-login-shell {
+        min-height: 100dvh;
         grid-template-columns: 1fr;
     }
 
     .portal-login-brand-panel {
-        min-height: 340px;
-        padding: 34px 28px;
+        min-height: auto;
+        padding: 34px 28px 38px;
+    }
+
+    .portal-login-brand-content {
+        margin: 0;
+    }
+
+    .portal-login-hmv-logo {
+        width: 160px;
+        height: 66px;
+    }
+
+    .portal-login-product-kicker {
+        margin-top: 14px;
+    }
+
+    .portal-login-message {
+        margin-top: 28px;
     }
 
     .portal-login-headline {
-        max-width: 600px;
-        margin-top: 48px;
-        font-size: clamp(2.4rem, 8vw, 4rem);
+        max-width: 650px;
+        font-size: clamp(2.4rem, 8vw, 3.8rem);
     }
 
-    .portal-login-network {
+    .portal-login-description {
+        max-width: 600px;
+        margin-top: 14px;
+    }
+
+    .portal-login-capabilities,
+    .portal-login-brand-signature {
         display: none;
     }
 
     .portal-login-access-panel {
         min-height: auto;
-        padding: 32px 20px 54px;
+        padding: 30px 20px 48px;
+    }
+
+    .portal-login-access-wrap {
+        width: min(520px, 100%);
     }
 }
 
 @media (max-width: 520px) {
     .portal-login-brand-panel {
-        min-height: 300px;
-        padding: 28px 20px;
+        padding: 26px 20px 30px;
+    }
+
+    .portal-login-hmv-logo {
+        width: 142px;
+        height: 58px;
     }
 
     .portal-login-headline {
-        margin-top: 40px;
-        font-size: 2.55rem;
+        font-size: 2.35rem;
     }
 
-    .portal-login-card {
+    .portal-login-description {
+        font-size: .83rem;
+    }
+
+    .portal-login-access-panel {
+        padding: 22px 14px 34px;
+    }
+
+    .portal-login-access-wrap {
         padding: 28px 22px;
-        border-radius: 22px;
+        border-radius: 20px;
+    }
+
+    .portal-login-title {
+        font-size: 1.9rem;
+    }
+
+    .portal-login-access-foot {
+        gap: 7px;
     }
 }
 
@@ -370,237 +532,4 @@
 .portal-logout-link:hover {
     background: rgba(255,255,255,.08);
     color: var(--portal-white) !important;
-}
-
-
-/* ==========================================================================
-   Etapa 14D · Login institucional refinado
-   ========================================================================== */
-
-.portal-login-shell {
-    grid-template-columns: minmax(0, 1.12fr) minmax(410px, .88fr);
-}
-
-.portal-login-brand-panel {
-    padding: clamp(38px, 5vw, 72px);
-}
-
-.portal-login-brand-content {
-    width: min(760px, 100%);
-}
-
-.portal-login-hmv-logo {
-    width: 205px;
-    height: 92px;
-    filter: brightness(0) invert(1);
-    opacity: .98;
-}
-
-.portal-login-hmv-logo .q-img__image {
-    object-fit: contain !important;
-    object-position: left center !important;
-}
-
-.portal-login-product-kicker {
-    margin-top: 34px;
-    color: rgba(255,255,255,.58);
-    font-size: .66rem;
-    font-weight: 850;
-    letter-spacing: .18em;
-}
-
-.portal-login-headline {
-    max-width: 720px;
-    margin-top: 12px;
-    font-size: clamp(2.7rem, 4.6vw, 4.9rem);
-}
-
-.portal-login-description {
-    max-width: 620px;
-    margin-top: 20px;
-}
-
-.portal-login-capabilities {
-    width: min(700px, 100%);
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 38px;
-}
-
-.portal-login-capability {
-    min-width: 0;
-    display: flex;
-    gap: 10px;
-    padding: 14px;
-    border: 1px solid rgba(255,255,255,.11);
-    border-radius: 15px;
-    background: rgba(255,255,255,.07);
-    backdrop-filter: blur(8px);
-}
-
-.portal-login-capability-icon {
-    width: 35px;
-    height: 35px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
-    background: rgba(255,255,255,.11);
-    color: white;
-}
-
-.portal-login-capability-icon .q-icon {
-    font-size: 18px;
-}
-
-.portal-login-capability-copy {
-    min-width: 0;
-    gap: 3px;
-}
-
-.portal-login-capability-title {
-    color: rgba(255,255,255,.92);
-    font-size: .68rem;
-    font-weight: 760;
-}
-
-.portal-login-capability-detail {
-    color: rgba(255,255,255,.55);
-    font-size: .58rem;
-    line-height: 1.45;
-}
-
-.portal-login-access-wrap {
-    width: min(470px, 100%);
-}
-
-.portal-login-mobile-product {
-    display: none;
-}
-
-.portal-login-card {
-    position: relative;
-    width: 100%;
-    padding: clamp(32px, 4vw, 46px);
-    overflow: hidden;
-}
-
-.portal-login-card::before {
-    position: absolute;
-    inset: 0 0 auto;
-    height: 4px;
-    background: linear-gradient(90deg, #005691, #41a5d8);
-    content: "";
-}
-
-.portal-login-card-icon {
-    width: 44px;
-    height: 44px;
-    display: grid;
-    margin-bottom: 22px;
-    place-items: center;
-    border-radius: 13px;
-    background: var(--portal-primary-50);
-    color: var(--portal-primary-700);
-}
-
-.portal-login-card-icon .q-icon {
-    font-size: 22px;
-}
-
-.portal-google-login-button {
-    min-height: 62px;
-    padding: 7px 13px;
-}
-
-.portal-google-login-copy {
-    flex: 1 1 auto;
-    min-width: 0;
-    gap: 1px;
-}
-
-.portal-google-login-title {
-    color: var(--portal-ink-950);
-    font-size: .76rem;
-    font-weight: 780;
-}
-
-.portal-google-login-subtitle {
-    color: var(--portal-ink-500);
-    font-size: .6rem;
-}
-
-.portal-google-login-arrow {
-    color: var(--portal-primary-700);
-    font-size: 18px;
-}
-
-.portal-login-trust {
-    display: flex;
-    margin-top: 20px;
-    justify-content: center;
-    gap: 18px;
-    flex-wrap: wrap;
-}
-
-.portal-login-trust-item {
-    align-items: center;
-    gap: 5px;
-    color: var(--portal-ink-500);
-    font-size: .58rem;
-    font-weight: 650;
-}
-
-.portal-login-trust-item .q-icon {
-    font-size: 14px;
-    color: var(--portal-primary-600);
-}
-
-.portal-login-footer {
-    margin-top: 16px;
-    color: var(--portal-ink-400);
-    font-size: .58rem;
-    text-align: center;
-}
-
-@media (max-width: 1080px) {
-    .portal-login-capabilities {
-        grid-template-columns: 1fr;
-        max-width: 560px;
-    }
-
-    .portal-login-capability {
-        padding: 11px 13px;
-    }
-}
-
-@media (max-width: 920px) {
-    .portal-login-hmv-logo {
-        width: 170px;
-        height: 74px;
-    }
-
-    .portal-login-product-kicker {
-        margin-top: 22px;
-    }
-
-    .portal-login-capabilities {
-        display: none;
-    }
-
-    .portal-login-access-wrap {
-        width: min(520px, 100%);
-    }
-}
-
-@media (max-width: 520px) {
-    .portal-login-hmv-logo {
-        width: 145px;
-        height: 64px;
-    }
-
-    .portal-login-description {
-        margin-top: 14px;
-    }
 }
