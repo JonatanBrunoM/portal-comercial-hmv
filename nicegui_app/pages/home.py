@@ -12,29 +12,11 @@ from nicegui_app.services.home_service import (
 )
 
 
-QUICK_ACCESS = (
-    (
-        "domain",
-        "Operadoras",
-        "Planos, regras, coberturas e orientações.",
-        "/operadoras",
-    ),
-    (
-        "vpn_key",
-        "Portais e acessos",
-        "Credenciais e instruções para os portais externos.",
-        "/portais",
-    ),
-    (
-        "description",
-        "Documentos",
-        "Manuais, formulários e referências institucionais.",
-        "/documentos",
-    ),
+SUPPORT_LINKS = (
     (
         "contacts",
         "Contatos",
-        "Canais de apoio para cada necessidade.",
+        "Centrais, setores e canais de apoio.",
         "/contatos",
     ),
     (
@@ -51,66 +33,75 @@ def _first_name(user: dict) -> str:
     return name.split()[0] if name else ""
 
 
-def _metric_card(item: HomeMetric) -> None:
+def _module_card(item: HomeMetric) -> None:
+    """Atalho principal da Home.
+
+    O valor numérico do HomeMetric não é exibido de propósito: na Home,
+    estes elementos são navegação e não indicadores de desempenho.
+    """
     with ui.button(
         on_click=lambda route=item.route: ui.navigate.to(route),
-    ).props("flat no-caps").classes("home-metric-card"):
-        with ui.element("div").classes("home-metric-icon"):
+    ).props("flat no-caps").classes("home-module-card"):
+        with ui.element("div").classes("home-module-icon"):
             ui.icon(item.icon)
-        with ui.element("div").classes("home-metric-copy"):
-            ui.label(str(item.value)).classes("home-metric-value")
-            ui.label(item.label).classes("home-metric-label")
-            ui.label(item.detail).classes("home-metric-detail")
-        ui.icon("north_east").classes("home-metric-arrow")
+
+        with ui.column().classes("home-module-copy"):
+            ui.label(item.label).classes("home-module-title")
+            ui.label(item.detail).classes("home-module-detail")
+
+        ui.icon("arrow_forward").classes("home-module-arrow")
 
 
-def _quick_card(
+def _support_link(
     icon: str,
     title: str,
     description: str,
     route: str,
 ) -> None:
     with ui.button(
-        on_click=lambda: ui.navigate.to(route),
-    ).props("flat no-caps").classes("home-quick-card"):
-        with ui.element("div").classes("home-quick-icon"):
+        on_click=lambda target=route: ui.navigate.to(target),
+    ).props("flat no-caps").classes("home-support-link"):
+        with ui.element("div").classes("home-support-icon"):
             ui.icon(icon)
-        with ui.column().classes("home-quick-copy"):
-            ui.label(title).classes("home-quick-title")
-            ui.label(description).classes("home-quick-description")
-        ui.icon("arrow_forward").classes("home-quick-arrow")
+        with ui.column().classes("home-support-copy"):
+            ui.label(title).classes("home-support-title")
+            ui.label(description).classes("home-support-description")
+        ui.icon("arrow_forward").classes("home-support-arrow")
 
 
-def _communication_card(item: HomeCommunication) -> None:
-    classes = "home-update-card"
+def _communication_row(item: HomeCommunication) -> None:
+    classes = "home-update-row"
     if item.featured:
         classes += " is-featured"
 
     with ui.button(
-        on_click=lambda: ui.navigate.to(item.route),
+        on_click=lambda route=item.route: ui.navigate.to(route),
     ).props("flat no-caps").classes(classes):
-        with ui.row().classes("home-update-meta"):
-            ui.label(item.operator_name).classes("home-update-operator")
-            if item.featured:
-                ui.label("DESTAQUE").classes("home-update-badge")
-            elif item.category:
-                ui.label(item.category).classes("home-update-badge is-soft")
+        with ui.element("div").classes("home-update-rail"):
+            ui.icon("campaign" if item.featured else "article")
 
-        ui.label(item.title).classes("home-update-title")
-        if item.summary:
-            ui.label(item.summary).classes("home-update-description")
+        with ui.column().classes("home-update-main"):
+            with ui.row().classes("home-update-meta"):
+                ui.label(item.operator_name).classes("home-update-operator")
+                if item.featured:
+                    ui.label("DESTAQUE").classes("home-update-badge")
+                elif item.category:
+                    ui.label(item.category).classes("home-update-badge is-soft")
 
-        with ui.row().classes("home-update-footer"):
+            ui.label(item.title).classes("home-update-title")
+
+            if item.summary:
+                ui.label(item.summary).classes("home-update-description")
+
+        with ui.column().classes("home-update-side"):
             ui.label(item.priority).classes("home-update-priority")
-            with ui.row().classes("home-update-link"):
-                ui.label("Ler comunicado")
-                ui.icon("arrow_forward")
+            ui.icon("arrow_forward").classes("home-update-arrow")
 
 
-def _contingency_card(item: HomeContingency) -> None:
+def _contingency_row(item: HomeContingency) -> None:
     with ui.button(
-        on_click=lambda: ui.navigate.to(item.route),
-    ).props("flat no-caps").classes("home-alert-card"):
+        on_click=lambda route=item.route: ui.navigate.to(route),
+    ).props("flat no-caps").classes("home-alert-row"):
         with ui.element("div").classes("home-alert-indicator"):
             ui.icon("warning_amber")
 
@@ -122,6 +113,7 @@ def _contingency_card(item: HomeContingency) -> None:
                     ui.label(item.priority).classes("home-alert-priority")
 
             ui.label(item.title).classes("home-alert-title")
+
             detail = item.alternative_guidance or item.description
             if detail:
                 ui.label(detail).classes("home-alert-description")
@@ -151,10 +143,20 @@ def _empty_state(
 
 
 def _render_home_data(data: HomeData) -> None:
-    with ui.element("section").classes("home-metrics-grid"):
-        for metric in data.metrics:
-            _metric_card(metric)
+    # Navegação principal: mantém os quatro módulos, mas sem números.
+    with ui.element("section").classes("home-module-section"):
+        with ui.row().classes("home-module-heading"):
+            ui.label("ACESSO RÁPIDO").classes("home-section-kicker")
+            ui.label(
+                "Entre direto na informação que procura."
+            ).classes("home-module-heading-note")
 
+        with ui.element("div").classes("home-module-grid"):
+            for metric in data.metrics:
+                _module_card(metric)
+
+    # Atualizações e contingências são informação operacional, não um mural
+    # de cards. As listas têm hierarquia e densidade próprias.
     with ui.element("section").classes("home-workspace-grid"):
         with ui.element("article").classes("home-panel home-updates-panel"):
             with ui.row().classes("home-panel-heading"):
@@ -162,7 +164,7 @@ def _render_home_data(data: HomeData) -> None:
                     ui.label("ATUALIZAÇÕES").classes("home-section-kicker")
                     ui.label("O que merece sua atenção").classes("home-section-title")
                 ui.button(
-                    "Todos",
+                    "Ver todos",
                     icon="arrow_forward",
                     on_click=lambda: ui.navigate.to("/comunicados"),
                 ).props("flat no-caps").classes("home-text-action")
@@ -170,7 +172,7 @@ def _render_home_data(data: HomeData) -> None:
             if data.communications:
                 with ui.column().classes("home-updates-list"):
                     for item in data.communications:
-                        _communication_card(item)
+                        _communication_row(item)
             else:
                 _empty_state(
                     icon="mark_email_read",
@@ -189,7 +191,7 @@ def _render_home_data(data: HomeData) -> None:
                     ui.label("OPERAÇÃO AGORA").classes("home-section-kicker")
                     ui.label("Contingências vigentes").classes("home-section-title")
                 ui.button(
-                    "Todas",
+                    "Ver todas",
                     icon="arrow_forward",
                     on_click=lambda: ui.navigate.to("/contingencias"),
                 ).props("flat no-caps").classes("home-text-action")
@@ -197,7 +199,7 @@ def _render_home_data(data: HomeData) -> None:
             if data.contingencies:
                 with ui.column().classes("home-alerts-list"):
                     for item in data.contingencies:
-                        _contingency_card(item)
+                        _contingency_row(item)
             else:
                 _empty_state(
                     icon="verified",
@@ -208,6 +210,17 @@ def _render_home_data(data: HomeData) -> None:
                     route="/contingencias",
                     action="Consultar histórico",
                 )
+
+    # Contatos e consultores continuam acessíveis sem repetir outra grade
+    # inteira de cards já representados na navegação principal/sidebar.
+    with ui.element("section").classes("home-support-section"):
+        with ui.column().classes("home-support-intro"):
+            ui.label("PRECISA DE APOIO?").classes("home-section-kicker")
+            ui.label("Encontre quem pode ajudar").classes("home-support-heading")
+
+        with ui.element("div").classes("home-support-links"):
+            for item in SUPPORT_LINKS:
+                _support_link(*item)
 
 
 def render_home(user: dict) -> None:
@@ -230,11 +243,14 @@ def render_home(user: dict) -> None:
 
             with ui.element("div").classes("home-hero-content"):
                 ui.label("PORTAL COMERCIAL").classes("home-hero-kicker")
+
                 greeting = f"Olá, {first_name}." if first_name else "Olá."
                 ui.label(greeting).classes("home-hero-greeting")
+
                 ui.label(
                     "Encontre a informação que a operação precisa, sem perder tempo."
                 ).classes("home-hero-title")
+
                 ui.label(
                     "Operadoras, portais, documentos, contatos e orientações "
                     "reunidos em um único ponto de consulta."
@@ -251,8 +267,6 @@ def render_home(user: dict) -> None:
                         home_search.run_method("focus")
                         return
 
-                    # A consulta é transferida para a página de Pesquisa.
-                    # O resultado não é renderizado na Home.
                     ui.context.client.storage["portal_pending_search_query"] = query
                     ui.navigate.to("/pesquisa")
 
@@ -262,7 +276,7 @@ def render_home(user: dict) -> None:
 
                     home_search = ui.input(
                         placeholder=(
-                            "Operadora, autorização, elegibilidade, portal, contato..."
+                            "Ex.: senha Unimed, autorização Bradesco, contato CASSI..."
                         )
                     ).props(
                         "borderless dense autocomplete='off'"
@@ -275,6 +289,8 @@ def render_home(user: dict) -> None:
                         on_click=submit_home_search,
                     ).props("unelevated no-caps").classes("home-search-submit")
 
+            # Elemento gráfico discreto: reforça a ideia de central de consulta
+            # sem disputar atenção com a pesquisa.
             with ui.element("div").classes("home-hero-mark"):
                 with ui.element("div").classes("home-hero-mark-ring ring-one"):
                     pass
@@ -288,18 +304,3 @@ def render_home(user: dict) -> None:
 
         if data.metrics:
             _render_home_data(data)
-
-        with ui.element("section").classes("home-quick-section"):
-            with ui.row().classes("home-section-heading"):
-                with ui.column().classes("home-section-heading-copy"):
-                    ui.label("ATALHOS").classes("home-section-kicker")
-                    ui.label("Acesso direto ao que você mais usa").classes(
-                        "home-section-title"
-                    )
-                ui.label(
-                    "Entre no módulo certo sem percorrer menus intermediários."
-                ).classes("home-section-note")
-
-            with ui.element("div").classes("home-quick-grid"):
-                for item in QUICK_ACCESS:
-                    _quick_card(*item)
