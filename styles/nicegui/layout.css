@@ -1623,3 +1623,87 @@
         font-size: .8rem;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 20.2A · Shell verdadeiramente responsivo
+   --------------------------------------------------------------------------
+   O shell principal não deve depender da largura intrínseca gerada pelos
+   componentes NiceGUI/Quasar. Em desktop ele ocupa sempre todo o espaço
+   restante do viewport ao lado da sidebar; em tablet/mobile volta a 100vw.
+   ========================================================================== */
+
+.portal-app-shell,
+.portal-spa-shell {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
+
+.portal-main-shell {
+    width: calc(100vw - var(--portal-sidebar-width));
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.portal-topbar {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.portal-content,
+.portal-spa-content,
+.portal-spa-router,
+.portal-spa-page {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.portal-content {
+    /*
+     * A largura agora deriva do espaço REAL disponível no shell.
+     * O max-width continua existindo apenas para impedir linhas
+     * excessivamente longas em monitores muito grandes.
+     */
+    width: min(calc(100% - 56px), var(--portal-content-max));
+    max-width: var(--portal-content-max);
+    margin-inline: auto;
+}
+
+@media (max-width: 1100px) and (min-width: 861px) {
+    .portal-main-shell {
+        width: calc(100vw - var(--portal-sidebar-width));
+    }
+
+    .portal-content {
+        width: calc(100% - 36px);
+        max-width: none;
+    }
+}
+
+@media (max-width: 860px) {
+    .portal-app-shell,
+    .portal-spa-shell,
+    .portal-main-shell {
+        width: 100%;
+        max-width: none;
+    }
+
+    .portal-main-shell {
+        margin-left: 0;
+    }
+
+    .portal-content {
+        width: calc(100% - 28px);
+        max-width: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-content {
+        width: calc(100% - 20px);
+    }
+}
