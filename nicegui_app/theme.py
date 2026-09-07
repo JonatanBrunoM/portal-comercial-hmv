@@ -43,3 +43,13 @@ def apply_theme() -> None:
         for relative_path in STYLE_ORDER
     )
     ui.add_css(css)
+
+    # O favicon é declarado explicitamente no <head>.
+    # Alguns navegadores/NiceGUI podem ignorar somente o argumento favicon= do ui.run.
+    # O query string também evita reaproveitar uma referência antiga em cache.
+    ui.add_head_html(
+        """
+        <link rel="icon" type="image/png" href="/assets/brand/favicon.png?v=20260907">
+        <link rel="shortcut icon" type="image/png" href="/assets/brand/favicon.png?v=20260907">
+        """
+    )
