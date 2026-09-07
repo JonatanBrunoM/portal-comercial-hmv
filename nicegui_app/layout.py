@@ -7,6 +7,8 @@ from typing import Iterator
 
 from nicegui import ui
 
+from nicegui_app.brand import BRAND_FAVICON, BRAND_LOGO, BRAND_LOGO_WHITE
+
 
 NAV_ITEMS = (
     ("home", "home", "Início", "/"),
@@ -127,10 +129,11 @@ def _nav_button(
 
 
 def _brand() -> None:
-    with ui.column().classes("portal-brand"):
-        ui.image(
-            "https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png"
-        ).classes("portal-brand-hmv-logo")
+    with ui.element("div").classes("portal-brand"):
+        # A versão completa aparece na sidebar aberta. Em modo compacto,
+        # exibimos somente o símbolo institucional do favicon.
+        ui.image(BRAND_LOGO_WHITE).classes("portal-brand-hmv-logo")
+        ui.image(BRAND_FAVICON).classes("portal-brand-mini-logo")
         ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
 
 
@@ -220,9 +223,7 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
     with ui.element("header").classes("portal-topbar"):
         # Identidade/contexto
         with ui.element("div").classes("portal-topbar-left"):
-            ui.image(
-                "https://www.hospitalmoinhos.org.br/assets/images/logo-w-hopkins.png"
-            ).classes("portal-topbar-hmv-logo")
+            ui.image(BRAND_LOGO).classes("portal-topbar-hmv-logo")
             with ui.element("div").classes("portal-topbar-divider"):
                 pass
             with ui.row().classes("portal-topbar-context"):
