@@ -23,6 +23,7 @@ from nicegui_app.pages.contatos_admin import render_admin_contatos
 from nicegui_app.pages.consultores_admin import render_admin_consultores
 from nicegui_app.pages.comunicados_admin import render_admin_comunicados
 from nicegui_app.pages.contingencias_admin import render_admin_contingencias
+from nicegui_app.pages.auditoria_admin import render_admin_auditoria
 from nicegui_app.pages.pesquisa import render_pesquisa
 from nicegui_app.pages.contingencias import render_contingencia_detail, render_contingencias
 from nicegui_app.pages.comunicados import render_comunicado_detail, render_comunicados
@@ -223,6 +224,9 @@ def _build_portal_routes(user: dict) -> dict[str, object]:
         ),
         "/administracao/contingencias": (
             lambda: _render_admin_spa_page(render_admin_contingencias, user)
+        ),
+        "/administracao/auditoria": (
+            lambda: _render_admin_spa_page(render_admin_auditoria, user)
         ),
     }
 
