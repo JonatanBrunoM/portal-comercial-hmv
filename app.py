@@ -42,7 +42,6 @@ from nicegui_app.theme import apply_theme
 from nicegui_app.layout import portal_shell, spa_content_mode
 from nicegui_app.data.supabase_client import warm_public_data_cache, get_supabase_server_key, get_supabase_url
 from nicegui_app.production_readiness import get_readiness_report
-from nicegui_app.brand import BRAND_FAVICON
 
 
 logger = logging.getLogger(__name__)
@@ -368,7 +367,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         host="0.0.0.0",
         port=int(os.getenv("PORT", "8080")),
         title="Portal Comercial | Hospital Moinhos de Vento",
-        favicon=BRAND_FAVICON,
+        favicon=str(ASSETS_DIR / "brand" / "favicon.png"),
         reload=False,
         show=False,
         storage_secret=_storage_secret(),
