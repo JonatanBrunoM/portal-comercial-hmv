@@ -50,119 +50,199 @@ def _operator_mark(operator: OperadoraPreview) -> None:
     ui.label(initials).classes("portal-operator-initials")
 
 
-def _operator_directory_row(operator: OperadoraPreview) -> None:
+def _operator_feature(icon: str, title: str, description: str) -> None:
+    with ui.element("div").classes("portal-operator-feature"):
+        with ui.element("div").classes("portal-operator-feature-icon"):
+            ui.icon(icon)
+        with ui.column().classes("portal-operator-feature-copy"):
+            ui.label(title).classes("portal-operator-feature-title")
+            ui.label(description).classes("portal-operator-feature-description")
+
+
+def _operator_card(operator: OperadoraPreview, *, list_mode: bool = False) -> None:
     website = _safe_external_url(operator.site_url)
+    card_class = "portal-operator-card is-list" if list_mode else "portal-operator-card"
 
-    with ui.element("article").classes("portal-operator-directory-row"):
-        with ui.element("div").classes("portal-operator-directory-mark"):
-            _operator_mark(operator)
+    with ui.element("article").classes(card_class):
+        with ui.element("div").classes("portal-operator-card-top"):
+            with ui.element("div").classes("portal-operator-card-mark"):
+                _operator_mark(operator)
 
-        with ui.column().classes("portal-operator-directory-copy"):
-            with ui.row().classes("portal-operator-directory-heading"):
-                ui.label(operator.short_name).classes("portal-operator-directory-title")
-                with ui.element(
-                    "span"
-                ).classes(
-                    "portal-operator-status is-active"
-                    if _is_active(operator.status)
-                    else "portal-operator-status"
-                ):
-                    ui.element("span").classes("portal-operator-status-dot")
-                    ui.label(operator.status)
+            with ui.column().classes("portal-operator-card-copy"):
+                with ui.row().classes("portal-operator-card-heading"):
+                    ui.label(operator.short_name).classes("portal-operator-card-title")
+                    with ui.element(
+                        "span"
+                    ).classes(
+                        "portal-operator-status is-active"
+                        if _is_active(operator.status)
+                        else "portal-operator-status"
+                    ):
+                        ui.element("span").classes("portal-operator-status-dot")
+                        ui.label(operator.status)
 
-            if operator.name != operator.short_name:
-                ui.label(operator.name).classes("portal-operator-directory-name")
+                if operator.name != operator.short_name:
+                    ui.label(operator.name).classes("portal-operator-card-full-name")
 
-            with ui.row().classes("portal-operator-directory-meta"):
-                if operator.code:
-                    with ui.element("span").classes("portal-operator-directory-meta-item"):
-                        ui.icon("tag")
-                        ui.label(operator.code)
+                with ui.row().classes("portal-operator-card-meta"):
+                    if operator.code:
+                        with ui.element("span").classes("portal-operator-card-meta-item"):
+                            ui.icon("settings")
+                            ui.label(operator.code)
 
-                with ui.element("span").classes("portal-operator-directory-meta-item"):
-                    ui.icon("hub")
-                    ui.label("Central de informações")
+                    with ui.element("span").classes("portal-operator-card-meta-item"):
+                        ui.icon("account_tree")
+                        ui.label("Central de informações")
 
-            ui.label(
-                operator.observations
-                or (
-                    "Planos, acessos, documentos, contatos, autorizações, "
-                    "coberturas e orientações relacionadas."
-                )
-            ).classes("portal-operator-directory-description")
+                ui.label(
+                    operator.observations
+                    or (
+                        "Consulte orientações, acessos, documentos, contatos, "
+                        "autorizações e demais informações desta operadora."
+                    )
+                ).classes("portal-operator-card-description")
 
-        with ui.column().classes("portal-operator-directory-actions"):
-            ui.button(
-                "Consultar",
-                icon="arrow_forward",
-                on_click=lambda oid=operator.operator_id: ui.navigate.to(
-                    f"/operadoras/{oid}"
-                ),
-            ).props("unelevated no-caps").classes("portal-operator-primary-action")
+        with ui.element("div").classes("portal-operator-card-features"):
+            _operator_feature(
+                "vpn_key",
+                "Portais e acessos",
+                "Sistemas, links e orientações.",
+            )
+            _operator_feature(
+                "description",
+                "Guias e documentos",
+                "Referências para atendimento.",
+            )
+            _operator_feature(
+                "contacts",
+                "Contatos",
+                "Centrais e responsáveis.",
+            )
 
+        with ui.element("div").classes("portal-operator-card-footer"):
             if website:
                 ui.link(
                     "Site da operadora",
                     target=website,
                     new_tab=True,
-                ).classes("portal-operator-secondary-action")
+                ).classes("portal-operator-site-action")
+            else:
+                ui.label("Informações institucionais").classes(
+                    "portal-operator-site-action is-disabled"
+                )
+
+            ui.button(
+                "Ver detalhes da operadora",
+                icon="arrow_forward",
+                on_click=lambda oid=operator.operator_id: ui.navigate.to(
+                    f"/operadoras/{oid}"
+                ),
+            ).props("unelevated no-caps").classes("portal-operator-detail-action")
 
 
 def render_operadoras(user: dict) -> None:
     operators = get_operadoras_preview()
 
     with portal_layout(user=user, active="operators"):
-        with ui.element("section").classes("portal-operators-intro"):
-            with ui.column().classes("portal-operators-intro-copy"):
-                ui.label("CENTRAL DE OPERADORAS").classes("portal-section-kicker")
+        with ui.element("section").classes("portal-operators-hero"):
+            with ui.column().classes("portal-operators-hero-copy"):
+                ui.label("CENTRAL DE OPERADORAS").classes("portal-operators-hero-kicker")
                 ui.label(
-                    "Qual operadora você precisa consultar?"
-                ).classes("portal-operators-title")
+                    "Tudo sobre as operadoras, em um só lugar."
+                ).classes("portal-operators-hero-title")
                 ui.label(
-                    "Escolha uma operadora para acessar, em um só lugar, "
-                    "as informações necessárias para conduzir o atendimento."
-                ).classes("portal-operators-description")
+                    "Acesse rapidamente portais, orientações, contatos, documentos "
+                    "e informações atualizadas para conduzir o atendimento."
+                ).classes("portal-operators-hero-description")
 
-            with ui.element("div").classes("portal-operators-intro-mark"):
+            with ui.element("div").classes("portal-operators-hero-side"):
+                for icon, title, subtitle in (
+                    ("bolt", "Atendimento", "mais ágil"),
+                    ("verified_user", "Informação", "segura"),
+                    ("groups", "Parceria", "pela saúde"),
+                ):
+                    with ui.element("div").classes("portal-operators-hero-point"):
+                        with ui.element("div").classes("portal-operators-hero-point-icon"):
+                            ui.icon(icon)
+                        with ui.column().classes("portal-operators-hero-point-copy"):
+                            ui.label(title).classes("portal-operators-hero-point-title")
+                            ui.label(subtitle).classes("portal-operators-hero-point-subtitle")
+
+            with ui.element("div").classes("portal-operators-hero-watermark"):
                 ui.icon("domain")
 
-        with ui.element("section").classes("portal-operators-controls"):
-            with ui.element("div").classes("portal-operators-search-wrap"):
-                ui.icon("search").classes("portal-operators-search-icon")
+        filter_state = {"value": "Todos"}
+        sort_state = {"value": "Nome (A–Z)"}
+        view_state = {"value": "grid"}
+        filter_buttons: dict[str, Any] = {}
+        view_buttons: dict[str, Any] = {}
+
+        with ui.element("section").classes("portal-operators-toolbar"):
+            with ui.element("div").classes("portal-operators-search-box"):
+                ui.icon("search")
                 search = ui.input(
-                    placeholder="Buscar operadora por nome ou código..."
+                    placeholder="Buscar operadora por nome, código ou palavra-chave..."
                 ).props(
                     "borderless dense clearable autocomplete='off'"
-                ).classes("portal-operators-search")
+                ).classes("portal-operators-search-input")
+                ui.button(
+                    "Pesquisar",
+                    icon="arrow_forward",
+                    on_click=lambda: refresh(),
+                ).props("unelevated no-caps").classes("portal-operators-search-button")
 
-            filter_state = {"value": "Todos"}
-            filter_buttons: dict[str, Any] = {}
+            with ui.element("div").classes("portal-operators-status-filter"):
+                ui.label("FILTRAR POR STATUS").classes("portal-operators-control-label")
+                with ui.element("div").classes("portal-operators-status-actions"):
+                    for value, label in (
+                        ("Todos", "Todas"),
+                        ("Ativo", "Ativas"),
+                        ("Outros", "Outras"),
+                    ):
+                        button = ui.button(
+                            label,
+                            on_click=lambda selected=value: set_filter(selected),
+                        ).props("flat no-caps").classes("portal-operators-status-button")
+                        filter_buttons[value] = button
 
-            with ui.element("div").classes("portal-operators-filter-group"):
-                for value, label in (
-                    ("Todos", "Todas"),
-                    ("Ativo", "Ativas"),
-                    ("Outros", "Outras"),
-                ):
-                    button = ui.button(
-                        label,
-                        on_click=lambda selected=value: set_filter(selected),
-                    ).props("flat no-caps").classes("portal-operators-filter-button")
-                    filter_buttons[value] = button
+        with ui.element("section").classes("portal-operators-directory-head"):
+            with ui.column().classes("portal-operators-directory-title-copy"):
+                ui.label("OPERADORAS CADASTRADAS").classes("portal-section-kicker")
+                results_label = ui.label("").classes("portal-operators-directory-count")
 
-        with ui.row().classes("portal-operators-list-heading"):
-            with ui.column().classes("portal-operators-list-heading-copy"):
-                ui.label("OPERADORAS DISPONÍVEIS").classes("portal-section-kicker")
-                results_label = ui.label("").classes("portal-operators-result-label")
-            ui.label(
-                "Abra uma operadora para consultar todas as informações vinculadas."
-            ).classes("portal-operators-list-note")
+            with ui.element("div").classes("portal-operators-directory-tools"):
+                ui.label("Ordenar por").classes("portal-operators-order-label")
+                order_select = ui.select(
+                    ["Nome (A–Z)", "Nome (Z–A)", "Código"],
+                    value="Nome (A–Z)",
+                ).props("outlined dense options-dense").classes("portal-operators-order-select")
 
-        directory = ui.element("div").classes("portal-operators-directory")
+                with ui.element("div").classes("portal-operators-view-switch"):
+                    grid_button = ui.button(
+                        icon="grid_view",
+                        on_click=lambda: set_view("grid"),
+                    ).props("flat dense round").classes("portal-operators-view-button")
+                    list_button = ui.button(
+                        icon="view_list",
+                        on_click=lambda: set_view("list"),
+                    ).props("flat dense round").classes("portal-operators-view-button")
+                    view_buttons["grid"] = grid_button
+                    view_buttons["list"] = list_button
+
+        directory = ui.element("div").classes("portal-operators-card-grid")
+
+        def ordered(items: list[OperadoraPreview]) -> list[OperadoraPreview]:
+            mode = sort_state["value"]
+            if mode == "Nome (Z–A)":
+                return sorted(items, key=lambda item: item.short_name.casefold(), reverse=True)
+            if mode == "Código":
+                return sorted(items, key=lambda item: item.code.casefold())
+            return sorted(items, key=lambda item: item.short_name.casefold())
 
         def refresh() -> None:
             term = _normalized(search.value or "")
             selected = filter_state["value"]
+            sort_state["value"] = str(order_select.value or "Nome (A–Z)")
 
             filtered: list[OperadoraPreview] = []
             for operator in operators:
@@ -184,10 +264,18 @@ def render_operadoras(user: dict) -> None:
                 if (not term or term in haystack) and status_ok:
                     filtered.append(operator)
 
+            filtered = ordered(filtered)
+
             for value, button in filter_buttons.items():
                 button.classes(
                     add="is-selected" if value == selected else "",
                     remove="" if value == selected else "is-selected",
+                )
+
+            for value, button in view_buttons.items():
+                button.classes(
+                    add="is-selected" if value == view_state["value"] else "",
+                    remove="" if value == view_state["value"] else "is-selected",
                 )
 
             count = len(filtered)
@@ -196,25 +284,57 @@ def render_operadoras(user: dict) -> None:
                 f"{'s' if count != 1 else ''}"
             )
 
+            directory.classes(
+                add="is-list" if view_state["value"] == "list" else "",
+                remove="" if view_state["value"] == "list" else "is-list",
+            )
             directory.clear()
+
             with directory:
                 if not filtered:
                     _empty(
                         "Nenhuma operadora encontrada.",
-                        "Tente outro nome ou ajuste o filtro.",
+                        "Tente outro nome ou ajuste os filtros.",
                         "search_off",
                     )
                     return
 
                 for operator in filtered:
-                    _operator_directory_row(operator)
+                    _operator_card(
+                        operator,
+                        list_mode=view_state["value"] == "list",
+                    )
 
         def set_filter(value: str) -> None:
             filter_state["value"] = value
             refresh()
 
+        def set_view(value: str) -> None:
+            view_state["value"] = value
+            refresh()
+
         search.on_value_change(lambda _: refresh())
+        order_select.on_value_change(lambda _: refresh())
+
         refresh()
+
+        with ui.element("section").classes("portal-operators-help"):
+            with ui.element("div").classes("portal-operators-help-message"):
+                with ui.element("div").classes("portal-operators-help-icon"):
+                    ui.icon("info")
+                with ui.column().classes("portal-operators-help-copy"):
+                    ui.label("Não encontrou o que precisa?").classes(
+                        "portal-operators-help-title"
+                    )
+                    ui.label(
+                        "Use a pesquisa do Portal ou fale com o time responsável."
+                    ).classes("portal-operators-help-description")
+
+            ui.button(
+                "Falar com um consultor",
+                icon="support_agent",
+                on_click=lambda: ui.navigate.to("/consultores"),
+            ).props("flat no-caps").classes("portal-operators-help-action")
 
 def _empty(title: str, description: str, icon: str = "inventory_2") -> None:
     with ui.element("div").classes("portal-operators-empty"):
