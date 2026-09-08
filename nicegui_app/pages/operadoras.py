@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from nicegui import ui
 
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.operadoras_service import (
     OperadoraPreview,
@@ -168,8 +169,7 @@ def render_operadoras(user: dict) -> None:
                             ui.label(title).classes("portal-operators-hero-point-title")
                             ui.label(subtitle).classes("portal-operators-hero-point-subtitle")
 
-            with ui.element("div").classes("portal-operators-hero-watermark"):
-                ui.icon("domain")
+            render_hero_art(variant="operators", icon="domain")
 
         filter_state = {"value": "Todos"}
         sort_state = {"value": "Nome (A–Z)"}
