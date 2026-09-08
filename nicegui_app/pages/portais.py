@@ -99,13 +99,35 @@ def _compact_credential(
                         "portal-access-card-copy-icon"
                     ).tooltip("Copiar login")
 
-            password_value = ui.label("••••••••••").classes(
-                "portal-access-card-password-value"
-            )
-            password_status = ui.label("").classes(
-                "portal-access-card-password-status"
-            )
             state = {"visible": False, "generation": 0}
+
+            # IMPORTANTE: os elementos de senha precisam ser criados DENTRO do
+            # campo correspondente. Se forem criados antes do container, o
+            # NiceGUI os insere no pai e a senha aparece "solta" no card.
+            with ui.element("div").classes("portal-access-card-field"):
+                ui.label("SENHA").classes("portal-access-card-field-label")
+
+                with ui.row().classes("portal-access-card-field-value-row"):
+                    password_value = ui.label("••••••••••").classes(
+                        "portal-access-card-password-value"
+                    )
+
+                    with ui.row().classes("portal-access-card-password-actions"):
+                        reveal_button = ui.button(
+                            icon="visibility",
+                        ).props("flat round dense").classes(
+                            "portal-access-card-copy-icon"
+                        ).tooltip("Revelar / ocultar senha")
+
+                        copy_button = ui.button(
+                            icon="content_copy",
+                        ).props("flat round dense").classes(
+                            "portal-access-card-copy-icon"
+                        ).tooltip("Copiar senha")
+
+                password_status = ui.label("").classes(
+                    "portal-access-card-password-status"
+                )
 
             def hide_password(
                 label=password_value,
@@ -187,28 +209,8 @@ def _compact_credential(
                         timeout=6000,
                     )
 
-            with ui.element("div").classes("portal-access-card-field"):
-                ui.label("SENHA").classes("portal-access-card-field-label")
-
-                with ui.row().classes("portal-access-card-field-value-row"):
-                    password_value
-
-                    with ui.row().classes("portal-access-card-password-actions"):
-                        ui.button(
-                            icon="visibility",
-                            on_click=toggle_password,
-                        ).props("flat round dense").classes(
-                            "portal-access-card-copy-icon"
-                        ).tooltip("Revelar / ocultar senha")
-
-                        ui.button(
-                            icon="content_copy",
-                            on_click=copy_password,
-                        ).props("flat round dense").classes(
-                            "portal-access-card-copy-icon"
-                        ).tooltip("Copiar senha")
-
-                password_status
+            reveal_button.on("click", toggle_password)
+            copy_button.on("click", copy_password)
 
         if credential.access_tip:
             with ui.row().classes("portal-access-card-credential-tip"):
