@@ -89,3 +89,36 @@ def list_consultores_for_operadora_hub() -> list[dict[str, Any]]:
         select="id,nome,cargo,email,telefone,status",
         params={"order": "nome.asc"},
     )
+
+
+def list_portais_for_operadora_cards() -> list[dict[str, Any]]:
+    return rest_select(
+        "portais",
+        select=(
+            "id,operadora_id,nome,tipo,url,exige_login,"
+            "instrucao_acesso,dica_geral_acesso,status"
+        ),
+        params={"order": "nome.asc"},
+    )
+
+
+def list_documentos_for_operadora_cards() -> list[dict[str, Any]]:
+    return rest_select(
+        "documentos",
+        select=(
+            "id,operadora_id,nome,obrigatorio,formato,"
+            "orientacao,status"
+        ),
+        params={"order": "nome.asc"},
+    )
+
+
+def list_contatos_for_operadora_cards() -> list[dict[str, Any]]:
+    return rest_select(
+        "contatos",
+        select=(
+            "id,operadora_id,nome_setor,finalidade,tipo,contato,"
+            "responsavel,horario_atendimento,status"
+        ),
+        params={"order": "nome_setor.asc"},
+    )
