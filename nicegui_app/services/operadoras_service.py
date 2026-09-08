@@ -19,6 +19,9 @@ from nicegui_app.repositories.operadoras_repository import (
     list_operadoras,
     list_planos_by_operadora,
     list_portais_by_operadora,
+    list_portais_for_operadora_cards,
+    list_documentos_for_operadora_cards,
+    list_contatos_for_operadora_cards,
 )
 
 
@@ -61,6 +64,12 @@ class OperadoraPreview:
     observations: str
     logo_url: str
     site_url: str
+    portal_name: str = ""
+    portal_detail: str = ""
+    document_name: str = ""
+    document_detail: str = ""
+    contact_name: str = ""
+    contact_value: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,8 +102,85 @@ def _operator_from_record(record: dict[str, Any]) -> OperadoraPreview:
     )
 
 
+def _first_active_by_operator(
+    rows: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    first: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        operator_id = _text(row, "operadora_id")
+        if not operator_id:
+            continue
+        status = _text(row, "status").lower()
+        if status and status != "ativo":
+            continue
+        first.setdefault(operator_id, row)
+    return first
+
+
 def get_operadoras_preview() -> list[OperadoraPreview]:
-    return [_operator_from_record(row) for row in list_operadoras()]
+    # A landing de Operadoras precisa mostrar informação útil dentro de cada
+    # card. Carregamos três conjuntos públicos em lote, em paralelo, evitando
+    # abrir o hub completo de cada operadora (11 consultas por operadora).
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="portal-operator-cards") as pool:
+        operators_future = pool.submit(list_operadoras)
+        portals_future = pool.submit(list_portais_for_operadora_cards)
+        documents_future = pool.submit(list_documentos_for_operadora_cards)
+        contacts_future = pool.submit(list_contatos_for_operadora_cards)
+
+        operator_rows = operators_future.result()
+        portals = _first_active_by_operator(portals_future.result())
+        documents = _first_active_by_operator(documents_future.result())
+        contacts = _first_active_by_operator(contacts_future.result())
+
+    result: list[OperadoraPreview] = []
+    for row in operator_rows:
+        base = _operator_from_record(row)
+        portal = portals.get(base.operator_id, {})
+        document = documents.get(base.operator_id, {})
+        contact = contacts.get(base.operator_id, {})
+
+        portal_type = _text(portal, "tipo")
+        requires_login = portal.get("exige_login")
+        portal_detail_parts = [
+            portal_type,
+            "Exige login" if requires_login is True else "",
+        ]
+
+        document_detail_parts = [
+            "Obrigatório" if document.get("obrigatorio") is True else "",
+            _text(document, "formato"),
+        ]
+
+        contact_name = (
+            _text(contact, "finalidade")
+            or _text(contact, "nome_setor")
+            or "Canal de atendimento"
+        )
+
+        result.append(
+            OperadoraPreview(
+                operator_id=base.operator_id,
+                code=base.code,
+                name=base.name,
+                short_name=base.short_name,
+                status=base.status,
+                observations=base.observations,
+                logo_url=base.logo_url,
+                site_url=base.site_url,
+                portal_name=_text(portal, "nome"),
+                portal_detail=" · ".join(
+                    item for item in portal_detail_parts if item
+                ),
+                document_name=_text(document, "nome"),
+                document_detail=" · ".join(
+                    item for item in document_detail_parts if item
+                ),
+                contact_name=contact_name if contact else "",
+                contact_value=_text(contact, "contato"),
+            )
+        )
+
+    return result
 
 
 def get_operadora_detail(operator_id: str) -> OperadoraDetail | None:
