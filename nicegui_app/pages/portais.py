@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from nicegui import ui
 
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.portais_service import (
     PortalPreview,
@@ -355,6 +356,8 @@ def render_portais(user: dict) -> None:
                         with ui.column().classes("portal-access-hero-step-copy"):
                             ui.label(title).classes("portal-access-hero-step-title")
                             ui.label(subtitle).classes("portal-access-hero-step-subtitle")
+
+            render_hero_art(variant="portals", icon="vpn_key")
 
         filter_state = {"operator": "Todas", "auth": "Todos"}
         operator_buttons: dict[str, object] = {}
