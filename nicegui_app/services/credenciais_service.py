@@ -181,12 +181,15 @@ def reveal_password(
             "O serviço seguro de credenciais não está disponível no momento."
         ) from None
     except Exception:
-        logger.exception(
-            "Falha de descriptografia de credencial. credencial_id=%s",
+        # Credenciais antigas/de teste podem ter sido gravadas com outra chave
+        # ou em um formato que não é um token Fernet válido. Não exponha stack
+        # trace ao usuário nem tente "adivinhar" a senha.
+        logger.warning(
+            "Credencial incompatível com a chave/formato atual. credencial_id=%s",
             credential_id,
         )
         raise CredentialSecurityError(
-            "Não foi possível acessar esta credencial com segurança."
+            "Esta senha precisa ser redefinida pelo administrador antes de ser utilizada."
         ) from None
 
     _audit(
