@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.home_service import (
     HomeCommunication,
@@ -301,16 +302,7 @@ def render_home(user: dict) -> None:
                         on_click=submit_home_search,
                     ).props("unelevated no-caps").classes("home-search-submit")
 
-            # Elemento gráfico discreto: reforça a ideia de central de consulta
-            # sem disputar atenção com a pesquisa.
-            with ui.element("div").classes("home-hero-mark"):
-                with ui.element("div").classes("home-hero-mark-ring ring-one"):
-                    pass
-                with ui.element("div").classes("home-hero-mark-ring ring-two"):
-                    pass
-                with ui.element("div").classes("home-hero-mark-core"):
-                    ui.icon("hub")
-                ui.label("CENTRAL DE CONSULTA").classes("home-mark-caption")
+            render_hero_art(variant="home", icon="hub")
 
         if data.metrics:
             _render_home_data(data)
