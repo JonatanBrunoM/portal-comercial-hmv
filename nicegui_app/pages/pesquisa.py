@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.pesquisa_service import (
     ConversationalAnswer,
@@ -123,6 +124,8 @@ def render_pesquisa(user: dict) -> None:
                             "e procura a informação mais provável entre os registros "
                             "oficiais cadastrados."
                         ).classes("portal-search-helper")
+
+                render_hero_art(variant="search", icon="travel_explore")
 
             with ui.element("div").classes("portal-search-box"):
                 initial_query = str(
