@@ -16,6 +16,7 @@ from nicegui_app.repositories.credenciais_repository import (
     get_credential,
     list_credential_history,
     list_credentials_by_portal,
+    list_active_credentials_for_portals,
     update_credential,
     rotate_credential_atomic,
 )
@@ -143,6 +144,16 @@ def get_public_credentials(portal_id: str) -> list[CredentialPreview]:
         _preview(row)
         for row in list_credentials_by_portal(portal_id, active_only=True)
     ]
+
+
+def get_public_credentials_for_portals(
+    portal_ids: list[str],
+) -> dict[str, list[CredentialPreview]]:
+    grouped: dict[str, list[CredentialPreview]] = {}
+    for row in list_active_credentials_for_portals(portal_ids):
+        preview = _preview(row)
+        grouped.setdefault(preview.portal_id, []).append(preview)
+    return grouped
 
 
 def get_admin_credentials(portal_id: str, actor: dict) -> list[CredentialPreview]:
