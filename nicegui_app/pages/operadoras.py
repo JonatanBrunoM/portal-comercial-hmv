@@ -105,18 +105,18 @@ def _operator_card(operator: OperadoraPreview, *, list_mode: bool = False) -> No
         with ui.element("div").classes("portal-operator-card-features"):
             _operator_feature(
                 "vpn_key",
-                "Portais e acessos",
-                "Sistemas, links e orientações.",
+                operator.portal_name or "Portais e acessos",
+                operator.portal_detail or "Nenhum portal ativo em destaque.",
             )
             _operator_feature(
                 "description",
-                "Guias e documentos",
-                "Referências para atendimento.",
+                operator.document_name or "Guias e documentos",
+                operator.document_detail or "Nenhum documento ativo em destaque.",
             )
             _operator_feature(
                 "contacts",
-                "Contatos",
-                "Centrais e responsáveis.",
+                operator.contact_name or "Contatos",
+                operator.contact_value or "Nenhum contato ativo em destaque.",
             )
 
         with ui.element("div").classes("portal-operator-card-footer"):
@@ -344,112 +344,115 @@ def _empty(title: str, description: str, icon: str = "inventory_2") -> None:
 
 
 
-def _detail_summary_item(icon: str, label: str, value: str, helper: str = "") -> None:
-    with ui.element("div").classes("portal-operator-summary-item"):
-        with ui.element("div").classes("portal-operator-summary-icon"):
+
+def _compact_value(value: str, fallback: str = "Não informado") -> str:
+    return value.strip() if value and value.strip() else fallback
+
+
+def _first(rows: tuple[dict[str, Any], ...]) -> dict[str, Any]:
+    return rows[0] if rows else {}
+
+
+def _quick_panel(
+    *,
+    icon: str,
+    eyebrow: str,
+    title: str,
+    value: str,
+    helper: str,
+    action_label: str = "",
+    action=None,
+    tone: str = "",
+) -> None:
+    classes = "portal-operator-quick-panel"
+    if tone:
+        classes += f" is-{tone}"
+
+    with ui.element("article").classes(classes):
+        with ui.row().classes("portal-operator-quick-head"):
+            with ui.element("div").classes("portal-operator-quick-icon"):
+                ui.icon(icon)
+            ui.label(eyebrow).classes("portal-operator-quick-eyebrow")
+
+        ui.label(title).classes("portal-operator-quick-title")
+        ui.label(value).classes("portal-operator-quick-value")
+        ui.label(helper).classes("portal-operator-quick-helper")
+
+        if action_label and action is not None:
+            ui.button(
+                action_label,
+                icon="arrow_forward",
+                on_click=action,
+            ).props("flat no-caps").classes("portal-operator-quick-action")
+
+
+def _rule_card(
+    icon: str,
+    title: str,
+    rows: tuple[dict[str, Any], ...],
+    fields: list[tuple[str, tuple[str, ...]]],
+    empty_text: str,
+) -> None:
+    with ui.element("article").classes("portal-operator-rule-card"):
+        with ui.row().classes("portal-operator-rule-head"):
+            with ui.element("div").classes("portal-operator-rule-icon"):
+                ui.icon(icon)
+            with ui.column().classes("portal-operator-rule-head-copy"):
+                ui.label(title).classes("portal-operator-rule-title")
+                ui.label(
+                    f"{len(rows)} registro{'s' if len(rows) != 1 else ''}"
+                ).classes("portal-operator-rule-count")
+
+        if not rows:
+            ui.label(empty_text).classes("portal-operator-rule-empty")
+            return
+
+        row = rows[0]
+        with ui.element("div").classes("portal-operator-rule-fields"):
+            for label, keys in fields:
+                value = _text(row, *keys)
+                if value:
+                    with ui.element("div").classes("portal-operator-rule-field"):
+                        ui.label(label).classes("portal-operator-rule-label")
+                        ui.label(value).classes("portal-operator-rule-value")
+
+        if len(rows) > 1:
+            ui.label(
+                f"+ {len(rows) - 1} outro{'s' if len(rows) - 1 != 1 else ''} registro"
+                f"{'s' if len(rows) - 1 != 1 else ''}"
+            ).classes("portal-operator-rule-more")
+
+
+def _resource_item(
+    icon: str,
+    title: str,
+    subtitle: str,
+    meta: str = "",
+    action_label: str = "",
+    action=None,
+) -> None:
+    with ui.element("article").classes("portal-operator-resource-item"):
+        with ui.element("div").classes("portal-operator-resource-icon"):
             ui.icon(icon)
-        with ui.column().classes("portal-operator-summary-copy"):
-            ui.label(label).classes("portal-operator-summary-label")
-            ui.label(value).classes("portal-operator-summary-value")
-            if helper:
-                ui.label(helper).classes("portal-operator-summary-helper")
+        with ui.column().classes("portal-operator-resource-copy"):
+            ui.label(title).classes("portal-operator-resource-title")
+            if subtitle:
+                ui.label(subtitle).classes("portal-operator-resource-subtitle")
+            if meta:
+                ui.label(meta).classes("portal-operator-resource-meta")
+        if action_label and action is not None:
+            ui.button(
+                action_label,
+                icon="arrow_forward",
+                on_click=action,
+            ).props("flat no-caps").classes("portal-operator-resource-action")
 
 
-def _info_row(title: str, lines: list[tuple[str, str]], icon: str = "article") -> None:
-    with ui.element("article").classes("portal-hub-card"):
-        with ui.element("div").classes("portal-hub-card-icon"):
-            ui.icon(icon)
-
-        with ui.column().classes("portal-hub-card-copy"):
-            ui.label(title).classes("portal-hub-card-title")
-
-            with ui.element("div").classes("portal-hub-card-fields"):
-                for label, value in lines:
-                    if value:
-                        with ui.element("div").classes("portal-hub-card-field"):
-                            ui.label(label).classes("portal-hub-card-field-label")
-                            ui.label(value).classes("portal-hub-card-field-value")
-
-
-def _render_planos(rows: tuple[dict[str, Any], ...]) -> None:
-    if not rows:
-        _empty("Nenhum plano cadastrado.", "Ainda não há planos vinculados.")
-        return
-
-    with ui.element("div").classes("portal-hub-card-grid"):
-        for row in rows:
-            _info_row(
-                _text(row, "nome_padronizado", "nome") or "Plano sem nome",
-                [
-                    ("Código", _text(row, "codigo")),
-                    ("Tipo", _text(row, "tipo_plano")),
-                    ("Resumo", _text(row, "observacao_resumida")),
-                    ("Status", _text(row, "status")),
-                ],
-                "view_list",
-            )
-
-
-def _render_portais(rows: tuple[dict[str, Any], ...]) -> None:
-    if not rows:
-        _empty(
-            "Nenhum portal cadastrado.",
-            "Ainda não há portais vinculados.",
-            "vpn_key",
-        )
-        return
-
-    with ui.element("div").classes("portal-hub-card-grid"):
-        for row in rows:
-            with ui.element("article").classes("portal-hub-card is-portal"):
-                with ui.element("div").classes("portal-hub-card-icon"):
-                    ui.icon("vpn_key")
-
-                with ui.column().classes("portal-hub-card-copy"):
-                    ui.label(_text(row, "nome") or "Portal").classes(
-                        "portal-hub-card-title"
-                    )
-
-                    with ui.element("div").classes("portal-hub-card-fields"):
-                        for label, value in [
-                            ("Tipo", _text(row, "tipo")),
-                            ("Instrução", _text(row, "instrucao_acesso")),
-                            ("Dica", _text(row, "dica_geral_acesso")),
-                            ("Observações", _text(row, "observacoes")),
-                            ("Status", _text(row, "status")),
-                        ]:
-                            if value:
-                                with ui.element("div").classes("portal-hub-card-field"):
-                                    ui.label(label).classes(
-                                        "portal-hub-card-field-label"
-                                    )
-                                    ui.label(value).classes(
-                                        "portal-hub-card-field-value"
-                                    )
-
-                url = _safe_external_url(_text(row, "url"))
-                if url:
-                    ui.link(
-                        "Abrir portal",
-                        target=url,
-                        new_tab=True,
-                    ).classes("portal-hub-card-action")
-
-
-def _render_generic(rows, title_keys, fields, icon, empty_title):
-    if not rows:
-        _empty(
-            empty_title,
-            "Nenhum registro vinculado a esta operadora.",
-            icon,
-        )
-        return
-
-    with ui.element("div").classes("portal-hub-card-grid"):
-        for row in rows:
-            title = _text(row, *title_keys) or "Informação cadastrada"
-            lines = [(label, _text(row, *keys)) for label, keys in fields]
-            _info_row(title, lines, icon)
+def _section_heading(kicker: str, title: str, description: str) -> None:
+    with ui.column().classes("portal-operator-section-heading"):
+        ui.label(kicker).classes("portal-section-kicker")
+        ui.label(title).classes("portal-operator-section-title")
+        ui.label(description).classes("portal-operator-section-description")
 
 
 def render_operadora_detail(user: dict, operator_id: str) -> None:
@@ -466,6 +469,11 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
         operator = detail.operator
         external_url = _safe_external_url(operator.site_url)
+
+        first_portal = _first(detail.portais)
+        first_contact = _first(detail.contatos)
+        first_contingency = _first(detail.contingencias)
+        first_communication = _first(detail.comunicados)
 
         total_info = sum(
             len(rows)
@@ -484,40 +492,38 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             )
         )
 
-        # Navegação contextual compacta.
-        with ui.row().classes("portal-operator-detail-nav"):
+        # Breadcrumb / contextual actions.
+        with ui.row().classes("portal-operator-cockpit-nav"):
             ui.button(
-                "Operadoras",
+                "Todas as operadoras",
                 icon="arrow_back",
                 on_click=lambda: ui.navigate.to("/operadoras"),
-            ).props("flat no-caps").classes("portal-operator-back-button")
+            ).props("flat no-caps").classes("portal-operator-cockpit-back")
 
-            with ui.row().classes("portal-operator-detail-nav-actions"):
+            with ui.row().classes("portal-operator-cockpit-nav-actions"):
                 if external_url:
                     ui.link(
-                        "Site da operadora",
+                        "Site institucional",
                         target=external_url,
                         new_tab=True,
-                    ).classes("portal-operator-nav-link")
+                    ).classes("portal-operator-cockpit-external")
 
-                if detail.portais:
-                    ui.button(
-                        "Ver portais",
-                        icon="vpn_key",
-                        on_click=lambda: tabs.set_value(t_portais),
-                    ).props("flat no-caps").classes("portal-operator-nav-action")
+                ui.button(
+                    "Pesquisar nesta operadora",
+                    icon="search",
+                    on_click=lambda: _search_operator(operator.short_name),
+                ).props("flat no-caps").classes("portal-operator-cockpit-search")
 
-        # Hero da operadora: identidade + contexto, sem ocupar a tela toda.
-        with ui.element("section").classes("portal-operator-detail-hero"):
-            with ui.element("div").classes("portal-operator-detail-hero-pattern"):
-                pass
-
-            with ui.element("div").classes("portal-operator-detail-mark"):
+        # Compact identity header.
+        with ui.element("section").classes("portal-operator-cockpit-hero"):
+            with ui.element("div").classes("portal-operator-cockpit-mark"):
                 _operator_mark(operator)
 
-            with ui.column().classes("portal-operator-detail-copy"):
-                with ui.row().classes("portal-operator-detail-meta"):
-                    ui.label("OPERADORA").classes("portal-operator-detail-kicker")
+            with ui.column().classes("portal-operator-cockpit-copy"):
+                with ui.row().classes("portal-operator-cockpit-meta"):
+                    ui.label("CENTRAL DA OPERADORA").classes(
+                        "portal-operator-cockpit-kicker"
+                    )
                     with ui.element(
                         "span"
                     ).classes(
@@ -528,224 +534,335 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         ui.element("span").classes("portal-operator-status-dot")
                         ui.label(operator.status)
 
-                ui.label(operator.short_name).classes("portal-operator-detail-title")
-
-                if operator.name != operator.short_name:
-                    ui.label(operator.name).classes(
-                        "portal-operator-detail-full-name"
-                    )
-
+                ui.label(operator.short_name).classes("portal-operator-cockpit-title")
                 ui.label(
                     operator.observations
                     or (
-                        "Centralize nesta página os acessos, planos, documentos, "
-                        "contatos e regras relacionadas à operadora."
+                        "Informações operacionais reunidas para apoiar o atendimento "
+                        "sem precisar alternar entre diferentes fontes."
                     )
-                ).classes("portal-operator-detail-description")
+                ).classes("portal-operator-cockpit-description")
 
-            with ui.element("div").classes("portal-operator-detail-hero-side"):
-                ui.label("VISÃO GERAL").classes("portal-operator-detail-side-kicker")
-                ui.label(
-                    f"{str(total_info).zfill(2)} informações vinculadas"
-                ).classes("portal-operator-detail-side-value")
-                ui.label(
-                    "Use as áreas abaixo para encontrar rapidamente o que precisa."
-                ).classes("portal-operator-detail-side-copy")
+            with ui.element("div").classes("portal-operator-cockpit-context"):
+                ui.label("VISÃO GERAL").classes("portal-operator-cockpit-context-kicker")
+                ui.label(str(total_info).zfill(2)).classes(
+                    "portal-operator-cockpit-context-value"
+                )
+                ui.label("informações vinculadas").classes(
+                    "portal-operator-cockpit-context-label"
+                )
+                ui.label(operator.code or "Sem código").classes(
+                    "portal-operator-cockpit-context-code"
+                )
 
-        # Resumo útil: não são KPI; servem de contexto para a consulta.
-        with ui.element("section").classes("portal-operator-summary-strip"):
-            _detail_summary_item(
-                "tag",
-                "Código",
-                operator.code or "Não informado",
-                "Identificador interno",
+        # 1. What the user normally needs first.
+        _section_heading(
+            "COMECE POR AQUI",
+            "O essencial para conduzir o atendimento",
+            "Acesso, contato e qualquer situação operacional que mereça atenção imediata.",
+        )
+
+        with ui.element("section").classes("portal-operator-quick-grid"):
+            portal_url = _safe_external_url(_text(first_portal, "url"))
+            _quick_panel(
+                icon="vpn_key",
+                eyebrow="PORTAL PRINCIPAL",
+                title=_text(first_portal, "nome") or "Nenhum portal em destaque",
+                value=(
+                    _text(first_portal, "instrucao_acesso")
+                    or _text(first_portal, "dica_geral_acesso")
+                    or "Consulte os acessos cadastrados para esta operadora."
+                ),
+                helper=(
+                    ("Exige autenticação" if first_portal.get("exige_login") is True else "Acesso sem login informado")
+                    if first_portal
+                    else "Nenhum portal ativo cadastrado."
+                ),
+                action_label="Abrir portal" if portal_url else "",
+                action=(lambda url=portal_url: ui.navigate.to(url, new_tab=True))
+                if portal_url
+                else None,
             )
-            _detail_summary_item(
-                "view_list",
-                "Planos",
-                str(len(detail.planos)).zfill(2),
-                "vinculados à operadora",
+
+            _quick_panel(
+                icon="contacts",
+                eyebrow="CONTATO RÁPIDO",
+                title=(
+                    _text(first_contact, "finalidade")
+                    or _text(first_contact, "nome_setor")
+                    or "Nenhum contato em destaque"
+                ),
+                value=_text(first_contact, "contato") or "Contato ainda não cadastrado.",
+                helper=(
+                    " · ".join(
+                        item
+                        for item in (
+                            _text(first_contact, "responsavel"),
+                            _text(first_contact, "horario_atendimento"),
+                        )
+                        if item
+                    )
+                    or "Consulte os demais canais disponíveis abaixo."
+                ),
             )
-            _detail_summary_item(
-                "vpn_key",
-                "Portais",
-                str(len(detail.portais)).zfill(2),
-                "acessos cadastrados",
+
+            if first_contingency:
+                _quick_panel(
+                    icon="warning_amber",
+                    eyebrow="ATENÇÃO AGORA",
+                    title=_text(first_contingency, "titulo") or "Contingência ativa",
+                    value=(
+                        _text(first_contingency, "orientacao_alternativa")
+                        or _text(first_contingency, "descricao")
+                        or "Consulte a orientação cadastrada."
+                    ),
+                    helper=(
+                        _text(first_contingency, "prioridade")
+                        or _text(first_contingency, "status")
+                    ),
+                    tone="warning",
+                )
+            elif first_communication:
+                _quick_panel(
+                    icon="campaign",
+                    eyebrow="ÚLTIMA ORIENTAÇÃO",
+                    title=_text(first_communication, "titulo") or "Comunicado vigente",
+                    value=(
+                        _text(first_communication, "resumo")
+                        or _text(first_communication, "conteudo")
+                        or "Consulte o comunicado."
+                    ),
+                    helper=_text(first_communication, "prioridade") or "Publicado",
+                    tone="information",
+                )
+            else:
+                _quick_panel(
+                    icon="verified",
+                    eyebrow="OPERAÇÃO AGORA",
+                    title="Sem alertas vigentes",
+                    value="Nenhuma contingência ou comunicado prioritário está ativo.",
+                    helper="Cenário operacional sem alerta cadastrado.",
+                    tone="success",
+                )
+
+        # 2. Rules as questions, not database tables.
+        with ui.element("section").classes("portal-operator-section-block"):
+            _section_heading(
+                "COMO ATENDER",
+                "Regras que orientam a jornada",
+                "As primeiras informações de elegibilidade, autorização e cobertura já ficam visíveis.",
             )
-            _detail_summary_item(
-                "contacts",
-                "Contatos",
-                str(len(detail.contatos)).zfill(2),
-                "canais disponíveis",
+
+            with ui.element("div").classes("portal-operator-rule-grid"):
+                _rule_card(
+                    "verified",
+                    "Elegibilidade",
+                    detail.elegibilidade,
+                    [
+                        ("Orientação", ("orientacao",)),
+                        ("Observação", ("observacoes",)),
+                    ],
+                    "Nenhuma orientação de elegibilidade cadastrada.",
+                )
+                _rule_card(
+                    "fact_check",
+                    "Autorização",
+                    detail.autorizacoes,
+                    [
+                        ("Quando", ("momento_autorizacao",)),
+                        ("Quem solicita", ("quem_solicita",)),
+                        ("Canal", ("meio_solicitacao",)),
+                        ("Prazo", ("prazo",)),
+                    ],
+                    "Nenhuma regra de autorização cadastrada.",
+                )
+                _rule_card(
+                    "health_and_safety",
+                    "Cobertura",
+                    detail.coberturas,
+                    [
+                        ("Acomodação", ("acomodacao",)),
+                        ("Acompanhante", ("acompanhante",)),
+                        ("Restrições", ("restricoes_cobertura",)),
+                    ],
+                    "Nenhuma informação de cobertura cadastrada.",
+                )
+
+        # 3. Plans and documents visible in the same page.
+        with ui.element("section").classes("portal-operator-section-block"):
+            _section_heading(
+                "REFERÊNCIAS",
+                "Planos e documentos",
+                "Materiais que ajudam a identificar o produto e preparar o atendimento.",
             )
 
-        with ui.element("section").classes("portal-operator-workspace"):
-            with ui.row().classes("portal-operator-workspace-heading"):
-                with ui.column().classes("portal-operator-workspace-heading-copy"):
-                    ui.label("CENTRAL DA OPERADORA").classes("portal-section-kicker")
-                    ui.label(
-                        "Encontre tudo sem sair desta página"
-                    ).classes("portal-operator-workspace-title")
-                    ui.label(
-                        "Navegue pelas categorias para acessar as informações "
-                        "relacionadas ao atendimento."
-                    ).classes("portal-operator-workspace-description")
+            with ui.element("div").classes("portal-operator-reference-layout"):
+                with ui.element("div").classes("portal-operator-reference-column"):
+                    with ui.row().classes("portal-operator-reference-head"):
+                        ui.label("PLANOS").classes("portal-operator-reference-kicker")
+                        ui.label(str(len(detail.planos)).zfill(2)).classes(
+                            "portal-operator-reference-count"
+                        )
 
-            tabs = ui.tabs().classes("portal-hub-tabs").props(
-                "dense align=left no-caps"
-            )
-            with tabs:
-                t_planos = ui.tab("Planos", icon="view_list")
-                t_portais = ui.tab("Portais", icon="vpn_key")
-                t_eleg = ui.tab("Elegibilidade", icon="verified")
-                t_auth = ui.tab("Autorizações", icon="fact_check")
-                t_cob = ui.tab("Coberturas", icon="health_and_safety")
-                t_docs = ui.tab("Documentos", icon="description")
-                t_cont = ui.tab("Contatos", icon="contacts")
-                t_more = ui.tab("Mais", icon="more_horiz")
-
-            with ui.tab_panels(tabs, value=t_planos).classes("portal-hub-panels"):
-                with ui.tab_panel(t_planos):
-                    _render_planos(detail.planos)
-
-                with ui.tab_panel(t_portais):
-                    _render_portais(detail.portais)
-
-                with ui.tab_panel(t_eleg):
-                    _render_generic(
-                        detail.elegibilidade,
-                        ("orientacao", "codigo"),
-                        [
-                            ("Tipo de atendimento", ("tipo_atendimento",)),
-                            ("Orientação", ("orientacao",)),
-                            ("Observações", ("observacoes",)),
-                            ("Status", ("status",)),
-                        ],
-                        "verified",
-                        "Nenhuma orientação de elegibilidade cadastrada.",
-                    )
-
-                with ui.tab_panel(t_auth):
-                    _render_generic(
-                        detail.autorizacoes,
-                        ("orientacao", "codigo"),
-                        [
-                            ("Momento", ("momento_autorizacao",)),
-                            ("Quem solicita", ("quem_solicita",)),
-                            ("Meio", ("meio_solicitacao",)),
-                            ("Prazo", ("prazo",)),
-                            ("Observações", ("observacoes",)),
-                            ("Status", ("status",)),
-                        ],
-                        "fact_check",
-                        "Nenhuma regra de autorização cadastrada.",
-                    )
-
-                with ui.tab_panel(t_cob):
-                    _render_generic(
-                        detail.coberturas,
-                        ("restricoes_cobertura", "acomodacao", "codigo"),
-                        [
-                            ("Acomodação", ("acomodacao",)),
-                            ("Acompanhante", ("acompanhante",)),
-                            ("Restrições", ("restricoes_cobertura",)),
-                            ("Observações", ("observacoes",)),
-                            ("Status", ("status",)),
-                        ],
-                        "health_and_safety",
-                        "Nenhuma informação de cobertura cadastrada.",
-                    )
-
-                with ui.tab_panel(t_docs):
-                    _render_generic(
-                        detail.documentos,
-                        ("nome", "codigo"),
-                        [
-                            ("Formato", ("formato",)),
-                            ("Orientação", ("orientacao",)),
-                            ("Observações", ("observacoes",)),
-                            ("Status", ("status",)),
-                        ],
-                        "description",
-                        "Nenhum documento cadastrado.",
-                    )
-
-                with ui.tab_panel(t_cont):
-                    _render_generic(
-                        detail.contatos,
-                        ("finalidade", "nome_setor", "contato"),
-                        [
-                            ("Setor", ("nome_setor",)),
-                            ("Tipo", ("tipo",)),
-                            ("Contato", ("contato",)),
-                            ("Responsável", ("responsavel",)),
-                            ("Horário", ("horario_atendimento",)),
-                            ("Observações", ("observacoes",)),
-                            ("Status", ("status",)),
-                        ],
-                        "contacts",
-                        "Nenhum contato cadastrado.",
-                    )
-
-                with ui.tab_panel(t_more):
-                    with ui.element("div").classes("portal-hub-more-grid"):
-                        with ui.element("section").classes("portal-hub-more-section"):
-                            ui.label("Contingências").classes("portal-hub-subtitle")
-                            _render_generic(
-                                detail.contingencias,
-                                ("titulo", "codigo"),
-                                [
-                                    ("Descrição", ("descricao",)),
-                                    ("Como proceder", ("orientacao_alternativa",)),
-                                    ("Contato alternativo", ("contato_alternativo",)),
-                                    ("Prioridade", ("prioridade",)),
-                                    ("Status", ("status",)),
-                                ],
-                                "warning_amber",
-                                "Nenhuma contingência cadastrada.",
+                    if detail.planos:
+                        for row in detail.planos[:4]:
+                            _resource_item(
+                                "view_list",
+                                _text(row, "nome_padronizado", "nome") or "Plano",
+                                _text(row, "tipo_plano") or "Tipo não informado",
+                                (
+                                    f"Código: {_text(row, 'codigo')}"
+                                    if _text(row, "codigo")
+                                    else ""
+                                ),
                             )
+                    else:
+                        ui.label("Nenhum plano cadastrado.").classes(
+                            "portal-operator-reference-empty"
+                        )
 
-                        with ui.element("section").classes("portal-hub-more-section"):
-                            ui.label("Dicas operacionais").classes("portal-hub-subtitle")
-                            _render_generic(
-                                detail.dicas,
-                                ("titulo", "dica", "orientacao"),
-                                [
-                                    ("Dica", ("dica", "orientacao", "descricao")),
-                                    ("Status", ("status",)),
-                                ],
-                                "lightbulb",
-                                "Nenhuma dica operacional cadastrada.",
+                with ui.element("div").classes("portal-operator-reference-column"):
+                    with ui.row().classes("portal-operator-reference-head"):
+                        ui.label("DOCUMENTOS").classes("portal-operator-reference-kicker")
+                        ui.label(str(len(detail.documentos)).zfill(2)).classes(
+                            "portal-operator-reference-count"
+                        )
+
+                    if detail.documentos:
+                        for row in detail.documentos[:4]:
+                            file_url = _safe_external_url(_text(row, "arquivo_url"))
+                            meta = " · ".join(
+                                item
+                                for item in (
+                                    "Obrigatório" if row.get("obrigatorio") is True else "",
+                                    _text(row, "formato"),
+                                )
+                                if item
                             )
+                            _resource_item(
+                                "description",
+                                _text(row, "nome") or "Documento",
+                                _text(row, "orientacao") or "Referência cadastrada.",
+                                meta,
+                                "Abrir arquivo" if file_url else "",
+                                (
+                                    lambda url=file_url: ui.navigate.to(url, new_tab=True)
+                                    if url
+                                    else None
+                                )
+                                if file_url
+                                else None,
+                            )
+                    else:
+                        ui.label("Nenhum documento cadastrado.").classes(
+                            "portal-operator-reference-empty"
+                        )
 
-                        with ui.element("section").classes("portal-hub-more-section"):
-                            ui.label("Comunicados").classes("portal-hub-subtitle")
-                            _render_generic(
-                                detail.comunicados,
-                                ("titulo", "assunto", "codigo"),
-                                [
-                                    ("Resumo", ("resumo", "conteudo", "descricao")),
-                                    ("Status", ("status",)),
-                                ],
+        # 4. Secondary information via native Quasar expansion panels.
+        with ui.element("section").classes("portal-operator-section-block"):
+            _section_heading(
+                "OUTRAS INFORMAÇÕES",
+                "Consulte quando precisar aprofundar",
+                "Contatos adicionais, dicas, comunicados, contingências e consultoria ficam disponíveis sem sair da operadora.",
+            )
+
+            with ui.element("div").classes("portal-operator-expansion-list"):
+                with ui.expansion(
+                    "Contatos adicionais",
+                    icon="contacts",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    if detail.contatos:
+                        with ui.element("div").classes("portal-operator-expansion-content"):
+                            for row in detail.contatos:
+                                _resource_item(
+                                    "phone",
+                                    (
+                                        _text(row, "finalidade")
+                                        or _text(row, "nome_setor")
+                                        or "Contato"
+                                    ),
+                                    _text(row, "contato"),
+                                    " · ".join(
+                                        item
+                                        for item in (
+                                            _text(row, "responsavel"),
+                                            _text(row, "horario_atendimento"),
+                                        )
+                                        if item
+                                    ),
+                                )
+                    else:
+                        ui.label("Nenhum contato adicional cadastrado.")
+
+                with ui.expansion(
+                    "Dicas e orientações",
+                    icon="lightbulb",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    if detail.dicas:
+                        with ui.element("div").classes("portal-operator-expansion-content"):
+                            for row in detail.dicas:
+                                _resource_item(
+                                    "lightbulb",
+                                    _text(row, "titulo") or "Dica operacional",
+                                    _text(row, "dica", "orientacao", "descricao"),
+                                    _text(row, "categoria"),
+                                )
+                    else:
+                        ui.label("Nenhuma dica operacional cadastrada.")
+
+                with ui.expansion(
+                    "Comunicados e contingências",
+                    icon="campaign",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    with ui.element("div").classes("portal-operator-expansion-content"):
+                        for row in detail.comunicados:
+                            _resource_item(
                                 "campaign",
-                                "Nenhum comunicado cadastrado.",
+                                _text(row, "titulo") or "Comunicado",
+                                _text(row, "resumo", "conteudo"),
+                                _text(row, "prioridade"),
                             )
+                        for row in detail.contingencias:
+                            _resource_item(
+                                "warning_amber",
+                                _text(row, "titulo") or "Contingência",
+                                (
+                                    _text(row, "orientacao_alternativa")
+                                    or _text(row, "descricao")
+                                ),
+                                _text(row, "prioridade"),
+                            )
+                        if not detail.comunicados and not detail.contingencias:
+                            ui.label("Nenhum comunicado ou contingência vigente.")
 
-                        with ui.element("section").classes("portal-hub-more-section"):
-                            ui.label("Carteiras / consultoria").classes(
-                                "portal-hub-subtitle"
-                            )
-                            _render_generic(
-                                detail.carteiras,
-                                ("consultor_nome", "papel", "codigo"),
-                                [
-                                    ("Papel", ("papel",)),
-                                    ("Cargo", ("consultor_cargo",)),
-                                    ("E-mail", ("consultor_email",)),
-                                    ("Telefone", ("consultor_telefone",)),
-                                    ("Observações", ("observacoes",)),
-                                    ("Status", ("status",)),
-                                ],
-                                "support_agent",
-                                "Nenhuma carteira vinculada.",
-                            )
+                with ui.expansion(
+                    "Consultoria e carteiras",
+                    icon="support_agent",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    if detail.carteiras:
+                        with ui.element("div").classes("portal-operator-expansion-content"):
+                            for row in detail.carteiras:
+                                _resource_item(
+                                    "support_agent",
+                                    _text(row, "consultor_nome") or "Consultor",
+                                    _text(row, "papel", "consultor_cargo"),
+                                    " · ".join(
+                                        item
+                                        for item in (
+                                            _text(row, "consultor_email"),
+                                            _text(row, "consultor_telefone"),
+                                        )
+                                        if item
+                                    ),
+                                )
+                    else:
+                        ui.label("Nenhuma carteira vinculada.")
+
+
+def _search_operator(operator_name: str) -> None:
+    ui.context.client.storage["portal_pending_search_query"] = operator_name
+    ui.navigate.to("/pesquisa")
