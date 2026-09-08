@@ -1274,6 +1274,24 @@
     background: rgba(255,255,255,.18);
 }
 
+.portal-sidebar-scroll {
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Firefox */
+    scrollbar-width: none;
+
+    /* Edge / IE legado */
+    -ms-overflow-style: none;
+}
+
+/* Chrome, Edge, Safari */
+.portal-sidebar-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
 .portal-sidebar-admin-section {
     margin-top: 18px;
 }
