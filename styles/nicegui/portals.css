@@ -1573,3 +1573,115 @@
         display: none;
     }
 }
+
+
+/* ==========================================================================
+   Etapa 20.4D · Alinhamento final dos cards de credenciais
+   ========================================================================== */
+
+.portal-access-grid {
+    align-items: stretch;
+}
+
+.portal-access-card {
+    height: 100%;
+    min-height: 405px;
+}
+
+.portal-access-card-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.portal-access-card-credential {
+    display: flex;
+    width: 100% !important;
+    min-width: 0;
+    max-width: none !important;
+    flex-direction: column;
+}
+
+.portal-access-card-credential-head {
+    min-height: 24px;
+}
+
+.portal-access-card-credential-grid {
+    align-items: stretch;
+}
+
+.portal-access-card-field {
+    width: 100%;
+    min-width: 0;
+    min-height: 68px;
+    box-sizing: border-box;
+}
+
+.portal-access-card-field-value-row {
+    min-height: 28px;
+}
+
+.portal-access-card-login-value,
+.portal-access-card-password-value {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.2;
+}
+
+.portal-access-card-password-actions {
+    display: flex;
+    min-width: 54px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.portal-access-card-password-status {
+    display: block;
+    width: 100%;
+    min-height: 10px;
+    margin-top: 2px;
+}
+
+.portal-access-card-credential-tip,
+.portal-access-card-security-note {
+    flex: 0 0 auto;
+}
+
+.portal-access-card-footer {
+    width: 100%;
+}
+
+/* Em desktop, cada card mantém login e senha lado a lado e alinhados. */
+@media (min-width: 1181px) {
+    .portal-access-card-credential-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-access-card-field {
+        min-height: 70px;
+    }
+}
+
+/* Notebook: mantém duas colunas se houver espaço suficiente. */
+@media (min-width: 901px) and (max-width: 1180px) {
+    .portal-access-card-credential-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-access-card {
+        min-height: 420px;
+    }
+}
+
+/* Mobile/tablet estreito: empilha de forma previsível. */
+@media (max-width: 900px) {
+    .portal-access-card {
+        min-height: 0;
+    }
+
+    .portal-access-card-credential-grid {
+        grid-template-columns: 1fr;
+    }
+}
