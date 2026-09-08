@@ -51,7 +51,7 @@ def _compact_credential(
     credential,
     user: dict,
 ) -> None:
-    with ui.element("div").classes("portal-access-card-credential"):
+    with ui.element("section").classes("portal-access-card-credential"):
         with ui.row().classes("portal-access-card-credential-head"):
             with ui.row().classes("portal-access-card-credential-title-wrap"):
                 ui.icon("shield_lock")
@@ -59,44 +59,51 @@ def _compact_credential(
                     credential.identification or "Acesso principal"
                 ).classes("portal-access-card-credential-title")
 
-            ui.label(
-                format_credential_datetime(credential.password_changed_at)
-            ).classes("portal-access-card-credential-date")
+            if credential.password_changed_at:
+                ui.label(
+                    "Atualizada em "
+                    f"{format_credential_datetime(credential.password_changed_at)}"
+                ).classes("portal-access-card-credential-date")
 
-        with ui.element("div").classes("portal-access-card-credential-fields"):
-            with ui.element("div").classes("portal-access-card-login-field"):
+        with ui.element("div").classes("portal-access-card-credential-grid"):
+            with ui.element("div").classes("portal-access-card-field"):
                 ui.label("LOGIN").classes("portal-access-card-field-label")
-                ui.label(credential.login).classes(
-                    "portal-access-card-login-value"
-                )
 
-                async def copy_login(login=credential.login) -> None:
-                    try:
-                        await ui.run_javascript(
-                            "navigator.clipboard.writeText("
-                            f"{json.dumps(login)})"
-                        )
-                        ui.notify(
-                            "Login copiado.",
-                            type="positive",
-                            position="top",
-                        )
-                    except Exception:
-                        ui.notify(
-                            "Não foi possível copiar o login.",
-                            type="negative",
-                            position="top",
-                        )
+                with ui.row().classes("portal-access-card-field-value-row"):
+                    ui.label(credential.login).classes(
+                        "portal-access-card-login-value"
+                    )
 
-                ui.button(
-                    icon="content_copy",
-                    on_click=copy_login,
-                ).props("flat round dense").classes(
-                    "portal-access-card-copy-icon"
-                ).tooltip("Copiar login")
+                    async def copy_login(login=credential.login) -> None:
+                        try:
+                            await ui.run_javascript(
+                                "navigator.clipboard.writeText("
+                                f"{json.dumps(login)})"
+                            )
+                            ui.notify(
+                                "Login copiado.",
+                                type="positive",
+                                position="top",
+                            )
+                        except Exception:
+                            ui.notify(
+                                "Não foi possível copiar o login.",
+                                type="negative",
+                                position="top",
+                            )
+
+                    ui.button(
+                        icon="content_copy",
+                        on_click=copy_login,
+                    ).props("flat round dense").classes(
+                        "portal-access-card-copy-icon"
+                    ).tooltip("Copiar login")
 
             password_value = ui.label("••••••••••").classes(
                 "portal-access-card-password-value"
+            )
+            password_status = ui.label("").classes(
+                "portal-access-card-password-status"
             )
             state = {"visible": False, "generation": 0}
 
@@ -110,22 +117,26 @@ def _compact_credential(
             def toggle_password(
                 cid=credential.credential_id,
                 label=password_value,
+                status=password_status,
                 state=state,
             ) -> None:
                 try:
                     if state["visible"]:
                         state["generation"] += 1
                         hide_password(label, state)
+                        status.set_text("")
                         return
 
                     secret = reveal_password(cid, user)
                     state["generation"] += 1
                     generation = state["generation"]
                     label.set_text(secret)
+                    status.set_text("Visível por 20 segundos")
                     state["visible"] = True
 
                     def auto_hide(
                         label=label,
+                        status=status,
                         state=state,
                         generation=generation,
                     ) -> None:
@@ -134,16 +145,23 @@ def _compact_credential(
                             and state["generation"] == generation
                         ):
                             hide_password(label, state)
+                            status.set_text("")
 
                     ui.timer(20.0, auto_hide, once=True)
                 except Exception as error:
+                    hide_password(label, state)
+                    status.set_text("Senha indisponível")
                     ui.notify(
                         str(error),
-                        type="negative",
+                        type="warning",
                         position="top",
+                        timeout=6000,
                     )
 
-            async def copy_password(cid=credential.credential_id) -> None:
+            async def copy_password(
+                cid=credential.credential_id,
+                status=password_status,
+            ) -> None:
                 try:
                     secret = reveal_password(
                         cid,
@@ -154,41 +172,55 @@ def _compact_credential(
                         "navigator.clipboard.writeText("
                         f"{json.dumps(secret)})"
                     )
+                    status.set_text("Senha copiada")
                     ui.notify(
                         "Senha copiada.",
                         type="positive",
                         position="top",
                     )
                 except Exception as error:
+                    status.set_text("Senha indisponível")
                     ui.notify(
                         str(error),
-                        type="negative",
+                        type="warning",
                         position="top",
+                        timeout=6000,
                     )
 
-            with ui.element("div").classes("portal-access-card-password-field"):
+            with ui.element("div").classes("portal-access-card-field"):
                 ui.label("SENHA").classes("portal-access-card-field-label")
-                password_value
 
-                with ui.row().classes("portal-access-card-password-actions"):
-                    ui.button(
-                        icon="visibility",
-                        on_click=toggle_password,
-                    ).props("flat round dense").classes(
-                        "portal-access-card-copy-icon"
-                    ).tooltip("Revelar / ocultar senha")
+                with ui.row().classes("portal-access-card-field-value-row"):
+                    password_value
 
-                    ui.button(
-                        icon="content_copy",
-                        on_click=copy_password,
-                    ).props("flat round dense").classes(
-                        "portal-access-card-copy-icon"
-                    ).tooltip("Copiar senha")
+                    with ui.row().classes("portal-access-card-password-actions"):
+                        ui.button(
+                            icon="visibility",
+                            on_click=toggle_password,
+                        ).props("flat round dense").classes(
+                            "portal-access-card-copy-icon"
+                        ).tooltip("Revelar / ocultar senha")
+
+                        ui.button(
+                            icon="content_copy",
+                            on_click=copy_password,
+                        ).props("flat round dense").classes(
+                            "portal-access-card-copy-icon"
+                        ).tooltip("Copiar senha")
+
+                password_status
 
         if credential.access_tip:
             with ui.row().classes("portal-access-card-credential-tip"):
                 ui.icon("lightbulb")
                 ui.label(credential.access_tip)
+
+        with ui.row().classes("portal-access-card-security-note"):
+            ui.icon("verified_user")
+            ui.label(
+                "Uso institucional. Não compartilhe ou salve estas credenciais "
+                "fora dos ambientes autorizados."
+            )
 
 
 
@@ -378,7 +410,7 @@ def render_portais(user: dict) -> None:
                     "anotações não protegidas."
                 ).classes("portal-access-credentials-warning-text")
             ui.label(
-                "A revelação e a cópia de senha são auditadas."
+                "Revelação e cópia de senha ficam registradas na auditoria do Portal."
             ).classes("portal-access-credentials-warning-audit")
 
         with ui.row().classes("portal-access-results-head"):
