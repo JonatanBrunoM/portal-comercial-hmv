@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from urllib.parse import quote
-
 from nicegui import ui
 
 from nicegui_app.layout import portal_layout
@@ -58,11 +56,52 @@ def _contact_title(contact: ContatoPreview) -> str:
     return contact.sector or contact.purpose or "Contato"
 
 
+def _hero_step(icon: str, title: str, subtitle: str) -> None:
+    with ui.element("div").classes("portal-contacts-hero-step"):
+        with ui.element("div").classes("portal-contacts-hero-step-icon"):
+            ui.icon(icon)
+        with ui.column().classes("portal-contacts-hero-step-copy"):
+            ui.label(title).classes("portal-contacts-hero-step-title")
+            ui.label(subtitle).classes("portal-contacts-hero-step-subtitle")
+
+
+def _hero_art() -> None:
+    """Ilustração decorativa própria de Contatos, sem arquivo de imagem externo."""
+    with ui.element("div").classes("portal-contacts-hero-art").props("aria-hidden=true"):
+        ui.element("div").classes("portal-contacts-art-ring portal-contacts-art-ring-one")
+        ui.element("div").classes("portal-contacts-art-ring portal-contacts-art-ring-two")
+
+        with ui.element("div").classes("portal-contacts-art-center"):
+            ui.icon("support_agent")
+
+        for position, icon in (
+            ("one", "mail"),
+            ("two", "phone"),
+            ("three", "chat"),
+            ("four", "person"),
+        ):
+            with ui.element("div").classes(
+                f"portal-contacts-art-node portal-contacts-art-node-{position}"
+            ):
+                ui.icon(icon)
+
+
 def _contact_card(contact: ContatoPreview) -> None:
+    action = _contact_action(contact)
+
     with ui.element("article").classes("portal-contact-card"):
-        with ui.row().classes("portal-contact-card-top"):
-            with ui.element("div").classes("portal-contact-card-icon"):
-                ui.icon(_contact_icon(contact.contact_type))
+        with ui.row().classes("portal-contact-card-head"):
+            with ui.element("div").classes("portal-contact-card-identity"):
+                with ui.element("div").classes("portal-contact-card-icon"):
+                    ui.icon(_contact_icon(contact.contact_type))
+
+                with ui.column().classes("portal-contact-card-heading"):
+                    ui.label(contact.operator_name).classes(
+                        "portal-contact-card-operator"
+                    )
+                    ui.label(_contact_title(contact)).classes(
+                        "portal-contact-card-title"
+                    )
 
             with ui.element("div").classes(
                 "portal-contact-status is-active"
@@ -72,33 +111,38 @@ def _contact_card(contact: ContatoPreview) -> None:
                 ui.element("span").classes("portal-contact-status-dot")
                 ui.label(contact.status)
 
-        ui.label(_contact_title(contact)).classes("portal-contact-card-title")
-
         if contact.purpose and contact.purpose != _contact_title(contact):
             ui.label(contact.purpose).classes("portal-contact-card-purpose")
 
-        ui.label(contact.operator_name).classes("portal-contact-card-operator")
-
         if contact.plan_name:
-            ui.label(contact.plan_name).classes("portal-contact-card-plan")
+            with ui.row().classes("portal-contact-card-scope"):
+                ui.icon("view_list")
+                ui.label(contact.plan_name)
 
-        with ui.element("div").classes("portal-contact-highlight"):
-            ui.label(contact.contact_type or "Contato").classes(
-                "portal-contact-highlight-label"
-            )
+        with ui.element("div").classes("portal-contact-channel"):
+            with ui.row().classes("portal-contact-channel-head"):
+                ui.icon(_contact_icon(contact.contact_type))
+                ui.label(contact.contact_type or "Contato").classes(
+                    "portal-contact-channel-label"
+                )
             ui.label(contact.contact or "Não informado").classes(
-                "portal-contact-highlight-value"
+                "portal-contact-channel-value"
             )
 
-        if contact.responsible:
-            with ui.row().classes("portal-contact-detail-line"):
-                ui.icon("person")
-                ui.label(contact.responsible)
+        with ui.element("div").classes("portal-contact-card-facts"):
+            if contact.responsible:
+                with ui.element("div").classes("portal-contact-fact"):
+                    ui.icon("person")
+                    with ui.column().classes("portal-contact-fact-copy"):
+                        ui.label("Responsável").classes("portal-contact-fact-label")
+                        ui.label(contact.responsible).classes("portal-contact-fact-value")
 
-        if contact.schedule:
-            with ui.row().classes("portal-contact-detail-line"):
-                ui.icon("schedule")
-                ui.label(contact.schedule)
+            if contact.schedule:
+                with ui.element("div").classes("portal-contact-fact"):
+                    ui.icon("schedule")
+                    with ui.column().classes("portal-contact-fact-copy"):
+                        ui.label("Atendimento").classes("portal-contact-fact-label")
+                        ui.label(contact.schedule).classes("portal-contact-fact-value")
 
         with ui.row().classes("portal-contact-card-actions"):
             ui.button(
@@ -109,12 +153,9 @@ def _contact_card(contact: ContatoPreview) -> None:
                 ),
             ).props("flat no-caps").classes("portal-contact-detail-button")
 
-            action = _contact_action(contact)
             if action:
                 label, target = action
-                ui.link(label, target=target).classes(
-                    "portal-contact-action-link"
-                )
+                ui.link(label, target=target).classes("portal-contact-action-link")
 
 
 def _empty(title: str, description: str) -> None:
@@ -125,18 +166,13 @@ def _empty(title: str, description: str) -> None:
 
 
 def render_contatos(user: dict) -> None:
-    contacts = get_contatos_preview()
+    contacts = [
+        contact
+        for contact in get_contatos_preview()
+        if _is_active(contact.status)
+    ]
 
-    with portal_layout(
-        user=user,
-        active="contacts",
-        page_eyebrow="CENTRAL DE CONTATOS",
-        page_title="Encontre rapidamente quem pode ajudar.",
-        page_description=(
-            "Consulte telefones, e-mails, setores, responsáveis e horários "
-            "de atendimento vinculados às operadoras."
-        ),
-    ):
+    with portal_layout(user=user, active="contacts"):
         operators = sorted(
             {contact.operator_name for contact in contacts if contact.operator_name}
         )
@@ -144,56 +180,91 @@ def render_contatos(user: dict) -> None:
             {contact.contact_type for contact in contacts if contact.contact_type}
         )
 
-        with ui.element("section").classes("portal-contacts-summary"):
-            with ui.column().classes("portal-contacts-summary-copy"):
-                ui.label("RELACIONAMENTO").classes("portal-section-kicker")
-                ui.label(f"{len(contacts):02d} contatos cadastrados").classes(
-                    "portal-contacts-summary-value"
-                )
+        with ui.element("section").classes("portal-contacts-hero"):
+            with ui.column().classes("portal-contacts-hero-copy"):
+                ui.label("CENTRAL DE CONTATOS").classes("portal-contacts-hero-kicker")
                 ui.label(
-                    "Canais e responsáveis disponíveis para a operação."
-                ).classes("portal-contacts-summary-description")
+                    "Fale com a pessoa certa, pelo canal certo."
+                ).classes("portal-contacts-hero-title")
+                ui.label(
+                    "Localize setores, responsáveis e canais oficiais das operadoras "
+                    "sem interromper o fluxo do atendimento."
+                ).classes("portal-contacts-hero-description")
 
-            with ui.row().classes("portal-contacts-summary-stats"):
-                with ui.column().classes("portal-contacts-mini-stat"):
-                    ui.label(
-                        str(sum(1 for c in contacts if _is_active(c.status))).zfill(2)
-                    ).classes("portal-contacts-mini-value")
-                    ui.label("Ativos").classes("portal-contacts-mini-label")
+            _hero_art()
 
-                with ui.column().classes("portal-contacts-mini-stat"):
-                    ui.label(str(len(operators)).zfill(2)).classes(
-                        "portal-contacts-mini-value"
-                    )
-                    ui.label("Operadoras").classes("portal-contacts-mini-label")
+            with ui.element("div").classes("portal-contacts-hero-flow"):
+                _hero_step("search", "LOCALIZE", "o contato certo")
+                _hero_step("person_search", "CONFIRA", "quem pode ajudar")
+                _hero_step("forum", "CONTATE", "pelo canal oficial")
 
-        with ui.element("section").classes("portal-contacts-toolbar"):
+        with ui.element("section").classes("portal-contacts-searchbar"):
             search = ui.input(
-                placeholder="Buscar setor, finalidade, telefone, e-mail ou responsável"
-            ).props("outlined dense clearable prepend-icon=search").classes(
-                "portal-contacts-search"
+                placeholder=(
+                    "Buscar operadora, setor, finalidade, responsável, telefone ou e-mail..."
+                )
+            ).props("borderless clearable").classes("portal-contacts-search")
+            search.props("prepend-icon=search")
+
+            ui.button(
+                "Pesquisar",
+                icon="arrow_forward",
+            ).props("unelevated no-caps").classes("portal-contacts-search-button")
+
+        with ui.element("section").classes("portal-contacts-filterbar"):
+            with ui.row().classes("portal-contacts-operator-filter"):
+                ui.label("OPERADORA").classes("portal-contacts-filter-caption")
+                operator_buttons: dict[str, object] = {}
+
+                for name in ["Todas"] + operators:
+                    button = ui.button(name).props("flat no-caps").classes(
+                        "portal-contacts-chip"
+                    )
+                    operator_buttons[name] = button
+
+            with ui.row().classes("portal-contacts-selects"):
+                contact_type = ui.select(
+                    options=["Todos"] + contact_types,
+                    value="Todos",
+                    label="Canal",
+                ).props("outlined dense").classes("portal-contacts-filter")
+
+        with ui.element("section").classes("portal-contacts-guidance"):
+            with ui.element("div").classes("portal-contacts-guidance-icon"):
+                ui.icon("verified_user")
+            with ui.column().classes("portal-contacts-guidance-copy"):
+                ui.label("CANAIS OFICIAIS").classes("portal-contacts-guidance-title")
+                ui.label(
+                    "Utilize os contatos cadastrados no Portal Comercial e confira "
+                    "a finalidade e o horário antes de acionar a operadora."
+                ).classes("portal-contacts-guidance-text")
+            ui.label("Base institucional de consulta").classes(
+                "portal-contacts-guidance-side"
             )
 
-            operator = ui.select(
-                options=["Todas"] + operators,
-                value="Todas",
-                label="Operadora",
-            ).props("outlined dense").classes("portal-contacts-filter")
+        with ui.row().classes("portal-contacts-results-head"):
+            with ui.column().classes("portal-contacts-results-copy"):
+                ui.label("CONTATOS DISPONÍVEIS").classes(
+                    "portal-contacts-results-kicker"
+                )
+                result_label = ui.label("").classes("portal-contacts-result-label")
+            ui.label(
+                "Os principais dados já aparecem no card para reduzir cliques."
+            ).classes("portal-contacts-results-note")
 
-            contact_type = ui.select(
-                options=["Todos"] + contact_types,
-                value="Todos",
-                label="Tipo",
-            ).props("outlined dense").classes("portal-contacts-filter")
-
-        result_label = ui.label("").classes("portal-contacts-result-label")
         cards = ui.element("div").classes("portal-contacts-grid")
+        selected_operator = {"value": "Todas"}
+
+        def update_operator_buttons() -> None:
+            for name, button in operator_buttons.items():
+                button.classes(
+                    add="is-active" if name == selected_operator["value"] else "",
+                    remove="" if name == selected_operator["value"] else "is-active",
+                )
 
         def refresh() -> None:
             term = _normalized(search.value or "")
-            selected_operator = operator.value or "Todas"
             selected_type = contact_type.value or "Todos"
-
             filtered: list[ContatoPreview] = []
 
             for contact in contacts:
@@ -213,8 +284,8 @@ def render_contatos(user: dict) -> None:
                 )
 
                 operator_ok = (
-                    selected_operator == "Todas"
-                    or contact.operator_name == selected_operator
+                    selected_operator["value"] == "Todas"
+                    or contact.operator_name == selected_operator["value"]
                 )
                 type_ok = (
                     selected_type == "Todos"
@@ -238,9 +309,17 @@ def render_contatos(user: dict) -> None:
                 for contact in filtered:
                     _contact_card(contact)
 
+        def choose_operator(name: str) -> None:
+            selected_operator["value"] = name
+            update_operator_buttons()
+            refresh()
+
+        for name, button in operator_buttons.items():
+            button.on_click(lambda _, value=name: choose_operator(value))
+
         search.on_value_change(lambda _: refresh())
-        operator.on_value_change(lambda _: refresh())
         contact_type.on_value_change(lambda _: refresh())
+        update_operator_buttons()
         refresh()
 
 
@@ -278,14 +357,10 @@ def render_contato_detail(user: dict, contact_id: str) -> None:
 
             with ui.column().classes("portal-contact-detail-copy"):
                 ui.label("FICHA DO CONTATO").classes("portal-section-kicker")
-                ui.label(_contact_title(contact)).classes(
-                    "portal-contact-detail-title"
-                )
+                ui.label(_contact_title(contact)).classes("portal-contact-detail-title")
 
                 if contact.purpose and contact.purpose != _contact_title(contact):
-                    ui.label(contact.purpose).classes(
-                        "portal-contact-detail-purpose"
-                    )
+                    ui.label(contact.purpose).classes("portal-contact-detail-purpose")
 
                 ui.label(contact.operator_name).classes(
                     "portal-contact-detail-operator"
@@ -322,9 +397,5 @@ def render_contato_detail(user: dict, contact_id: str) -> None:
             with ui.element("section").classes("portal-contact-notes-card"):
                 with ui.row().classes("portal-contact-notes-head"):
                     ui.icon("info")
-                    ui.label("Observações").classes(
-                        "portal-contact-notes-title"
-                    )
-                ui.label(contact.observations).classes(
-                    "portal-contact-notes-text"
-                )
+                    ui.label("Observações").classes("portal-contact-notes-title")
+                ui.label(contact.observations).classes("portal-contact-notes-text")
