@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from nicegui import ui
 
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.documentos_service import (
     DocumentoPreview,
@@ -133,6 +134,8 @@ def render_documentos(user: dict) -> None:
                         with ui.column().classes("portal-documents-hero-step-copy"):
                             ui.label(title)
                             ui.label(text)
+
+            render_hero_art(variant="documents", icon="description")
 
         with ui.element("section").classes("portal-documents-searchbar"):
             search = ui.input(
