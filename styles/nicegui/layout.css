@@ -1791,8 +1791,7 @@
      * A sidebar cresce SOBRE a área principal.
      * Não alteramos margin-left no hover, portanto a página não sofre reflow.
      */
-    .portal-sidebar:hover,
-    .portal-sidebar:focus-within {
+    .portal-sidebar:hover {
         width: var(--portal-sidebar-expanded-width);
         padding-inline: 18px;
         box-shadow: 18px 0 38px rgba(0, 38, 63, .17);
@@ -1827,28 +1826,24 @@
         opacity: 1;
     }
 
-    .portal-sidebar:hover .portal-brand,
-    .portal-sidebar:focus-within .portal-brand {
+    .portal-sidebar:hover .portal-brand {
         min-height: auto;
         padding: 2px 8px 22px;
         align-items: flex-start;
         gap: 9px;
     }
 
-    .portal-sidebar:hover .portal-brand-hmv-logo,
-    .portal-sidebar:focus-within .portal-brand-hmv-logo {
+    .portal-sidebar:hover .portal-brand-hmv-logo {
         display: block;
         opacity: .98;
     }
 
-    .portal-sidebar:hover .portal-brand-title,
-    .portal-sidebar:focus-within .portal-brand-title {
+    .portal-sidebar:hover .portal-brand-title {
         display: block;
         opacity: 1;
     }
 
-    .portal-sidebar:hover .portal-brand-mini-logo,
-    .portal-sidebar:focus-within .portal-brand-mini-logo {
+    .portal-sidebar:hover .portal-brand-mini-logo {
         display: none;
     }
 
@@ -1873,8 +1868,7 @@
         content: "";
     }
 
-    .portal-sidebar:hover .portal-nav-section-label,
-    .portal-sidebar:focus-within .portal-nav-section-label {
+    .portal-sidebar:hover .portal-nav-section-label {
         height: auto;
         padding: 0 14px;
         margin: 5px 0 6px;
@@ -1883,8 +1877,7 @@
         font-size: .61rem;
     }
 
-    .portal-sidebar:hover .portal-nav-section-label::after,
-    .portal-sidebar:focus-within .portal-nav-section-label::after {
+    .portal-sidebar:hover .portal-nav-section-label::after {
         display: none;
     }
 
@@ -1925,13 +1918,11 @@
         right: 4px;
     }
 
-    .portal-sidebar:hover .portal-nav-list,
-    .portal-sidebar:focus-within .portal-nav-list {
+    .portal-sidebar:hover .portal-nav-list {
         align-items: stretch;
     }
 
-    .portal-sidebar:hover .portal-nav-item,
-    .portal-sidebar:focus-within .portal-nav-item {
+    .portal-sidebar:hover .portal-nav-item {
         width: 100% !important;
         min-width: 0 !important;
         height: 42px;
@@ -1939,16 +1930,14 @@
         padding: 0 12px !important;
     }
 
-    .portal-sidebar:hover .portal-nav-item > .q-btn__content,
-    .portal-sidebar:focus-within .portal-nav-item > .q-btn__content {
+    .portal-sidebar:hover .portal-nav-item > .q-btn__content {
         display: grid !important;
         grid-template-columns: 24px minmax(0, 1fr);
         justify-items: start;
         gap: 10px;
     }
 
-    .portal-sidebar:hover .portal-nav-label,
-    .portal-sidebar:focus-within .portal-nav-label {
+    .portal-sidebar:hover .portal-nav-label {
         display: block;
         min-width: 0;
         overflow: hidden;
@@ -1985,13 +1974,11 @@
         display: none;
     }
 
-    .portal-sidebar:hover .portal-sidebar-footer,
-    .portal-sidebar:focus-within .portal-sidebar-footer {
+    .portal-sidebar:hover .portal-sidebar-footer {
         display: block;
     }
 
-    .portal-sidebar:hover .portal-profile,
-    .portal-sidebar:focus-within .portal-profile {
+    .portal-sidebar:hover .portal-profile {
         width: 100%;
         min-width: 0;
         min-height: 0;
@@ -2003,14 +1990,11 @@
     }
 
     .portal-sidebar:hover .portal-profile-copy,
-    .portal-sidebar:focus-within .portal-profile-copy,
-    .portal-sidebar:hover .portal-profile .portal-logout-link,
-    .portal-sidebar:focus-within .portal-profile .portal-logout-link {
+    .portal-sidebar:hover .portal-profile .portal-logout-link {
         display: flex;
     }
 
-    .portal-sidebar:hover .portal-profile .portal-logout-link,
-    .portal-sidebar:focus-within .portal-profile .portal-logout-link {
+    .portal-sidebar:hover .portal-profile .portal-logout-link {
         display: grid;
     }
 
@@ -2144,14 +2128,12 @@
     }
 
     /* Estado aberto: restaura o cartão completo sem mover o conteúdo da página. */
-    .portal-sidebar:hover .portal-sidebar-footer,
-    .portal-sidebar:focus-within .portal-sidebar-footer {
+    .portal-sidebar:hover .portal-sidebar-footer {
         display: block !important;
         padding: 10px 18px 14px !important;
     }
 
-    .portal-sidebar:hover .portal-profile,
-    .portal-sidebar:focus-within .portal-profile {
+    .portal-sidebar:hover .portal-profile {
         width: 100% !important;
         min-width: 0 !important;
         max-width: none !important;
@@ -2165,13 +2147,11 @@
         overflow: hidden !important;
     }
 
-    .portal-sidebar:hover .portal-profile-copy,
-    .portal-sidebar:focus-within .portal-profile-copy {
+    .portal-sidebar:hover .portal-profile-copy {
         display: flex !important;
     }
 
-    .portal-sidebar:hover .portal-profile .portal-logout-link,
-    .portal-sidebar:focus-within .portal-profile .portal-logout-link {
+    .portal-sidebar:hover .portal-profile .portal-logout-link {
         display: grid !important;
     }
 }
