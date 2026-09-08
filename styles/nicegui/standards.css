@@ -1,3 +1,7 @@
+/* --------------------------------------------------------------------------
+   1. Navegação e controles globais
+   -------------------------------------------------------------------------- */
+
 .portal-nav-label {
     font-size: var(--portal-font-xs);
 }
@@ -565,4 +569,331 @@
     .portal-operators-hero-title,
     .portal-access-hero-title,
     .portal-documents-hero-title { font-size: clamp(29px,9vw,36px) !important; }
+}
+
+/* ========================================================================== 
+   12. HERO SYSTEM · identidade visual compartilhada
+   --------------------------------------------------------------------------
+   Todos os cards principais partem do mesmo azul institucional e evoluem
+   para uma cor de módulo. A arte abstrata usa a mesma linguagem em todas as
+   telas: halo superior + anéis no canto direito.
+   ========================================================================== */
+
+:root {
+    --portal-hero-origin: #004a73;
+    --portal-hero-home-end: #0a7faf;
+    --portal-hero-operators-end: #1477a8;
+    --portal-hero-portals-end: #2188b2;
+    --portal-hero-documents-end: #159bb5;
+}
+
+.home-hero,
+.portal-operators-hero,
+.portal-access-hero,
+.portal-documents-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .055);
+    border-radius: 22px;
+    box-shadow: 0 17px 40px rgba(0, 61, 102, .13);
+}
+
+.home-hero {
+    background: linear-gradient(
+        118deg,
+        var(--portal-hero-origin) 0%,
+        #005b8d 58%,
+        var(--portal-hero-home-end) 100%
+    );
+}
+
+.portal-operators-hero {
+    background: linear-gradient(
+        118deg,
+        var(--portal-hero-origin) 0%,
+        #075f8d 58%,
+        var(--portal-hero-operators-end) 100%
+    );
+}
+
+.portal-access-hero {
+    background: linear-gradient(
+        118deg,
+        var(--portal-hero-origin) 0%,
+        #096b98 58%,
+        var(--portal-hero-portals-end) 100%
+    );
+}
+
+.portal-documents-hero {
+    background: linear-gradient(
+        118deg,
+        var(--portal-hero-origin) 0%,
+        #08758f 58%,
+        var(--portal-hero-documents-end) 100%
+    );
+}
+
+/* Halo superior: mesma posição, dimensão e transparência. */
+.home-hero::before,
+.portal-operators-hero::before,
+.portal-access-hero::before,
+.portal-documents-hero::before {
+    position: absolute;
+    z-index: -1;
+    top: -205px;
+    right: 23%;
+    width: 330px;
+    height: 330px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .075);
+    content: "";
+    pointer-events: none;
+}
+
+/* Anel inferior direito: segunda peça comum da arte. */
+.home-hero::after,
+.portal-operators-hero::after,
+.portal-access-hero::after,
+.portal-documents-hero::after {
+    position: absolute;
+    z-index: -1;
+    right: -150px;
+    bottom: -315px;
+    width: 500px;
+    height: 500px;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .025);
+    content: "";
+    pointer-events: none;
+}
+
+/* Remove artes antigas que faziam cada hero parecer pertencer a um sistema
+   diferente. O conteúdo funcional permanece intacto. */
+.home-hero-glow,
+.home-hero-visual-ring,
+.home-hero-visual-orbit,
+.portal-operators-hero-watermark {
+    display: none !important;
+}
+
+/* A ilustração funcional da Home continua existindo, porém recebe o mesmo
+   acabamento translúcido usado nos cards laterais dos módulos. */
+.home-hero-visual {
+    position: relative;
+    z-index: 2;
+}
+
+.home-hero-visual-core {
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    background: rgba(255, 255, 255, .075) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+    backdrop-filter: blur(7px);
+}
+
+/* --------------------------------------------------------------------------
+   13. Painel informativo do hero · componente único
+   -------------------------------------------------------------------------- */
+
+.portal-operators-hero-side,
+.portal-access-hero-flow,
+.portal-documents-hero-flow {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 100%;
+    max-width: 330px;
+    justify-self: end;
+    gap: 9px;
+}
+
+.portal-operators-hero-point,
+.portal-access-hero-step,
+.portal-documents-hero-step {
+    display: grid !important;
+    width: 100%;
+    min-height: 58px;
+    padding: 7px 12px 7px 7px !important;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    border-radius: 13px !important;
+    background: rgba(255, 255, 255, .075) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+    backdrop-filter: blur(7px);
+}
+
+.portal-operators-hero-point-icon,
+.portal-access-hero-step-icon,
+.portal-documents-hero-step-icon {
+    display: grid !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .09) !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, .115) !important;
+}
+
+.portal-operators-hero-point-icon .q-icon,
+.portal-access-hero-step-icon .q-icon,
+.portal-documents-hero-step-icon .q-icon {
+    color: #fff;
+    font-size: 19px !important;
+}
+
+.portal-operators-hero-point-copy,
+.portal-access-hero-step-copy,
+.portal-documents-hero-step-copy {
+    min-width: 0;
+    gap: 1px !important;
+}
+
+.portal-operators-hero-point-title,
+.portal-access-hero-step-title,
+.portal-documents-hero-step-copy .q-label:first-child {
+    margin: 0;
+    color: rgba(255, 255, 255, .96) !important;
+    font-size: 12px !important;
+    font-weight: 780 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.22 !important;
+    text-transform: uppercase;
+}
+
+.portal-operators-hero-point-subtitle,
+.portal-access-hero-step-subtitle,
+.portal-documents-hero-step-copy .q-label:last-child {
+    margin: 0;
+    color: rgba(255, 255, 255, .68) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.28 !important;
+    text-transform: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   14. Geometria comum dos três módulos
+   -------------------------------------------------------------------------- */
+
+.portal-operators-hero,
+.portal-access-hero,
+.portal-documents-hero {
+    display: grid !important;
+    width: 100%;
+    min-height: 252px !important;
+    padding: 32px 40px !important;
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, .65fr) !important;
+    align-items: center;
+    gap: 36px !important;
+}
+
+.portal-operators-hero-copy,
+.portal-access-hero-copy,
+.portal-documents-hero-copy {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 760px;
+    gap: 0 !important;
+}
+
+.portal-operators-hero-kicker,
+.portal-access-hero-kicker,
+.portal-documents-hero-kicker {
+    margin: 0;
+    color: rgba(255, 255, 255, .68) !important;
+    font-size: 11px !important;
+    font-weight: 820 !important;
+    letter-spacing: .13em !important;
+    line-height: 1.2 !important;
+}
+
+.portal-operators-hero-title,
+.portal-access-hero-title,
+.portal-documents-hero-title {
+    max-width: 760px;
+    margin-top: 9px !important;
+    color: #fff !important;
+    font-size: clamp(34px, 3vw, 44px) !important;
+    font-weight: 790 !important;
+    letter-spacing: -.043em !important;
+    line-height: 1.03 !important;
+    text-wrap: balance;
+}
+
+.portal-operators-hero-description,
+.portal-access-hero-description,
+.portal-documents-hero-description {
+    max-width: 700px;
+    margin-top: 12px !important;
+    color: rgba(255, 255, 255, .78) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+/* --------------------------------------------------------------------------
+   15. Responsividade do Hero System
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1180px) {
+    .portal-operators-hero,
+    .portal-access-hero,
+    .portal-documents-hero {
+        padding: 30px 32px !important;
+        grid-template-columns: minmax(0, 1fr) 280px !important;
+        gap: 28px !important;
+    }
+
+    .portal-operators-hero-side,
+    .portal-access-hero-flow,
+    .portal-documents-hero-flow {
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 860px) {
+    .portal-operators-hero,
+    .portal-access-hero,
+    .portal-documents-hero {
+        min-height: auto !important;
+        padding: 28px 26px !important;
+        grid-template-columns: 1fr !important;
+        gap: 22px !important;
+    }
+
+    .portal-operators-hero-side,
+    .portal-access-hero-flow,
+    .portal-documents-hero-flow {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+}
+
+@media (max-width: 640px) {
+    .portal-operators-hero,
+    .portal-access-hero,
+    .portal-documents-hero {
+        padding: 24px 20px !important;
+    }
+
+    .portal-operators-hero-side,
+    .portal-access-hero-flow,
+    .portal-documents-hero-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-operators-hero-title,
+    .portal-access-hero-title,
+    .portal-documents-hero-title {
+        font-size: clamp(29px, 9vw, 36px) !important;
+    }
 }
