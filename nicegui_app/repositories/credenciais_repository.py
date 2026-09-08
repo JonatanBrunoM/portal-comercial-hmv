@@ -134,3 +134,24 @@ def rotate_credential_atomic(
     if isinstance(data, dict):
         return dict(data)
     return None
+
+
+def list_active_credentials_for_portals(
+    portal_ids: list[str],
+) -> list[dict[str, Any]]:
+    clean_ids = [portal_id.strip() for portal_id in portal_ids if portal_id.strip()]
+    if not clean_ids:
+        return []
+
+    return rest_select(
+        "portal_credenciais",
+        select=(
+            "id,portal_id,identificacao,login,dica_acesso,observacoes,status,"
+            "senha_alterada_em,quantidade_senhas_bloqueadas,regra_senha_observacao"
+        ),
+        params={
+            "portal_id": f"in.({','.join(clean_ids)})",
+            "status": "eq.Ativo",
+            "order": "identificacao.asc",
+        },
+    )
