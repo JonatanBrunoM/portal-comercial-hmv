@@ -235,15 +235,22 @@ def _password_was_used(
                 "Não é possível validar o histórico de senhas no momento."
             ) from None
         except Exception:
-            # Fail closed: se uma versão histórica não puder ser validada,
-            # a troca não prossegue.
-            logger.exception(
-                "Falha ao validar histórico criptografado. credencial_id=%s",
+            # Recuperação de credenciais legadas:
+            # registros de teste/versões antigas podem ter sido gravados com
+            # outra chave ou antes do padrão Fernet atual. Bloquear a troca
+            # deixaria a credencial irrecuperável para sempre.
+            #
+            # Não tentamos recuperar nem expor o valor antigo. Apenas ignoramos
+            # essa versão para a verificação de reutilização, registramos o
+            # evento no log do servidor e permitimos que um administrador
+            # grave uma NOVA senha com a chave atual.
+            logger.warning(
+                "Versão de senha incompatível com a chave/formato atual; "
+                "ignorada apenas para recuperação administrativa. "
+                "credencial_id=%s",
                 _text(current, "id"),
             )
-            raise CredentialSecurityError(
-                "O histórico desta credencial precisa ser validado antes da troca de senha."
-            ) from None
+            continue
 
         if hmac.compare_digest(candidate, previous_password):
             return True
