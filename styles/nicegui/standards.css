@@ -571,138 +571,112 @@
     .portal-documents-hero-title { font-size: clamp(29px,9vw,36px) !important; }
 }
 
-/* ========================================================================== 
-   12. HERO SYSTEM · identidade visual compartilhada
-   --------------------------------------------------------------------------
-   Todos os cards principais partem do mesmo azul institucional e evoluem
-   para uma cor de módulo. A arte abstrata usa a mesma linguagem em todas as
-   telas: halo superior + anéis no canto direito.
+/* ==========================================================================
+   V3 · SISTEMA DE HEROES E ILUSTRAÇÕES
+   Todos os heroes partem do mesmo azul institucional (#005691) e evoluem
+   para uma segunda cor própria do módulo. A linguagem decorativa também é
+   única: núcleo com o ícone da página, órbitas e nós.
    ========================================================================== */
 
-:root {
-    --portal-hero-origin: #004a73;
-    --portal-hero-home-end: #0a7faf;
-    --portal-hero-operators-end: #1477a8;
-    --portal-hero-portals-end: #2188b2;
-    --portal-hero-documents-end: #159bb5;
-}
-
 .home-hero,
+.portal-search-workspace,
 .portal-operators-hero,
 .portal-access-hero,
 .portal-documents-hero {
+    --portal-hero-start: #005691;
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, .055);
     border-radius: 22px;
-    box-shadow: 0 17px 40px rgba(0, 61, 102, .13);
 }
 
 .home-hero {
-    background: linear-gradient(
-        118deg,
-        var(--portal-hero-origin) 0%,
-        #005b8d 58%,
-        var(--portal-hero-home-end) 100%
-    );
+    --portal-hero-end: #2388b8;
+    background:
+        radial-gradient(circle at 66% -18%, rgba(255, 255, 255, .12), transparent 27rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #00669d 54%, var(--portal-hero-end) 100%) !important;
+}
+
+.portal-search-workspace {
+    --portal-hero-end: #4b8fb6;
+    border-color: rgba(255, 255, 255, .12) !important;
+    background:
+        radial-gradient(circle at 73% -15%, rgba(255, 255, 255, .11), transparent 25rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #176d9e 55%, var(--portal-hero-end) 100%) !important;
+    box-shadow: 0 17px 40px rgba(0, 61, 102, .13) !important;
 }
 
 .portal-operators-hero {
-    background: linear-gradient(
-        118deg,
-        var(--portal-hero-origin) 0%,
-        #075f8d 58%,
-        var(--portal-hero-operators-end) 100%
-    );
+    --portal-hero-end: #2379b7;
+    background:
+        radial-gradient(circle at 70% -15%, rgba(255, 255, 255, .11), transparent 26rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #08669e 54%, var(--portal-hero-end) 100%) !important;
 }
 
 .portal-access-hero {
-    background: linear-gradient(
-        118deg,
-        var(--portal-hero-origin) 0%,
-        #096b98 58%,
-        var(--portal-hero-portals-end) 100%
-    );
+    --portal-hero-end: #238fa7;
+    background:
+        radial-gradient(circle at 70% -15%, rgba(255, 255, 255, .11), transparent 26rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #08739c 54%, var(--portal-hero-end) 100%) !important;
 }
 
 .portal-documents-hero {
-    background: linear-gradient(
-        118deg,
-        var(--portal-hero-origin) 0%,
-        #08758f 58%,
-        var(--portal-hero-documents-end) 100%
-    );
+    --portal-hero-end: #28a1ae;
+    background:
+        radial-gradient(circle at 70% -15%, rgba(255, 255, 255, .11), transparent 26rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #087c9d 54%, var(--portal-hero-end) 100%) !important;
 }
 
-/* Halo superior: mesma posição, dimensão e transparência. */
-.home-hero::before,
-.portal-operators-hero::before,
-.portal-access-hero::before,
-.portal-documents-hero::before {
-    position: absolute;
-    z-index: -1;
-    top: -205px;
-    right: 23%;
-    width: 330px;
-    height: 330px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .075);
-    content: "";
-    pointer-events: none;
+.portal-operators-hero,
+.portal-access-hero,
+.portal-documents-hero {
+    display: grid;
+    width: 100%;
+    min-height: 252px;
+    padding: 32px 40px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(290px, .62fr);
+    align-items: center;
+    gap: 38px;
+    box-shadow: 0 17px 40px rgba(0, 61, 102, .13);
+    color: #fff;
 }
 
-/* Anel inferior direito: segunda peça comum da arte. */
-.home-hero::after,
-.portal-operators-hero::after,
-.portal-access-hero::after,
-.portal-documents-hero::after {
-    position: absolute;
-    z-index: -1;
-    right: -150px;
-    bottom: -315px;
-    width: 500px;
-    height: 500px;
-    border: 1px solid rgba(255, 255, 255, .10);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .025);
-    content: "";
-    pointer-events: none;
-}
-
-/* Remove artes antigas que faziam cada hero parecer pertencer a um sistema
-   diferente. O conteúdo funcional permanece intacto. */
-.home-hero-glow,
-.home-hero-visual-ring,
-.home-hero-visual-orbit,
-.portal-operators-hero-watermark {
-    display: none !important;
-}
-
-/* A ilustração funcional da Home continua existindo, porém recebe o mesmo
-   acabamento translúcido usado nos cards laterais dos módulos. */
-.home-hero-visual {
+.portal-operators-hero-copy,
+.portal-access-hero-copy,
+.portal-documents-hero-copy {
     position: relative;
-    z-index: 2;
+    z-index: 4;
+    width: 100%;
+    max-width: 760px;
 }
 
-.home-hero-visual-core {
-    border: 1px solid rgba(255, 255, 255, .13) !important;
-    background: rgba(255, 255, 255, .075) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
-    backdrop-filter: blur(7px);
+.portal-operators-hero-kicker,
+.portal-access-hero-kicker,
+.portal-documents-hero-kicker,
+.home-hero-kicker {
+    color: rgba(255, 255, 255, .72) !important;
 }
 
-/* --------------------------------------------------------------------------
-   13. Painel informativo do hero · componente único
-   -------------------------------------------------------------------------- */
+.portal-operators-hero-title,
+.portal-access-hero-title,
+.portal-documents-hero-title,
+.home-hero-title {
+    color: #fff !important;
+}
 
+.portal-operators-hero-description,
+.portal-access-hero-description,
+.portal-documents-hero-description,
+.home-hero-description {
+    color: rgba(255, 255, 255, .82) !important;
+}
+
+/* Cards laterais padronizados */
 .portal-operators-hero-side,
 .portal-access-hero-flow,
 .portal-documents-hero-flow {
     position: relative;
-    z-index: 2;
+    z-index: 5;
     display: grid;
     width: 100%;
     max-width: 330px;
@@ -715,35 +689,34 @@
 .portal-documents-hero-step {
     display: grid !important;
     width: 100%;
-    min-height: 58px;
+    min-height: 59px;
     padding: 7px 12px 7px 7px !important;
     grid-template-columns: 42px minmax(0, 1fr);
     align-items: center;
     gap: 11px;
-    border: 1px solid rgba(255, 255, 255, .13) !important;
+    border: 1px solid rgba(255, 255, 255, .16) !important;
     border-radius: 13px !important;
-    background: rgba(255, 255, 255, .075) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
-    backdrop-filter: blur(7px);
+    background: rgba(255, 255, 255, .09) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045) !important;
+    backdrop-filter: blur(8px);
 }
 
 .portal-operators-hero-point-icon,
 .portal-access-hero-step-icon,
 .portal-documents-hero-step-icon {
-    display: grid !important;
+    display: grid;
     width: 42px !important;
     height: 42px !important;
-    min-width: 42px;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .09) !important;
     border-radius: 11px !important;
-    background: rgba(255, 255, 255, .115) !important;
+    background: rgba(255, 255, 255, .13) !important;
+    color: #fff !important;
 }
 
 .portal-operators-hero-point-icon .q-icon,
 .portal-access-hero-step-icon .q-icon,
 .portal-documents-hero-step-icon .q-icon {
-    color: #fff;
     font-size: 19px !important;
 }
 
@@ -757,143 +730,308 @@
 .portal-operators-hero-point-title,
 .portal-access-hero-step-title,
 .portal-documents-hero-step-copy .q-label:first-child {
-    margin: 0;
-    color: rgba(255, 255, 255, .96) !important;
+    color: rgba(255, 255, 255, .97) !important;
     font-size: 12px !important;
-    font-weight: 780 !important;
-    letter-spacing: 0 !important;
-    line-height: 1.22 !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
     text-transform: uppercase;
 }
 
 .portal-operators-hero-point-subtitle,
 .portal-access-hero-step-subtitle,
 .portal-documents-hero-step-copy .q-label:last-child {
-    margin: 0;
     color: rgba(255, 255, 255, .68) !important;
     font-size: 11px !important;
     font-weight: 500 !important;
-    letter-spacing: 0 !important;
-    line-height: 1.28 !important;
-    text-transform: none !important;
+    line-height: 1.3 !important;
+    text-transform: none;
 }
 
-/* --------------------------------------------------------------------------
-   14. Geometria comum dos três módulos
-   -------------------------------------------------------------------------- */
-
-.portal-operators-hero,
-.portal-access-hero,
-.portal-documents-hero {
-    display: grid !important;
-    width: 100%;
-    min-height: 252px !important;
-    padding: 32px 40px !important;
-    grid-template-columns: minmax(0, 1.55fr) minmax(280px, .65fr) !important;
-    align-items: center;
-    gap: 36px !important;
+/* Ilustração interna compartilhada */
+.portal-hero-art {
+    position: absolute;
+    z-index: 1;
+    width: 260px;
+    height: 260px;
+    pointer-events: none;
+    opacity: .82;
 }
 
-.portal-operators-hero-copy,
-.portal-access-hero-copy,
-.portal-documents-hero-copy {
+.portal-hero-art-orbit,
+.portal-hero-art-arc,
+.portal-hero-art-node,
+.portal-hero-art-core {
+    position: absolute;
+    display: block;
+}
+
+.portal-hero-art-orbit {
+    top: 50%;
+    left: 50%;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.portal-hero-art-orbit.orbit-one {
+    width: 176px;
+    height: 176px;
+}
+
+.portal-hero-art-orbit.orbit-two {
+    width: 238px;
+    height: 238px;
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, .075);
+}
+
+.portal-hero-art-arc {
+    border: 1px solid transparent;
+    border-top-color: rgba(255, 255, 255, .16);
+    border-right-color: rgba(255, 255, 255, .08);
+    border-radius: 50%;
+}
+
+.portal-hero-art-arc.arc-one {
+    top: 23px;
+    left: 34px;
+    width: 154px;
+    height: 154px;
+    transform: rotate(25deg);
+}
+
+.portal-hero-art-arc.arc-two {
+    right: 21px;
+    bottom: 32px;
+    width: 112px;
+    height: 112px;
+    transform: rotate(180deg);
+}
+
+.portal-hero-art-core {
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 66px;
+    height: 66px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .17);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .12);
+    box-shadow: 0 12px 30px rgba(0, 38, 68, .12), inset 0 1px 0 rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .9);
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(8px);
+}
+
+.portal-hero-art-core .q-icon {
+    font-size: 30px;
+}
+
+.portal-hero-art-node {
+    width: 10px;
+    height: 10px;
+    border: 2px solid rgba(255, 255, 255, .56);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .13);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, .025);
+}
+
+/* Variações de composição: mesma linguagem, desenho diferente */
+.portal-hero-art--home {
+    right: 58px;
+    top: 50%;
+    width: 300px;
+    height: 300px;
+    transform: translateY(-50%);
+}
+.portal-hero-art--home .node-1 { top: 43px; left: 145px; }
+.portal-hero-art--home .node-2 { top: 117px; right: 31px; }
+.portal-hero-art--home .node-3 { right: 76px; bottom: 42px; }
+.portal-hero-art--home .node-4 { left: 44px; bottom: 77px; }
+.portal-hero-art--home .node-5 { top: 91px; left: 43px; }
+
+.portal-hero-art--search {
+    right: 42px;
+    top: 2px;
+    width: 240px;
+    height: 240px;
+    opacity: .58;
+}
+.portal-hero-art--search .portal-hero-art-core { top: 42%; left: 57%; }
+.portal-hero-art--search .node-1 { top: 21px; left: 106px; }
+.portal-hero-art--search .node-2 { top: 70px; right: 18px; }
+.portal-hero-art--search .node-3 { right: 47px; bottom: 43px; }
+.portal-hero-art--search .node-4 { left: 54px; bottom: 28px; }
+.portal-hero-art--search .node-5 { top: 78px; left: 18px; }
+
+.portal-hero-art--operators {
+    right: 285px;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    opacity: .48;
+    transform: translateY(-50%);
+}
+.portal-hero-art--operators .node-1 { top: 38px; left: 135px; }
+.portal-hero-art--operators .node-2 { top: 96px; right: 30px; }
+.portal-hero-art--operators .node-3 { right: 61px; bottom: 39px; }
+.portal-hero-art--operators .node-4 { left: 57px; bottom: 42px; }
+.portal-hero-art--operators .node-5 { top: 92px; left: 27px; }
+
+.portal-hero-art--portals {
+    right: 286px;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    opacity: .46;
+    transform: translateY(-50%) rotate(-7deg);
+}
+.portal-hero-art--portals .node-1 { top: 45px; left: 76px; }
+.portal-hero-art--portals .node-2 { top: 74px; right: 43px; }
+.portal-hero-art--portals .node-3 { right: 68px; bottom: 37px; }
+.portal-hero-art--portals .node-4 { left: 38px; bottom: 74px; }
+.portal-hero-art--portals .node-5 { top: 132px; left: 21px; }
+
+.portal-hero-art--documents {
+    right: 288px;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    opacity: .47;
+    transform: translateY(-50%) rotate(5deg);
+}
+.portal-hero-art--documents .portal-hero-art-core { border-radius: 14px; }
+.portal-hero-art--documents .node-1 { top: 29px; left: 137px; }
+.portal-hero-art--documents .node-2 { top: 87px; right: 28px; }
+.portal-hero-art--documents .node-3 { right: 39px; bottom: 71px; }
+.portal-hero-art--documents .node-4 { left: 82px; bottom: 25px; }
+.portal-hero-art--documents .node-5 { top: 78px; left: 32px; }
+
+/* Home */
+.home-hero-content {
     position: relative;
-    z-index: 2;
-    width: 100%;
-    max-width: 760px;
-    gap: 0 !important;
+    z-index: 4;
 }
+.home-hero .portal-hero-art { z-index: 2; }
+.home-hero-mark,
+.portal-operators-hero-watermark { display: none !important; }
 
-.portal-operators-hero-kicker,
-.portal-access-hero-kicker,
-.portal-documents-hero-kicker {
-    margin: 0;
-    color: rgba(255, 255, 255, .68) !important;
-    font-size: 11px !important;
-    font-weight: 820 !important;
-    letter-spacing: .13em !important;
-    line-height: 1.2 !important;
+/* Pesquisa na mesma família visual, sem sacrificar a área de digitação */
+.portal-search-workspace {
+    padding: 24px 28px 22px;
+    color: #fff;
 }
-
-.portal-operators-hero-title,
-.portal-access-hero-title,
-.portal-documents-hero-title {
-    max-width: 760px;
-    margin-top: 9px !important;
+.portal-search-intro,
+.portal-search-box,
+.portal-search-suggestions {
+    position: relative;
+    z-index: 4;
+}
+.portal-search-intro { padding-right: 210px; }
+.portal-search-intro-icon {
+    border-color: rgba(255, 255, 255, .16) !important;
+    background: rgba(255, 255, 255, .11) !important;
     color: #fff !important;
-    font-size: clamp(34px, 3vw, 44px) !important;
-    font-weight: 790 !important;
-    letter-spacing: -.043em !important;
-    line-height: 1.03 !important;
-    text-wrap: balance;
 }
-
-.portal-operators-hero-description,
-.portal-access-hero-description,
-.portal-documents-hero-description {
-    max-width: 700px;
-    margin-top: 12px !important;
-    color: rgba(255, 255, 255, .78) !important;
-    font-size: 14px !important;
-    line-height: 1.5 !important;
+.portal-search-kicker,
+.portal-search-question { color: #fff !important; }
+.portal-search-helper { color: rgba(255, 255, 255, .76) !important; }
+.portal-search-suggestions-label { color: rgba(255, 255, 255, .68) !important; }
+.portal-search-suggestion {
+    color: rgba(255, 255, 255, .9) !important;
+    background: rgba(255, 255, 255, .07) !important;
 }
-
-/* --------------------------------------------------------------------------
-   15. Responsividade do Hero System
-   -------------------------------------------------------------------------- */
+.portal-search-suggestion:hover { background: rgba(255, 255, 255, .13) !important; }
+.portal-search-box {
+    width: min(100%, 980px);
+    border-color: rgba(255, 255, 255, .32) !important;
+    box-shadow: 0 14px 30px rgba(0, 50, 78, .14) !important;
+}
 
 @media (max-width: 1180px) {
     .portal-operators-hero,
     .portal-access-hero,
     .portal-documents-hero {
-        padding: 30px 32px !important;
-        grid-template-columns: minmax(0, 1fr) 280px !important;
-        gap: 28px !important;
+        grid-template-columns: minmax(0, 1fr) 285px;
+        padding: 30px 32px;
+        gap: 28px;
     }
 
-    .portal-operators-hero-side,
-    .portal-access-hero-flow,
-    .portal-documents-hero-flow {
-        max-width: 280px;
+    .portal-hero-art--operators,
+    .portal-hero-art--portals,
+    .portal-hero-art--documents {
+        right: 248px;
+        width: 240px;
+        height: 240px;
     }
+
+    .portal-hero-art--home {
+        right: 28px;
+        width: 250px;
+        height: 250px;
+    }
+}
+
+@media (max-width: 980px) {
+    .portal-hero-art--operators,
+    .portal-hero-art--portals,
+    .portal-hero-art--documents {
+        right: 225px;
+        opacity: .27;
+    }
+
+    .portal-search-intro { padding-right: 150px; }
+    .portal-hero-art--search { right: 10px; opacity: .35; }
 }
 
 @media (max-width: 860px) {
     .portal-operators-hero,
     .portal-access-hero,
     .portal-documents-hero {
-        min-height: auto !important;
-        padding: 28px 26px !important;
-        grid-template-columns: 1fr !important;
-        gap: 22px !important;
+        min-height: auto;
+        padding: 28px 26px;
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 
     .portal-operators-hero-side,
     .portal-access-hero-flow,
     .portal-documents-hero-flow {
-        width: 100%;
         max-width: none;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
     }
+
+    .portal-hero-art--operators,
+    .portal-hero-art--portals,
+    .portal-hero-art--documents {
+        right: -35px;
+        top: 24px;
+        width: 220px;
+        height: 220px;
+        opacity: .2;
+        transform: none;
+    }
+
+    .portal-hero-art--home { right: -42px; opacity: .32; }
+}
+
+@media (max-width: 700px) {
+    .portal-search-intro { padding-right: 0; }
+    .portal-hero-art--search { display: none; }
 }
 
 @media (max-width: 640px) {
     .portal-operators-hero,
     .portal-access-hero,
-    .portal-documents-hero {
-        padding: 24px 20px !important;
-    }
+    .portal-documents-hero { padding: 24px 20px; }
 
     .portal-operators-hero-side,
     .portal-access-hero-flow,
-    .portal-documents-hero-flow {
-        grid-template-columns: 1fr;
-    }
+    .portal-documents-hero-flow { grid-template-columns: 1fr; }
 
-    .portal-operators-hero-title,
-    .portal-access-hero-title,
-    .portal-documents-hero-title {
-        font-size: clamp(29px, 9vw, 36px) !important;
-    }
+    .portal-hero-art--operators,
+    .portal-hero-art--portals,
+    .portal-hero-art--documents,
+    .portal-hero-art--home { display: none; }
 }
