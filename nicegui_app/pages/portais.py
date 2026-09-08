@@ -14,6 +14,7 @@ from nicegui_app.services.portais_service import (
 from nicegui_app.services.credenciais_service import (
     format_credential_datetime,
     get_public_credentials,
+    get_public_credentials_for_portals,
     password_policy_label,
     reveal_password,
 )
@@ -45,7 +46,157 @@ def _portal_context(portal: PortalPreview) -> str:
     return " · ".join(value for value in values if value)
 
 
-def _portal_card(portal: PortalPreview) -> None:
+
+def _compact_credential(
+    credential,
+    user: dict,
+) -> None:
+    with ui.element("div").classes("portal-access-card-credential"):
+        with ui.row().classes("portal-access-card-credential-head"):
+            with ui.row().classes("portal-access-card-credential-title-wrap"):
+                ui.icon("shield_lock")
+                ui.label(
+                    credential.identification or "Acesso principal"
+                ).classes("portal-access-card-credential-title")
+
+            ui.label(
+                format_credential_datetime(credential.password_changed_at)
+            ).classes("portal-access-card-credential-date")
+
+        with ui.element("div").classes("portal-access-card-credential-fields"):
+            with ui.element("div").classes("portal-access-card-login-field"):
+                ui.label("LOGIN").classes("portal-access-card-field-label")
+                ui.label(credential.login).classes(
+                    "portal-access-card-login-value"
+                )
+
+                async def copy_login(login=credential.login) -> None:
+                    try:
+                        await ui.run_javascript(
+                            "navigator.clipboard.writeText("
+                            f"{json.dumps(login)})"
+                        )
+                        ui.notify(
+                            "Login copiado.",
+                            type="positive",
+                            position="top",
+                        )
+                    except Exception:
+                        ui.notify(
+                            "Não foi possível copiar o login.",
+                            type="negative",
+                            position="top",
+                        )
+
+                ui.button(
+                    icon="content_copy",
+                    on_click=copy_login,
+                ).props("flat round dense").classes(
+                    "portal-access-card-copy-icon"
+                ).tooltip("Copiar login")
+
+            password_value = ui.label("••••••••••").classes(
+                "portal-access-card-password-value"
+            )
+            state = {"visible": False, "generation": 0}
+
+            def hide_password(
+                label=password_value,
+                state=state,
+            ) -> None:
+                label.set_text("••••••••••")
+                state["visible"] = False
+
+            def toggle_password(
+                cid=credential.credential_id,
+                label=password_value,
+                state=state,
+            ) -> None:
+                try:
+                    if state["visible"]:
+                        state["generation"] += 1
+                        hide_password(label, state)
+                        return
+
+                    secret = reveal_password(cid, user)
+                    state["generation"] += 1
+                    generation = state["generation"]
+                    label.set_text(secret)
+                    state["visible"] = True
+
+                    def auto_hide(
+                        label=label,
+                        state=state,
+                        generation=generation,
+                    ) -> None:
+                        if (
+                            state["visible"]
+                            and state["generation"] == generation
+                        ):
+                            hide_password(label, state)
+
+                    ui.timer(20.0, auto_hide, once=True)
+                except Exception as error:
+                    ui.notify(
+                        str(error),
+                        type="negative",
+                        position="top",
+                    )
+
+            async def copy_password(cid=credential.credential_id) -> None:
+                try:
+                    secret = reveal_password(
+                        cid,
+                        user,
+                        action="Cópia de senha",
+                    )
+                    await ui.run_javascript(
+                        "navigator.clipboard.writeText("
+                        f"{json.dumps(secret)})"
+                    )
+                    ui.notify(
+                        "Senha copiada.",
+                        type="positive",
+                        position="top",
+                    )
+                except Exception as error:
+                    ui.notify(
+                        str(error),
+                        type="negative",
+                        position="top",
+                    )
+
+            with ui.element("div").classes("portal-access-card-password-field"):
+                ui.label("SENHA").classes("portal-access-card-field-label")
+                password_value
+
+                with ui.row().classes("portal-access-card-password-actions"):
+                    ui.button(
+                        icon="visibility",
+                        on_click=toggle_password,
+                    ).props("flat round dense").classes(
+                        "portal-access-card-copy-icon"
+                    ).tooltip("Revelar / ocultar senha")
+
+                    ui.button(
+                        icon="content_copy",
+                        on_click=copy_password,
+                    ).props("flat round dense").classes(
+                        "portal-access-card-copy-icon"
+                    ).tooltip("Copiar senha")
+
+        if credential.access_tip:
+            with ui.row().classes("portal-access-card-credential-tip"):
+                ui.icon("lightbulb")
+                ui.label(credential.access_tip)
+
+
+
+def _portal_card(
+    portal: PortalPreview,
+    user: dict,
+    credentials: list,
+) -> None:
     external = _safe_url(portal.url)
 
     with ui.element("article").classes("portal-access-card"):
@@ -75,20 +226,43 @@ def _portal_card(portal: PortalPreview) -> None:
             if context:
                 ui.label(context).classes("portal-access-card-context")
 
-            with ui.element("div").classes("portal-access-card-guidance"):
-                with ui.row().classes("portal-access-card-guidance-head"):
-                    ui.icon("route")
-                    ui.label("COMO ACESSAR")
-                ui.label(
-                    portal.instruction
-                    or portal.general_tip
-                    or "Acesse o portal e siga as orientações cadastradas."
-                ).classes("portal-access-card-guidance-text")
+            if portal.requires_login and credentials:
+                _compact_credential(credentials[0], user)
 
-            if portal.general_tip and portal.general_tip != portal.instruction:
-                with ui.row().classes("portal-access-card-tip"):
-                    ui.icon("lightbulb")
-                    ui.label(portal.general_tip)
+                if len(credentials) > 1:
+                    ui.label(
+                        f"+ {len(credentials) - 1} outra"
+                        f"{'s' if len(credentials) - 1 != 1 else ''} credencial"
+                        f"{'is' if len(credentials) - 1 != 1 else ''} disponível"
+                        f"{'is' if len(credentials) - 1 != 1 else ''} nos detalhes"
+                    ).classes("portal-access-card-more-credentials")
+
+            elif portal.requires_login:
+                with ui.element("div").classes(
+                    "portal-access-card-credential is-empty"
+                ):
+                    with ui.row().classes("portal-access-card-credential-head"):
+                        with ui.row().classes(
+                            "portal-access-card-credential-title-wrap"
+                        ):
+                            ui.icon("shield_lock")
+                            ui.label("Credencial de acesso").classes(
+                                "portal-access-card-credential-title"
+                            )
+                    ui.label(
+                        "Nenhuma credencial ativa está cadastrada para este portal."
+                    ).classes("portal-access-card-credential-empty")
+
+            else:
+                with ui.element("div").classes("portal-access-card-guidance"):
+                    with ui.row().classes("portal-access-card-guidance-head"):
+                        ui.icon("route")
+                        ui.label("ACESSO")
+                    ui.label(
+                        portal.instruction
+                        or portal.general_tip
+                        or "Este portal não possui login obrigatório cadastrado."
+                    ).classes("portal-access-card-guidance-text")
 
         with ui.element("div").classes("portal-access-card-footer"):
             ui.button(
@@ -118,6 +292,9 @@ def render_portais(user: dict) -> None:
     portals = get_portais_preview()
     operators = sorted(
         {portal.operator_name for portal in portals if portal.operator_name}
+    )
+    credentials_by_portal = get_public_credentials_for_portals(
+        [portal.portal_id for portal in portals if portal.requires_login]
     )
 
     with portal_layout(user=user, active="portals"):
@@ -186,6 +363,23 @@ def render_portais(user: dict) -> None:
                         on_click=lambda selected=value: set_operator(selected),
                     ).props("flat no-caps").classes("portal-access-operator-button")
                     operator_buttons[value] = button
+
+        with ui.element("section").classes("portal-access-credentials-warning"):
+            with ui.element("div").classes("portal-access-credentials-warning-icon"):
+                ui.icon("security")
+            with ui.column().classes("portal-access-credentials-warning-copy"):
+                ui.label("USO DAS CREDENCIAIS").classes(
+                    "portal-access-credentials-warning-kicker"
+                )
+                ui.label(
+                    "Utilize login e senha somente para atividades institucionais "
+                    "autorizadas. Não compartilhe credenciais fora do ambiente de "
+                    "trabalho e evite salvá-las em navegadores, arquivos pessoais ou "
+                    "anotações não protegidas."
+                ).classes("portal-access-credentials-warning-text")
+            ui.label(
+                "A revelação e a cópia de senha são auditadas."
+            ).classes("portal-access-credentials-warning-audit")
 
         with ui.row().classes("portal-access-results-head"):
             with ui.column().classes("portal-access-results-copy"):
@@ -262,7 +456,11 @@ def render_portais(user: dict) -> None:
                     return
 
                 for portal in filtered:
-                    _portal_card(portal)
+                    _portal_card(
+                        portal,
+                        user,
+                        credentials_by_portal.get(portal.portal_id, []),
+                    )
 
         def set_auth(value: str) -> None:
             filter_state["auth"] = value
