@@ -134,3 +134,31 @@ a:focus-visible {
         transition-duration: .01ms !important;
     }
 }
+
+/* ==========================================================================
+   Etapa 20 · Legibilidade global
+   ========================================================================== */
+
+html {
+    font-size: 16px;
+}
+
+body,
+.portal-app-shell {
+    font-size: var(--portal-font-base);
+    line-height: var(--portal-line-body);
+}
+
+.portal-app-shell .q-field__native,
+.portal-app-shell .q-field__input,
+.portal-app-shell .q-select__dropdown-icon {
+    font-size: var(--portal-font-md);
+}
+
+.portal-app-shell .q-field__label {
+    font-size: var(--portal-font-xs);
+}
+
+.portal-app-shell .q-btn .q-btn__content {
+    font-size: inherit;
+}
