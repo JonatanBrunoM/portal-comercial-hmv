@@ -87,3 +87,31 @@
     --portal-border-interactive: #c8dae3;
     --portal-border-hover: #aacbd9;
 }
+
+/* ==========================================================================
+   Etapa 20 · Escala tipográfica institucional do Portal Comercial
+   ========================================================================== */
+
+:root {
+    /* Texto funcional: nenhum conteúdo operacional deve depender de fonte minúscula. */
+    --portal-font-2xs: 0.6875rem;   /* 11px · badges/kickers muito compactos */
+    --portal-font-xs: 0.75rem;      /* 12px · metadados, chips, auxiliares */
+    --portal-font-sm: 0.8125rem;    /* 13px · descrições compactas */
+    --portal-font-md: 0.875rem;     /* 14px · texto de interface */
+    --portal-font-base: 1rem;       /* 16px · base do Portal */
+    --portal-font-lg: 1.125rem;     /* 18px · títulos de card */
+    --portal-font-xl: 1.375rem;     /* 22px · títulos de seção */
+    --portal-font-2xl: 2rem;        /* 32px · títulos destacados */
+
+    --portal-line-tight: 1.12;
+    --portal-line-ui: 1.4;
+    --portal-line-body: 1.6;
+
+    /* Componentes compartilhados */
+    --portal-standard-hero-radius: 22px;
+    --portal-standard-card-radius: 17px;
+    --portal-standard-control-radius: 12px;
+    --portal-standard-search-height: 62px;
+    --portal-standard-control-font: var(--portal-font-xs);
+    --portal-standard-body-font: var(--portal-font-sm);
+}
