@@ -54,7 +54,7 @@ def _compact_credential(
     with ui.element("section").classes("portal-access-card-credential"):
         with ui.row().classes("portal-access-card-credential-head"):
             with ui.row().classes("portal-access-card-credential-title-wrap"):
-                ui.icon("shield_lock")
+                ui.icon("lock")
                 ui.label(
                     credential.identification or "Acesso principal"
                 ).classes("portal-access-card-credential-title")
@@ -279,7 +279,7 @@ def _portal_card(
                         with ui.row().classes(
                             "portal-access-card-credential-title-wrap"
                         ):
-                            ui.icon("shield_lock")
+                            ui.icon("lock")
                             ui.label("Credencial de acesso").classes(
                                 "portal-access-card-credential-title"
                             )
@@ -347,7 +347,7 @@ def render_portais(user: dict) -> None:
                 for icon, title, subtitle in (
                     ("search", "Localize", "o portal correto"),
                     ("route", "Confira", "como acessar"),
-                    ("shield_lock", "Acesse", "com segurança"),
+                    ("lock", "Acesse", "com segurança"),
                 ):
                     with ui.element("div").classes("portal-access-hero-step"):
                         with ui.element("div").classes("portal-access-hero-step-icon"):
@@ -842,7 +842,7 @@ def render_portal_detail(user: dict, portal_id: str) -> None:
                     with ui.element("div").classes(
                         "portal-system-credentials-icon"
                     ):
-                        ui.icon("shield_lock")
+                        ui.icon("lock")
                     with ui.column().classes("portal-system-credentials-copy"):
                         ui.label("Credenciais de acesso").classes(
                             "portal-system-credentials-title"
