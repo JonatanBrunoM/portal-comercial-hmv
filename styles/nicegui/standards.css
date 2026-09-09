@@ -1239,3 +1239,167 @@
     .portal-consultants-hero-flow { grid-template-columns: 1fr; }
     .portal-hero-art--consultants { display: none; }
 }
+
+/* ========================================================================== 
+   Etapa 20 · Comunicados
+   Mesma anatomia de hero dos módulos; identidade editorial própria.
+   ========================================================================== */
+
+.portal-communications-hero {
+    --portal-hero-start: #005691;
+    --portal-hero-end: #7b5f9d;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    width: 100%;
+    min-height: 252px;
+    padding: 32px 40px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(290px, .62fr);
+    align-items: center;
+    gap: 38px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 70% -15%, rgba(255, 255, 255, .11), transparent 26rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #426a9a 54%, var(--portal-hero-end) 100%);
+    box-shadow: 0 17px 40px rgba(0, 61, 102, .13);
+    color: #fff;
+}
+
+.portal-communications-hero-copy {
+    position: relative;
+    z-index: 4;
+    width: 100%;
+    max-width: 770px;
+}
+.portal-communications-hero-kicker {
+    color: rgba(255, 255, 255, .72) !important;
+    font-size: var(--portal-font-2xs);
+    font-weight: 820;
+    letter-spacing: .14em;
+    line-height: 1.2;
+}
+.portal-communications-hero-title {
+    max-width: 770px;
+    margin-top: 9px;
+    color: #fff !important;
+    font-size: clamp(34px, 3vw, 44px) !important;
+    font-weight: 790 !important;
+    letter-spacing: -.043em !important;
+    line-height: 1.03 !important;
+}
+.portal-communications-hero-description {
+    max-width: 710px;
+    margin-top: 12px;
+    color: rgba(255, 255, 255, .82) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+.portal-communications-hero-flow {
+    position: relative;
+    z-index: 5;
+    display: grid;
+    width: 100%;
+    max-width: 330px;
+    justify-self: end;
+    gap: 9px;
+}
+.portal-communications-hero-step {
+    display: grid !important;
+    width: 100%;
+    min-height: 59px;
+    padding: 7px 12px 7px 7px !important;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    border: 1px solid rgba(255, 255, 255, .16) !important;
+    border-radius: 13px !important;
+    background: rgba(255, 255, 255, .09) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045) !important;
+    backdrop-filter: blur(8px);
+}
+.portal-communications-hero-step-icon {
+    display: grid;
+    width: 42px !important;
+    height: 42px !important;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .09) !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, .13) !important;
+    color: #fff !important;
+}
+.portal-communications-hero-step-icon .q-icon { font-size: 19px !important; }
+.portal-communications-hero-step-copy { min-width: 0; gap: 1px !important; }
+.portal-communications-hero-step-title {
+    color: rgba(255, 255, 255, .97) !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+    text-transform: uppercase;
+}
+.portal-communications-hero-step-subtitle {
+    color: rgba(255, 255, 255, .68) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+}
+
+.portal-hero-art--communications {
+    right: 288px;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    opacity: .47;
+    transform: translateY(-50%) rotate(5deg);
+}
+.portal-hero-art--communications .portal-hero-art-core { border-radius: 18px; }
+.portal-hero-art--communications .node-1 { top: 31px; left: 132px; }
+.portal-hero-art--communications .node-2 { top: 86px; right: 25px; }
+.portal-hero-art--communications .node-3 { right: 53px; bottom: 38px; }
+.portal-hero-art--communications .node-4 { left: 55px; bottom: 49px; }
+.portal-hero-art--communications .node-5 { top: 92px; left: 24px; }
+.portal-hero-art--communications .arc-one { transform: rotate(18deg); }
+.portal-hero-art--communications .arc-two { transform: rotate(-20deg); }
+
+@media (max-width: 1180px) {
+    .portal-communications-hero {
+        grid-template-columns: minmax(0, 1fr) 285px;
+        padding: 30px 32px;
+        gap: 28px;
+    }
+    .portal-hero-art--communications {
+        right: 248px;
+        width: 240px;
+        height: 240px;
+    }
+}
+@media (max-width: 980px) {
+    .portal-hero-art--communications { right: 225px; opacity: .27; }
+}
+@media (max-width: 860px) {
+    .portal-communications-hero {
+        min-height: auto;
+        padding: 28px 26px;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .portal-communications-hero-flow {
+        max-width: none;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .portal-hero-art--communications {
+        right: -35px;
+        top: 24px;
+        width: 220px;
+        height: 220px;
+        opacity: .2;
+        transform: none;
+    }
+    .portal-communications-hero-title { font-size: clamp(29px, 8vw, 36px) !important; }
+    .portal-communications-hero-description { font-size: 13px !important; }
+}
+@media (max-width: 640px) {
+    .portal-communications-hero { padding: 24px 20px; }
+    .portal-communications-hero-flow { grid-template-columns: 1fr; }
+    .portal-hero-art--communications { display: none; }
+}
