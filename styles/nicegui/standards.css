@@ -1704,3 +1704,231 @@
 .portal-admin-hero {
     border-radius: var(--portal-standard-hero-radius) !important;
 }
+
+/* ========================================================================== 
+   Etapa 20C · Premium Polish
+   Microinterações e acabamento transversal, sem alterar estrutura ou fluxo.
+   ========================================================================== */
+
+:root {
+    --portal-premium-ease: cubic-bezier(.2, .72, .2, 1);
+    --portal-premium-fast: 150ms;
+    --portal-premium-normal: 220ms;
+    --portal-premium-shadow-hover: 0 14px 32px rgba(16, 43, 59, .10);
+    --portal-premium-ring: 0 0 0 4px rgba(0, 86, 145, .10);
+}
+
+/* 1. Entrada suave do conteúdo: curta o bastante para não atrasar o trabalho. */
+.portal-content {
+    animation: portal-premium-page-in 240ms var(--portal-premium-ease) both;
+}
+
+@keyframes portal-premium-page-in {
+    from { opacity: .01; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 2. Foco de teclado claro e institucional. */
+.portal-app-shell :where(.q-btn, button, a, [role="button"]):focus-visible {
+    outline: 2px solid rgba(0, 86, 145, .62) !important;
+    outline-offset: 3px;
+}
+
+/* 3. Botões ganham resposta tátil consistente sem saltos exagerados. */
+.portal-app-shell .q-btn {
+    transition:
+        transform var(--portal-premium-fast) var(--portal-premium-ease),
+        background-color var(--portal-premium-fast) ease,
+        border-color var(--portal-premium-fast) ease,
+        color var(--portal-premium-fast) ease,
+        box-shadow var(--portal-premium-fast) ease !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-app-shell .q-btn:not(.portal-nav-item):not([disabled]):hover {
+        transform: translateY(-1px);
+    }
+}
+
+.portal-app-shell .q-btn:not([disabled]):active {
+    transform: translateY(0) scale(.985);
+}
+
+/* 4. Campos de busca e formulário: foco mais nítido, sem trocar o layout. */
+.portal-app-shell .q-field__control {
+    transition:
+        border-color var(--portal-premium-fast) ease,
+        box-shadow var(--portal-premium-fast) ease,
+        background-color var(--portal-premium-fast) ease;
+}
+
+.portal-app-shell .q-field--focused .q-field__control {
+    box-shadow: var(--portal-premium-ring);
+}
+
+/* 5. Cards operacionais: elevação discreta e borda mais precisa no hover. */
+.portal-operator-card,
+.portal-access-card,
+.portal-document-card,
+.portal-contact-card,
+.portal-consultant-card,
+.portal-wallet-card,
+.portal-communication-gallery-card,
+.portal-contingency-history-card,
+.portal-contingency-live-card,
+.portal-admin-module-card,
+.portal-admin-security-card,
+.portal-search-result {
+    transition:
+        transform var(--portal-premium-normal) var(--portal-premium-ease),
+        box-shadow var(--portal-premium-normal) ease,
+        border-color var(--portal-premium-normal) ease !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-operator-card:hover,
+    .portal-access-card:hover,
+    .portal-document-card:hover,
+    .portal-contact-card:hover,
+    .portal-consultant-card:hover,
+    .portal-wallet-card:hover,
+    .portal-communication-gallery-card:hover,
+    .portal-contingency-history-card:hover,
+    .portal-admin-module-card:hover,
+    .portal-admin-security-card:hover,
+    .portal-search-result:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 86, 145, .19) !important;
+        box-shadow: var(--portal-premium-shadow-hover) !important;
+    }
+
+    /* Contingência ativa permanece firme: destaque vem da urgência, não de movimento. */
+    .portal-contingency-live-card:hover {
+        border-color: rgba(190, 73, 61, .28) !important;
+        box-shadow: 0 14px 34px rgba(128, 63, 53, .09) !important;
+    }
+}
+
+/* 6. Ações e setas dos cards respondem ao hover do conjunto. */
+.portal-operator-card .q-icon,
+.portal-access-card .q-icon,
+.portal-document-card .q-icon,
+.portal-contact-card .q-icon,
+.portal-consultant-card .q-icon,
+.portal-admin-module-arrow,
+.portal-search-result-action {
+    transition: transform var(--portal-premium-normal) var(--portal-premium-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-admin-module-card:hover .portal-admin-module-arrow,
+    .portal-search-result:hover .portal-search-result-action {
+        transform: translateX(3px);
+    }
+}
+
+/* 7. Chips/filtros ficam mais vivos sem virar botões chamativos. */
+.portal-app-shell :where(.q-chip, .portal-access-operator-button, .portal-search-filter-button) {
+    transition:
+        transform var(--portal-premium-fast) var(--portal-premium-ease),
+        background-color var(--portal-premium-fast) ease,
+        border-color var(--portal-premium-fast) ease,
+        box-shadow var(--portal-premium-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-app-shell .q-chip:hover {
+        transform: translateY(-1px);
+    }
+}
+
+/* 8. Navegação compacta: ícone ativo recebe profundidade sem aumentar o bloco. */
+.portal-nav-item .portal-nav-icon {
+    transition:
+        transform var(--portal-premium-normal) var(--portal-premium-ease),
+        color var(--portal-premium-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-nav-item:hover .portal-nav-icon {
+        transform: scale(1.06);
+    }
+}
+
+.portal-nav-item.is-active .portal-nav-icon {
+    filter: drop-shadow(0 3px 6px rgba(35, 166, 224, .20));
+}
+
+/* 9. Topbar: foco da busca ganha uma leitura premium e previsível. */
+.portal-topbar-search {
+    transition:
+        border-color var(--portal-premium-fast) ease,
+        box-shadow var(--portal-premium-fast) ease,
+        background-color var(--portal-premium-fast) ease;
+}
+
+.portal-topbar-search:focus-within {
+    box-shadow: 0 6px 18px rgba(0, 86, 145, .08), var(--portal-premium-ring) !important;
+}
+
+/* 10. Arte dos heroes ganha vida mínima, mantendo legibilidade e identidade. */
+.portal-hero-art-node {
+    animation: portal-premium-node-breathe 5.4s ease-in-out infinite;
+}
+
+.portal-hero-art-node:nth-of-type(2n) { animation-delay: -1.8s; }
+.portal-hero-art-node:nth-of-type(3n) { animation-delay: -3.4s; }
+
+@keyframes portal-premium-node-breathe {
+    0%, 100% { opacity: .54; }
+    50%      { opacity: .92; }
+}
+
+.portal-hero-art-core {
+    transition:
+        box-shadow 320ms ease,
+        border-color 320ms ease,
+        background-color 320ms ease;
+}
+
+/* 11. Galeria de Comunicados recebe uma resposta editorial própria. */
+.portal-communication-gallery-card {
+    overflow: hidden;
+}
+
+.portal-communication-gallery-card :where(.portal-communication-gallery-cover, .portal-communication-cover) {
+    transition: transform 420ms var(--portal-premium-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portal-communication-gallery-card:hover :where(.portal-communication-gallery-cover, .portal-communication-cover) {
+        transform: scale(1.012);
+    }
+}
+
+/* 12. Seleção de texto e scrollbars mantêm a identidade do produto. */
+.portal-app-shell ::selection {
+    background: rgba(0, 86, 145, .18);
+    color: var(--portal-ink-950);
+}
+
+.portal-content {
+    scrollbar-color: rgba(0, 86, 145, .22) transparent;
+}
+
+/* Acessibilidade: nenhuma animação é obrigatória para compreender ou operar o Portal. */
+@media (prefers-reduced-motion: reduce) {
+    .portal-content,
+    .portal-hero-art-node {
+        animation: none !important;
+    }
+
+    .portal-app-shell *,
+    .portal-app-shell *::before,
+    .portal-app-shell *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
