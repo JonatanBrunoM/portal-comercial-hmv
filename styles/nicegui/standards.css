@@ -1609,3 +1609,55 @@
         display: none;
     }
 }
+
+
+/* ========================================================================== 
+   Etapa 20 · Administração
+   A central administrativa usa o mesmo vocabulário gráfico dos heroes públicos,
+   com composição mais técnica e sóbria para reforçar governança e controle.
+   ========================================================================== */
+.portal-hero-art--admin {
+    right: 315px;
+    top: 50%;
+    width: 300px;
+    height: 300px;
+    opacity: .38;
+    transform: translateY(-50%) rotate(7deg);
+}
+
+.portal-hero-art--admin .portal-hero-art-core {
+    border-radius: 24px;
+    transform: rotate(-7deg);
+}
+
+.portal-hero-art--admin .node-1 { top: 31px; left: 132px; }
+.portal-hero-art--admin .node-2 { top: 67px; right: 31px; }
+.portal-hero-art--admin .node-3 { right: 49px; bottom: 41px; }
+.portal-hero-art--admin .node-4 { left: 54px; bottom: 39px; }
+.portal-hero-art--admin .node-5 { top: 96px; left: 27px; }
+.portal-hero-art--admin .arc-one { transform: rotate(44deg); }
+.portal-hero-art--admin .arc-two { transform: rotate(-42deg); }
+
+@media (max-width: 1180px) {
+    .portal-hero-art--admin {
+        right: 270px;
+        width: 250px;
+        height: 250px;
+        opacity: .28;
+    }
+}
+
+@media (max-width: 920px) {
+    .portal-hero-art--admin {
+        right: -30px;
+        top: 21px;
+        width: 220px;
+        height: 220px;
+        opacity: .16;
+        transform: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .portal-hero-art--admin { display: none; }
+}
