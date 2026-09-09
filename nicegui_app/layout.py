@@ -7,7 +7,7 @@ from typing import Iterator
 
 from nicegui import ui
 
-from nicegui_app.brand import BRAND_LOGO, BRAND_LOGO_WHITE, BRAND_LOGO_MINI
+from nicegui_app.brand import BRAND_LOGO, BRAND_LOGO_MINI, BRAND_LOGO_WHITE
 
 
 NAV_ITEMS = (
@@ -76,10 +76,14 @@ class PortalNavigationState:
     """Mantém menu e contexto da topbar sem reconstruir o shell."""
 
     items: list[tuple[str, object]] = field(default_factory=list)
+    grouped_items: list[tuple[tuple[str, ...], object]] = field(default_factory=list)
     context_label: object | None = None
 
     def register(self, target: str, button: object) -> None:
         self.items.append((target, button))
+
+    def register_group(self, targets: tuple[str, ...], button: object) -> None:
+        self.grouped_items.append((targets, button))
 
     def bind_context_label(self, label: object) -> None:
         self.context_label = label
@@ -89,6 +93,12 @@ class PortalNavigationState:
 
         for target, button in self.items:
             if _path_matches(target, path):
+                button.classes(add="is-active")
+            else:
+                button.classes(remove="is-active")
+
+        for targets, button in self.grouped_items:
+            if any(_path_matches(target, path) for target in targets):
                 button.classes(add="is-active")
             else:
                 button.classes(remove="is-active")
@@ -130,6 +140,8 @@ def _nav_button(
 
 def _brand() -> None:
     with ui.element("div").classes("portal-brand"):
+        # A versão completa aparece na sidebar aberta. Em modo compacto,
+        # exibimos somente o símbolo institucional do favicon.
         ui.image(BRAND_LOGO_WHITE).classes("portal-brand-hmv-logo")
         ui.image(BRAND_LOGO_MINI).classes("portal-brand-mini-logo")
         ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
@@ -269,8 +281,14 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
                     ui.label("Sair da conta")
 
 
-def _mobile_navigation(navigation: PortalNavigationState) -> None:
+def _mobile_navigation(navigation: PortalNavigationState, user: dict) -> None:
+    # Mantém os cinco atalhos principais e concentra os módulos restantes em
+    # "Ver mais", evitando que opções desapareçam em telas de telefone.
     visible = NAV_ITEMS[:5]
+    overflow = list(NAV_ITEMS[5:])
+    if user.get("role") == "admin":
+        overflow.extend(ADMIN_ITEMS)
+
     with ui.element("nav").classes("portal-mobile-nav"):
         for key, icon, label, target in visible:
             _nav_button(
@@ -281,6 +299,32 @@ def _mobile_navigation(navigation: PortalNavigationState) -> None:
                 navigation=navigation,
                 mobile=True,
             )
+
+        more_button = ui.button().props("flat no-caps").classes(
+            "portal-mobile-nav-item portal-mobile-more-button"
+        )
+        with more_button:
+            ui.icon("more_horiz").classes("portal-nav-icon")
+            ui.label("Ver mais").classes("portal-nav-label")
+
+            with ui.menu().props(
+                'anchor="top right" self="bottom right"'
+            ).classes("portal-mobile-more-menu"):
+                ui.label("MAIS OPÇÕES").classes("portal-mobile-more-title")
+                for key, icon, label, target in overflow:
+                    def navigate_to(route: str = target) -> None:
+                        ui.navigate.to(route)
+
+                    with ui.menu_item(on_click=navigate_to).classes(
+                        "portal-mobile-more-item"
+                    ):
+                        ui.icon(icon).classes("portal-mobile-more-icon")
+                        ui.label(label).classes("portal-mobile-more-label")
+
+        navigation.register_group(
+            tuple(target for _, _, _, target in overflow),
+            more_button,
+        )
 
 
 def _page_header(
@@ -328,7 +372,7 @@ def portal_shell(*, user: dict) -> Iterator[PortalNavigationState]:
             with ui.element("main").classes("portal-content portal-spa-content"):
                 yield navigation
 
-        _mobile_navigation(navigation)
+        _mobile_navigation(navigation, user)
 
 
 @contextmanager
@@ -371,7 +415,7 @@ def portal_layout(
                 )
                 yield
 
-        _mobile_navigation(navigation)
+        _mobile_navigation(navigation, user)
 
     # Compatibilidade visual quando uma página ainda for aberta isoladamente.
     target_by_key = {
