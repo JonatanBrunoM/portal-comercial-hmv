@@ -7,7 +7,7 @@ from typing import Iterator
 
 from nicegui import ui
 
-from nicegui_app.brand import BRAND_FAVICON, BRAND_LOGO, BRAND_LOGO_WHITE
+from nicegui_app.brand import BRAND_LOGO, BRAND_LOGO_WHITE
 
 
 NAV_ITEMS = (
@@ -130,10 +130,8 @@ def _nav_button(
 
 def _brand() -> None:
     with ui.element("div").classes("portal-brand"):
-        # A versão completa aparece na sidebar aberta. Em modo compacto,
-        # exibimos somente o símbolo institucional do favicon.
         ui.image(BRAND_LOGO_WHITE).classes("portal-brand-hmv-logo")
-        ui.image(BRAND_FAVICON).classes("portal-brand-mini-logo")
+        ui.image(BRAND_LOGO_WHITE).classes("portal-brand-mini-logo")
         ui.label("PORTAL COMERCIAL").classes("portal-brand-title")
 
 
