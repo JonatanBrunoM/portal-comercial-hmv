@@ -3,7 +3,7 @@ from __future__ import annotations
 from nicegui import ui
 
 
-_VARIANTS = {"home", "search", "operators", "portals", "documents", "contacts", "consultants", "communications"}
+_VARIANTS = {"home", "search", "operators", "portals", "documents", "contacts", "consultants", "communications", "contingencies"}
 
 
 def render_hero_art(*, variant: str, icon: str) -> None:
