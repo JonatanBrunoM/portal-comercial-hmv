@@ -1,4 +1,4 @@
-/* ==========================================================================
+
    Etapa 15B · Pesquisa Inteligente
    Layout compacto, orientado à tarefa e responsivo
    ========================================================================== */
@@ -720,12 +720,26 @@ body:has(.portal-search-workspace) .portal-spa-page {
 }
 
 /*
- * Em desktop o campo acompanha o painel. Antes ele parava em 920px e criava
- * uma faixa vazia à direita em resoluções intermediárias.
+ * Em desktop, a busca continua protagonista sem ocupar todo o hero.
+ * A largura reduzida preserva uma área livre à direita para a arte temática.
  */
 .portal-search-box {
-    width: 100% !important;
-    max-width: none !important;
+    width: min(78%, 900px) !important;
+    max-width: 900px !important;
+}
+
+@media (max-width: 1040px) {
+    .portal-search-box {
+        width: min(86%, 820px) !important;
+        max-width: 820px !important;
+    }
+}
+
+@media (max-width: 760px) {
+    .portal-search-box {
+        width: 100% !important;
+        max-width: none !important;
+    }
 }
 
 /* Distribui melhor os controles na largura total. */
