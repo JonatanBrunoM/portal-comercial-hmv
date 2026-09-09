@@ -1,228 +1,271 @@
-.portal-contingencies-summary {
+.portal-contingencies-command-strip {
     display: flex;
     width: 100%;
-    min-height: 156px;
-    padding: 28px 30px;
+    margin-top: 22px;
+    padding: 22px 24px;
     align-items: center;
     justify-content: space-between;
     gap: 28px;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: var(--portal-radius-lg);
-    background:
-        radial-gradient(circle at 86% 20%, rgba(0, 86, 145, .08), transparent 17rem),
-        var(--portal-white);
-    box-shadow: var(--portal-shadow-xs);
-}
-
-.portal-contingencies-summary-copy {
-    gap: 2px;
-}
-
-.portal-contingencies-summary-value {
-    margin-top: 4px;
-    color: var(--portal-primary-950);
-    font-size: clamp(1.8rem, 3vw, 2.65rem);
-    font-weight: 790;
-    letter-spacing: -.04em;
-}
-
-.portal-contingencies-summary-description {
-    margin-top: 5px;
-    color: var(--portal-ink-500);
-    font-size: .78rem;
-}
-
-.portal-contingencies-summary-stats {
-    flex-wrap: nowrap;
-    gap: 10px;
-}
-
-.portal-contingencies-mini-stat {
-    min-width: 118px;
-    padding: 15px 17px;
-    gap: 1px;
     border: 1px solid var(--portal-ink-100);
-    border-radius: 14px;
-    background: rgba(248, 251, 252, .9);
-}
-
-.portal-contingencies-mini-value {
-    color: var(--portal-primary-900);
-    font-size: 1.35rem;
-    font-weight: 820;
-}
-
-.portal-contingencies-mini-label {
-    color: var(--portal-ink-500);
-    font-size: .65rem;
-}
-
-.portal-contingencies-active-heading {
-    margin-top: 28px;
-}
-
-.portal-contingencies-toolbar {
-    display: flex;
-    width: 100%;
-    margin-top: 28px;
-    align-items: center;
-    gap: 12px;
-}
-
-.portal-contingencies-search {
-    flex: 1 1 auto;
-}
-
-.portal-contingencies-filter {
-    width: 175px;
-    flex: 0 0 auto;
-}
-
-.portal-contingencies-count {
-    margin: 18px 2px 10px;
-    color: var(--portal-ink-500);
-    font-size: .68rem;
-    font-weight: 680;
-}
-
-.portal-contingencies-grid {
-    display: grid;
-    width: 100%;
-    margin-top: 12px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-}
-
-.portal-contingency-card {
-    display: flex;
-    min-height: 355px;
-    padding: 22px;
-    flex-direction: column;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 20px;
+    border-radius: 18px;
     background: var(--portal-white);
     box-shadow: var(--portal-shadow-xs);
 }
 
-.portal-contingency-card-top {
+.portal-contingencies-command-copy {
+    min-width: 0;
+    max-width: 680px;
+    gap: 2px;
+}
+
+.portal-contingencies-command-title {
+    margin-top: 4px;
+    color: var(--portal-primary-950);
+    font-size: 20px;
+    font-weight: 790;
+    letter-spacing: -.025em;
+}
+
+.portal-contingencies-command-description {
+    margin-top: 6px;
+    color: var(--portal-ink-500);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.portal-contingencies-command-stats {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 9px;
+}
+
+.portal-contingencies-command-stat {
+    min-width: 112px;
+    min-height: 78px;
+    padding: 13px 15px;
+    justify-content: center;
+    gap: 1px;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 14px;
+    background: #f8fafb;
+}
+
+.portal-contingencies-command-stat.is-active {
+    border-color: #cde5da;
+    background: #f2faf6;
+}
+
+.portal-contingencies-command-stat.is-critical {
+    border-color: #f0d1ce;
+    background: #fff5f4;
+}
+
+.portal-contingencies-command-value {
+    color: var(--portal-primary-950);
+    font-size: 23px;
+    font-weight: 820;
+    letter-spacing: -.035em;
+}
+
+.portal-contingencies-command-stat.is-active .portal-contingencies-command-value {
+    color: #236f4e;
+}
+
+.portal-contingencies-command-stat.is-critical .portal-contingencies-command-value {
+    color: #a54038;
+}
+
+.portal-contingencies-command-label {
+    color: var(--portal-ink-500);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.portal-contingencies-section-head,
+.portal-contingencies-results-head {
+    display: flex;
     width: 100%;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+    gap: 22px;
 }
 
-.portal-contingency-icon,
-.portal-contingency-detail-icon {
+.portal-contingencies-section-head {
+    margin-top: 30px;
+}
+
+.portal-contingencies-section-copy,
+.portal-contingencies-results-copy {
+    gap: 1px;
+}
+
+.portal-contingencies-section-kicker,
+.portal-contingencies-results-kicker {
+    color: #a3453d;
+    font-size: 11px;
+    font-weight: 820;
+    letter-spacing: .13em;
+}
+
+.portal-contingencies-section-title,
+.portal-contingencies-results-title {
+    color: var(--portal-primary-950);
+    font-size: 20px;
+    font-weight: 790;
+    letter-spacing: -.025em;
+}
+
+.portal-contingencies-live-indicator {
+    display: inline-flex;
+    min-height: 32px;
+    padding: 0 12px;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #cde5da;
+    border-radius: 999px;
+    background: #f2faf6;
+    color: #2b7052;
+    font-size: 11px;
+    font-weight: 720;
+}
+
+.portal-contingencies-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #2f8c64;
+    box-shadow: 0 0 0 4px rgba(47, 140, 100, .1);
+}
+
+.portal-contingencies-live-list {
     display: grid;
-    place-items: center;
-    background: #fff8ef;
-    color: #a96d1b;
+    width: 100%;
+    margin-top: 12px;
+    gap: 14px;
 }
 
-.portal-contingency-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 15px;
+.portal-contingency-live-card {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding: 20px;
+    border: 1px solid #dbe4e8;
+    border-left: 4px solid #6e8a97;
+    border-radius: 18px;
+    background: var(--portal-white);
+    box-shadow: 0 10px 28px rgba(13, 48, 65, .06);
+}
+
+.portal-contingency-live-card.is-medium {
+    border-left-color: #d59232;
+}
+
+.portal-contingency-live-card.is-high {
+    border-color: #efd4d0;
+    border-left-color: #b7483f;
+    background:
+        linear-gradient(90deg, rgba(183, 72, 63, .035), transparent 24%),
+        var(--portal-white);
+}
+
+.portal-contingency-live-head {
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.portal-contingency-live-identity {
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+.portal-contingency-live-icon {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 14px;
+    background: #fff3f1;
+    color: #a8453d;
+}
+
+.portal-contingency-live-icon .q-icon {
+    font-size: 22px;
+}
+
+.portal-contingency-live-heading-copy {
+    min-width: 0;
+    gap: 2px;
+}
+
+.portal-contingency-live-operator,
+.portal-contingency-history-operator {
+    color: var(--portal-primary-700);
+    font-size: 12px;
+    font-weight: 760;
+}
+
+.portal-contingency-live-title {
+    color: var(--portal-primary-950);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.2;
+}
+
+.portal-contingency-live-badges {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
 }
 
 .portal-contingency-priority,
 .portal-contingency-status {
     display: inline-flex;
-    min-height: 27px;
+    min-height: 28px;
     padding: 0 10px;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     border-radius: 999px;
-    font-size: .59rem;
-    font-weight: 740;
+    font-size: 11px;
+    font-weight: 760;
+    white-space: nowrap;
 }
 
-.portal-contingency-priority {
-    background: #f4f7f8;
-    color: var(--portal-ink-600);
-}
-
-.portal-contingency-priority.is-medium {
-    background: #fff6e8;
-    color: #956117;
-}
-
-.portal-contingency-priority.is-high {
-    background: #fff0ef;
-    color: #a13c34;
-}
-
-.portal-contingency-title {
-    margin-top: 21px;
-    color: var(--portal-primary-950);
-    font-size: 1.14rem;
-    font-weight: 790;
-    letter-spacing: -.025em;
-    line-height: 1.2;
-}
-
-.portal-contingency-operator {
-    margin-top: 6px;
-    color: var(--portal-primary-700);
-    font-size: .66rem;
-    font-weight: 730;
-}
-
-.portal-contingency-meta {
-    margin-top: 4px;
-    color: var(--portal-ink-500);
-    font-size: .61rem;
-}
-
-.portal-contingency-description {
-    display: -webkit-box;
-    margin-top: 14px;
-    overflow: hidden;
-    color: var(--portal-ink-600);
-    font-size: .69rem;
-    line-height: 1.55;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-}
-
-.portal-contingency-info {
-    margin-top: 15px;
-    gap: 7px;
-}
-
-.portal-contingency-info-line {
-    align-items: flex-start;
-    gap: 6px;
-    color: var(--portal-ink-500);
-}
-
-.portal-contingency-info-line .q-icon {
+.portal-contingency-priority .q-icon {
     font-size: 14px;
 }
 
-.portal-contingency-info-line .q-label {
-    font-size: .61rem;
-    line-height: 1.4;
+.portal-contingency-priority {
+    background: #f2f5f6;
+    color: #667982;
 }
 
-.portal-contingency-actions {
-    width: 100%;
-    margin-top: auto;
-    padding-top: 15px;
-    align-items: center;
-    justify-content: space-between;
-    border-top: 1px solid var(--portal-ink-100);
+.portal-contingency-priority.is-medium {
+    background: #fff5e8;
+    color: #966018;
+}
+
+.portal-contingency-priority.is-high {
+    background: #fff0ee;
+    color: #a13f37;
 }
 
 .portal-contingency-status {
-    border: 1px solid #dfdfdf;
-    background: #f7f7f7;
-    color: #666;
+    border: 1px solid #dde3e6;
+    background: #f7f9fa;
+    color: #64737a;
 }
 
 .portal-contingency-status.is-active {
-    border-color: #cae7db;
-    background: #f1fbf6;
-    color: #23714f;
+    border-color: #c8e3d5;
+    background: #f0faf5;
+    color: #24714f;
 }
 
 .portal-contingency-status-dot {
@@ -232,211 +275,674 @@
     background: currentColor;
 }
 
-.portal-contingency-button,
+.portal-contingency-live-scope {
+    margin: 12px 0 0 58px;
+    align-items: center;
+    gap: 5px;
+    color: var(--portal-ink-500);
+    font-size: 12px;
+}
+
+.portal-contingency-live-scope .q-icon {
+    font-size: 14px;
+}
+
+.portal-contingency-response-grid {
+    display: grid;
+    width: 100%;
+    margin-top: 17px;
+    grid-template-columns: 1fr 1.15fr .8fr;
+    gap: 9px;
+}
+
+.portal-contingency-response-block {
+    min-width: 0;
+    min-height: 122px;
+    padding: 14px 15px;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 14px;
+    background: #fafcfc;
+}
+
+.portal-contingency-response-block.is-action {
+    border-color: #c9dfe8;
+    background: #f3f9fb;
+}
+
+.portal-contingency-response-block.is-support {
+    border-color: #eadfc9;
+    background: #fffaf2;
+}
+
+.portal-contingency-response-label {
+    align-items: center;
+    gap: 6px;
+    color: var(--portal-ink-500);
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: .1em;
+}
+
+.portal-contingency-response-block.is-action .portal-contingency-response-label {
+    color: #176c8f;
+}
+
+.portal-contingency-response-block.is-support .portal-contingency-response-label {
+    color: #8d681e;
+}
+
+.portal-contingency-response-label .q-icon {
+    font-size: 16px;
+}
+
+.portal-contingency-response-text {
+    display: -webkit-box;
+    margin-top: 9px;
+    overflow: hidden;
+    color: var(--portal-ink-700);
+    font-size: 13px;
+    font-weight: 560;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.portal-contingency-live-footer {
+    width: 100%;
+    margin-top: 14px;
+    padding-top: 13px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid var(--portal-ink-100);
+}
+
+.portal-contingency-live-period {
+    align-items: center;
+    gap: 6px;
+    color: var(--portal-ink-500);
+    font-size: 12px;
+}
+
+.portal-contingency-live-period .q-icon {
+    font-size: 15px;
+}
+
+.portal-contingency-live-button,
+.portal-contingencies-search-button {
+    background: var(--portal-primary-700) !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 760 !important;
+}
+
+.portal-contingency-live-button {
+    min-height: 38px;
+    padding: 0 15px;
+    border-radius: 11px;
+}
+
+.portal-contingencies-all-clear {
+    display: flex;
+    width: 100%;
+    margin-top: 28px;
+    padding: 20px 22px;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid #cce3d7;
+    border-radius: 18px;
+    background: #f3faf6;
+}
+
+.portal-contingencies-all-clear-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 15px;
+    background: #e4f4eb;
+    color: #28704f;
+}
+
+.portal-contingencies-all-clear-copy {
+    gap: 1px;
+}
+
+.portal-contingencies-all-clear-kicker {
+    color: #347659;
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: .11em;
+}
+
+.portal-contingencies-all-clear-title {
+    margin-top: 3px;
+    color: var(--portal-primary-950);
+    font-size: 17px;
+    font-weight: 780;
+}
+
+.portal-contingencies-all-clear-description {
+    margin-top: 3px;
+    color: var(--portal-ink-500);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.portal-contingencies-search-panel {
+    width: 100%;
+    margin-top: 30px;
+    padding: 15px;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 17px;
+    background: var(--portal-white);
+    box-shadow: var(--portal-shadow-xs);
+}
+
+.portal-contingencies-search-row {
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--portal-ink-200);
+    border-radius: 13px;
+    background: #f9fbfc;
+}
+
+.portal-contingencies-search {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.portal-contingencies-search .q-field__control {
+    min-height: 48px !important;
+}
+
+.portal-contingencies-search-button {
+    min-height: 38px;
+    margin-right: 5px;
+    padding: 0 16px;
+    border-radius: 10px;
+}
+
+.portal-contingencies-filters {
+    width: 100%;
+    margin-top: 10px;
+    align-items: center;
+    gap: 10px;
+}
+
+.portal-contingencies-filter {
+    width: 190px;
+    max-width: 100%;
+}
+
+.portal-contingencies-results-head {
+    margin-top: 25px;
+}
+
+.portal-contingencies-results-kicker {
+    color: var(--portal-primary-600);
+}
+
+.portal-contingencies-results-note {
+    max-width: 430px;
+    color: var(--portal-ink-500);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: right;
+}
+
+.portal-contingencies-history-grid {
+    display: grid;
+    width: 100%;
+    margin-top: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.portal-contingency-history-card {
+    display: flex;
+    min-height: 330px;
+    padding: 18px;
+    flex-direction: column;
+    border: 1px solid var(--portal-ink-200);
+    border-radius: 18px;
+    background: var(--portal-white);
+    box-shadow: var(--portal-shadow-xs);
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.portal-contingency-history-card:hover {
+    transform: translateY(-2px);
+    border-color: #c7dbe4;
+    box-shadow: 0 12px 30px rgba(10, 56, 79, .08);
+}
+
+.portal-contingency-history-top {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.portal-contingency-history-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 13px;
+    background: #edf5f8;
+    color: var(--portal-primary-700);
+}
+
+.portal-contingency-history-title {
+    margin-top: 16px;
+    color: var(--portal-primary-950);
+    font-size: 16px;
+    font-weight: 790;
+    letter-spacing: -.02em;
+    line-height: 1.25;
+}
+
+.portal-contingency-history-operator {
+    margin-top: 5px;
+}
+
+.portal-contingency-history-meta {
+    margin-top: 3px;
+    color: var(--portal-ink-500);
+    font-size: 11px;
+}
+
+.portal-contingency-history-description {
+    display: -webkit-box;
+    margin-top: 12px;
+    overflow: hidden;
+    color: var(--portal-ink-600);
+    font-size: 13px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.portal-contingency-history-info {
+    margin-top: 13px;
+    gap: 6px;
+}
+
+.portal-contingency-history-info-line {
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--portal-ink-500);
+}
+
+.portal-contingency-history-info-line .q-icon {
+    margin-top: 1px;
+    font-size: 14px;
+}
+
+.portal-contingency-history-info-line .q-label {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.portal-contingency-history-actions {
+    width: 100%;
+    margin-top: auto;
+    padding-top: 13px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-top: 1px solid var(--portal-ink-100);
+}
+
+.portal-contingency-history-button,
 .portal-contingency-back-button {
     color: var(--portal-primary-700) !important;
-    font-size: .68rem;
-    font-weight: 760;
+    font-size: 12px !important;
+    font-weight: 760 !important;
 }
 
 .portal-contingencies-empty {
     display: grid;
-    min-height: 240px;
+    min-height: 220px;
     padding: 34px;
     grid-column: 1 / -1;
     place-items: center;
     align-content: center;
     border: 1px dashed var(--portal-ink-200);
-    border-radius: 20px;
+    border-radius: 18px;
     color: var(--portal-ink-400);
     text-align: center;
 }
 
 .portal-contingencies-empty > .q-icon {
-    margin-bottom: 12px;
-    font-size: 38px;
-    color: #b8863b;
+    margin-bottom: 11px;
+    font-size: 36px;
+    color: #4f869d;
 }
 
 .portal-contingencies-empty-title {
     color: var(--portal-primary-950);
-    font-size: 1rem;
-    font-weight: 760;
+    font-size: 16px;
+    font-weight: 770;
 }
 
 .portal-contingencies-empty-description {
-    max-width: 440px;
+    max-width: 460px;
     margin-top: 5px;
     color: var(--portal-ink-500);
-    font-size: .72rem;
-    line-height: 1.55;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Detalhe ------------------------------------------------------------------ */
+
+.portal-contingency-back-button {
+    margin-bottom: 7px;
 }
 
 .portal-contingency-detail-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: flex;
     width: 100%;
-    margin-top: 10px;
-    padding: 30px;
+    min-height: 240px;
+    padding: 32px 36px;
     align-items: center;
-    gap: 22px;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 24px;
+    justify-content: space-between;
+    gap: 24px;
+    border-radius: 22px;
     background:
-        radial-gradient(circle at 88% 22%, rgba(169, 109, 27, .08), transparent 20rem),
-        var(--portal-white);
+        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, .11), transparent 18rem),
+        linear-gradient(118deg, #005691 0%, #176e88 55%, #4f8491 100%);
+    box-shadow: 0 16px 38px rgba(0, 61, 102, .13);
+    color: #fff;
 }
 
-.portal-contingency-detail-icon {
-    width: 88px;
-    height: 88px;
-    flex: 0 0 auto;
-    border-radius: 24px;
+.portal-contingency-detail-hero.is-medium {
+    background:
+        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, .11), transparent 18rem),
+        linear-gradient(118deg, #005691 0%, #4f7184 55%, #b28445 100%);
 }
 
-.portal-contingency-detail-icon .q-icon {
-    font-size: 35px;
+.portal-contingency-detail-hero.is-high {
+    background:
+        radial-gradient(circle at 82% 15%, rgba(255, 255, 255, .11), transparent 18rem),
+        linear-gradient(118deg, #005691 0%, #59647c 52%, #9b554f 100%);
 }
 
 .portal-contingency-detail-copy {
+    position: relative;
+    z-index: 2;
     min-width: 0;
-    flex: 1 1 auto;
+    max-width: 780px;
     gap: 2px;
+}
+
+.portal-contingency-detail-badges {
+    margin-bottom: 12px;
+    gap: 7px;
+}
+
+.portal-contingency-detail-hero .portal-contingency-priority,
+.portal-contingency-detail-hero .portal-contingency-status {
+    border-color: rgba(255, 255, 255, .18);
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    backdrop-filter: blur(7px);
+}
+
+.portal-contingency-detail-kicker {
+    color: rgba(255, 255, 255, .72);
+    font-size: 11px;
+    font-weight: 820;
+    letter-spacing: .13em;
 }
 
 .portal-contingency-detail-title {
     margin-top: 8px;
-    color: var(--portal-primary-950);
-    font-size: clamp(2rem, 4vw, 3.4rem);
+    color: #fff;
+    font-size: clamp(32px, 4vw, 46px);
     font-weight: 790;
-    letter-spacing: -.05em;
-    line-height: 1;
+    letter-spacing: -.045em;
+    line-height: 1.03;
 }
 
 .portal-contingency-detail-operator {
-    margin-top: 8px;
-    color: var(--portal-primary-700);
-    font-size: .77rem;
-    font-weight: 720;
+    margin-top: 9px;
+    color: rgba(255, 255, 255, .8);
+    font-size: 14px;
+    font-weight: 680;
 }
 
-.portal-contingency-detail-badges {
-    margin-top: 11px;
-    gap: 7px;
+.portal-contingency-detail-shield {
+    position: relative;
+    display: grid;
+    width: 126px;
+    height: 126px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 34px;
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(8px);
+}
+
+.portal-contingency-detail-shield .q-icon {
+    position: relative;
+    z-index: 2;
+    font-size: 50px;
+}
+
+.portal-contingency-detail-shield-ring {
+    position: absolute;
+    width: 86px;
+    height: 86px;
+    border: 1px dashed rgba(255, 255, 255, .28);
+    border-radius: 50%;
 }
 
 .portal-contingency-detail-grid {
     display: grid;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 14px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 .portal-contingency-detail-item {
     display: flex;
-    min-height: 88px;
-    padding: 17px;
+    min-height: 82px;
+    padding: 14px;
     align-items: center;
-    gap: 11px;
-    border: 1px solid var(--portal-ink-200);
-    border-radius: 16px;
+    gap: 10px;
+    border: 1px solid var(--portal-ink-100);
+    border-radius: 15px;
     background: var(--portal-white);
 }
 
-.portal-contingency-detail-item > .q-icon {
-    color: var(--portal-primary-600);
-    font-size: 21px;
+.portal-contingency-detail-item-icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 11px;
+    background: #edf5f8;
+    color: var(--portal-primary-700);
 }
 
 .portal-contingency-detail-item-copy {
+    min-width: 0;
     gap: 1px;
 }
 
 .portal-contingency-detail-label {
     color: var(--portal-ink-500);
-    font-size: .6rem;
+    font-size: 11px;
 }
 
 .portal-contingency-detail-value {
     color: var(--portal-primary-950);
-    font-size: .78rem;
+    font-size: 13px;
     font-weight: 740;
+    line-height: 1.35;
 }
 
-.portal-contingency-content-card,
-.portal-contingency-guidance-card,
-.portal-contingency-contact-card {
+.portal-contingency-response-detail {
+    display: grid;
+    width: 100%;
     margin-top: 18px;
-    padding: 22px;
-    border: 1px solid var(--portal-ink-200);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 290px;
+    gap: 12px;
+    align-items: stretch;
+}
+
+.portal-contingency-detail-context,
+.portal-contingency-detail-action,
+.portal-contingency-detail-support {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--portal-ink-100);
     border-radius: 17px;
     background: var(--portal-white);
 }
 
-.portal-contingency-content {
-    margin-top: 12px;
-    color: var(--portal-ink-600);
-    font-size: .74rem;
-    line-height: 1.75;
-    white-space: pre-line;
+.portal-contingency-detail-action {
+    border-color: #cbdfe8;
+    background: #f4f9fb;
 }
 
-.portal-contingency-guidance-card {
-    border-color: #d7e4ea;
-    background: #f8fbfc;
+.portal-contingency-detail-support {
+    border-color: #eadfc9;
+    background: #fffaf2;
 }
 
-.portal-contingency-guidance-head {
+.portal-contingency-detail-section-head {
     align-items: center;
-    gap: 7px;
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+.portal-contingency-detail-section-icon,
+.portal-contingency-detail-support-icon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 12px;
+    background: #edf4f7;
     color: var(--portal-primary-700);
 }
 
-.portal-contingency-guidance-title {
+.portal-contingency-detail-action .portal-contingency-detail-section-icon {
+    background: #e6f2f6;
+    color: #176c8f;
+}
+
+.portal-contingency-detail-section-copy {
+    gap: 1px;
+}
+
+.portal-contingency-detail-section-kicker,
+.portal-contingency-detail-support-kicker {
+    color: var(--portal-ink-500);
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: .1em;
+}
+
+.portal-contingency-detail-section-title,
+.portal-contingency-detail-support-title {
     color: var(--portal-primary-950);
-    font-size: .82rem;
+    font-size: 16px;
     font-weight: 780;
 }
 
-.portal-contingency-guidance-text {
-    margin-top: 11px;
-    color: var(--portal-ink-600);
-    font-size: .74rem;
+.portal-contingency-detail-section-text {
+    margin-top: 15px;
+    color: var(--portal-ink-700);
+    font-size: 14px;
     line-height: 1.7;
     white-space: pre-line;
 }
 
-.portal-contingency-contact-card {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    border-color: #ead7ba;
-    background: #fffaf3;
-    color: #98671f;
+.portal-contingency-detail-support-icon {
+    margin-bottom: 14px;
+    background: #f5ead6;
+    color: #8b661e;
 }
 
-.portal-contingency-contact-card > .q-icon {
-    font-size: 25px;
+.portal-contingency-detail-support-title {
+    margin-top: 4px;
 }
 
-.portal-contingency-contact-copy {
-    gap: 1px;
+.portal-contingency-detail-support-value {
+    margin-top: 12px;
+    color: #79591b;
+    font-size: 17px;
+    font-weight: 790;
+    line-height: 1.35;
+    white-space: pre-line;
 }
 
-.portal-contingency-contact-label {
+.portal-contingency-detail-support-note {
+    margin-top: 9px;
     color: var(--portal-ink-500);
-    font-size: .61rem;
-}
-
-.portal-contingency-contact-value {
-    color: var(--portal-primary-950);
-    font-size: .94rem;
-    font-weight: 780;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 @media (max-width: 1180px) {
-    .portal-contingencies-grid {
+    .portal-contingencies-history-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-contingency-response-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .portal-contingency-response-block.is-support {
+        grid-column: 1 / -1;
+        min-height: auto;
+    }
+
+    .portal-contingency-response-detail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-contingency-detail-support {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 900px) {
+    .portal-contingencies-command-strip {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .portal-contingencies-command-stats {
+        width: 100%;
+    }
+
+    .portal-contingencies-command-stat {
+        min-width: 0;
+        flex: 1 1 0;
+    }
+
+    .portal-contingency-live-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .portal-contingency-live-badges {
+        padding-left: 58px;
     }
 
     .portal-contingency-detail-grid {
@@ -444,14 +950,70 @@
     }
 }
 
-@media (max-width: 760px) {
-    .portal-contingencies-summary,
-    .portal-contingency-detail-hero {
+@media (max-width: 700px) {
+    .portal-contingencies-command-strip {
+        padding: 18px;
+    }
+
+    .portal-contingencies-command-stats {
+        flex-wrap: wrap;
+    }
+
+    .portal-contingencies-command-stat {
+        flex: 1 1 calc(50% - 6px);
+    }
+
+    .portal-contingencies-section-head,
+    .portal-contingencies-results-head {
         align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .portal-contingencies-results-note {
+        text-align: left;
+    }
+
+    .portal-contingency-live-card {
+        padding: 16px;
+    }
+
+    .portal-contingency-live-badges,
+    .portal-contingency-live-scope {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .portal-contingency-response-grid,
+    .portal-contingencies-history-grid,
+    .portal-contingency-detail-grid,
+    .portal-contingency-response-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-contingency-response-block.is-support,
+    .portal-contingency-detail-support {
+        grid-column: auto;
+    }
+
+    .portal-contingency-live-footer {
+        align-items: stretch;
         flex-direction: column;
     }
 
-    .portal-contingencies-toolbar {
+    .portal-contingency-live-button {
+        width: 100%;
+    }
+
+    .portal-contingencies-search-row {
+        padding: 3px;
+    }
+
+    .portal-contingencies-search-button {
+        padding: 0 11px;
+    }
+
+    .portal-contingencies-filters {
         align-items: stretch;
         flex-direction: column;
     }
@@ -460,12 +1022,25 @@
         width: 100%;
     }
 
-    .portal-contingencies-grid,
-    .portal-contingency-detail-grid {
-        grid-template-columns: 1fr;
+    .portal-contingency-detail-hero {
+        min-height: auto;
+        padding: 26px 22px;
+        align-items: flex-start;
+        flex-direction: column;
     }
 
-    .portal-contingency-detail-hero {
-        padding: 24px 20px;
+    .portal-contingency-detail-shield {
+        width: 84px;
+        height: 84px;
+        border-radius: 24px;
+    }
+
+    .portal-contingency-detail-shield .q-icon {
+        font-size: 36px;
+    }
+
+    .portal-contingency-detail-shield-ring {
+        width: 60px;
+        height: 60px;
     }
 }
