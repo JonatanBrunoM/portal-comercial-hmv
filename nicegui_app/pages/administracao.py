@@ -214,11 +214,6 @@ def render_administracao(user: dict) -> None:
     with portal_layout(
         user=user,
         active="admin",
-        page_eyebrow="GESTÃO DO PORTAL",
-        page_title="Central de Administração",
-        page_description=(
-            "Cadastros, acessos, segurança e rastreabilidade em um único ambiente."
-        ),
     ):
         with ui.element("section").classes("portal-admin-hero"):
             render_hero_art(variant="admin", icon="admin_panel_settings")
