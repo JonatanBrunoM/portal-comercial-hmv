@@ -108,22 +108,18 @@ def render_pesquisa(user: dict) -> None:
     ):
         with ui.element("section").classes("portal-search-workspace"):
             with ui.element("div").classes("portal-search-intro"):
-                with ui.row().classes("portal-search-intro-top"):
-                    with ui.element("div").classes("portal-search-intro-icon"):
-                        ui.icon("travel_explore")
-
-                    with ui.column().classes("portal-search-intro-copy"):
-                        ui.label("PESQUISA INTELIGENTE").classes(
-                            "portal-search-kicker"
-                        )
-                        ui.label(
-                            "O que você precisa encontrar?"
-                        ).classes("portal-search-question")
-                        ui.label(
-                            "Pergunte do seu jeito. O Portal interpreta o contexto "
-                            "e procura a informação mais provável entre os registros "
-                            "oficiais cadastrados."
-                        ).classes("portal-search-helper")
+                with ui.column().classes("portal-search-intro-copy"):
+                    ui.label("PESQUISA INTELIGENTE").classes(
+                        "portal-search-kicker"
+                    )
+                    ui.label(
+                        "O que você precisa encontrar?"
+                    ).classes("portal-search-question")
+                    ui.label(
+                        "Pergunte do seu jeito. O Portal interpreta o contexto "
+                        "e procura a informação mais provável entre os registros "
+                        "oficiais cadastrados."
+                    ).classes("portal-search-helper")
 
                 render_hero_art(variant="search", icon="travel_explore")
 
