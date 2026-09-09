@@ -1661,3 +1661,46 @@
 @media (max-width: 640px) {
     .portal-hero-art--admin { display: none; }
 }
+
+/* ==========================================================================
+   Etapa 20B · Acabamento global após auditoria visual lado a lado
+   Ajustes cirúrgicos: não redesenha páginas aprovadas.
+   ========================================================================== */
+
+/* Pesquisa: alinha a abertura textual à régua dos demais heroes. */
+.portal-search-intro-copy {
+    position: relative;
+    z-index: 4;
+    width: 100%;
+    max-width: 780px;
+    gap: 3px !important;
+}
+
+/* Consultores: reduz levemente a presença do violeta sem perder identidade. */
+.portal-consultants-hero {
+    --portal-hero-end: #617fae;
+    background:
+        radial-gradient(circle at 70% -15%, rgba(255, 255, 255, .11), transparent 26rem),
+        linear-gradient(118deg, var(--portal-hero-start) 0%, #2f6f9e 54%, var(--portal-hero-end) 100%) !important;
+}
+
+/* Textos auxiliares operacionais: contraste consistente em telas corporativas. */
+.home-module-heading-note,
+.home-operation-note,
+.portal-operators-directory-tools,
+.portal-access-results-note,
+.portal-documents-results-head > .q-label,
+.portal-contacts-results-note,
+.portal-consultants-results-note,
+.portal-communications-results-note,
+.portal-contingencies-results-note {
+    color: var(--portal-ink-500) !important;
+}
+
+/* O mesmo raio fecha a família visual dos heroes mais recentes. */
+.portal-consultants-hero,
+.portal-communications-hero,
+.portal-contingencies-hero,
+.portal-admin-hero {
+    border-radius: var(--portal-standard-hero-radius) !important;
+}
