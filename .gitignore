@@ -35,3 +35,6 @@ dist/
 build/
 htmlcov/
 .coverage
+
+# Arquivos temporários/sensíveis locais
+.private/
