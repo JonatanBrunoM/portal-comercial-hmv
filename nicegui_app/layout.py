@@ -26,6 +26,12 @@ ADMIN_ITEMS = (
     ("admin", "settings", "Administração", "/administracao"),
 )
 
+PARTICULAR_ITEM = (
+    "particular",
+    "monitoring",
+    "Particular",
+    "/particular",
+)
 
 TOPBAR_CONTEXT = (
     ("/administracao", "Administração"),
@@ -36,6 +42,7 @@ TOPBAR_CONTEXT = (
     ("/documentos", "Documentos"),
     ("/portais", "Portais"),
     ("/operadoras", "Operadoras"),
+    ("/particular", "Particular"),
     ("/pesquisa", "Pesquisa"),
     ("/", "Início"),
 )
@@ -162,7 +169,12 @@ def _user_avatar(user: dict, *, compact: bool = False) -> None:
 
 
 
-def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
+def _desktop_sidebar(
+    user: dict,
+    navigation: PortalNavigationState,
+    *,
+    show_particular: bool = False,
+) -> None:
     name = str(user.get("name") or "").strip() or "Usuário institucional"
     role = "Administrador" if user.get("role") == "admin" else "Usuário"
 
@@ -176,6 +188,16 @@ def _desktop_sidebar(user: dict, navigation: PortalNavigationState) -> None:
             ui.label("NAVEGAÇÃO").classes("portal-nav-section-label")
             with ui.column().classes("portal-nav-list"):
                 for key, icon, label, target in NAV_ITEMS:
+                    _nav_button(
+                        key,
+                        icon,
+                        label,
+                        target,
+                        navigation=navigation,
+                    )
+
+                if show_particular:
+                    key, icon, label, target = PARTICULAR_ITEM
                     _nav_button(
                         key,
                         icon,
@@ -281,11 +303,20 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
                     ui.label("Sair da conta")
 
 
-def _mobile_navigation(navigation: PortalNavigationState, user: dict) -> None:
+def _mobile_navigation(
+    navigation: PortalNavigationState,
+    user: dict,
+    *,
+    show_particular: bool = False,
+) -> None:
     # Mantém os cinco atalhos principais e concentra os módulos restantes em
     # "Ver mais", evitando que opções desapareçam em telas de telefone.
     visible = NAV_ITEMS[:5]
     overflow = list(NAV_ITEMS[5:])
+
+    if show_particular:
+        overflow.append(PARTICULAR_ITEM)
+
     if user.get("role") == "admin":
         overflow.extend(ADMIN_ITEMS)
 
@@ -355,7 +386,11 @@ def spa_content_mode() -> Iterator[None]:
 
 
 @contextmanager
-def portal_shell(*, user: dict) -> Iterator[PortalNavigationState]:
+def portal_shell(
+    *,
+    user: dict,
+    show_particular: bool = False,
+) -> Iterator[PortalNavigationState]:
     """Shell persistente da aplicação.
 
     Sidebar, topbar e navegação móvel são criadas uma única vez por cliente.
@@ -364,7 +399,11 @@ def portal_shell(*, user: dict) -> Iterator[PortalNavigationState]:
     navigation = PortalNavigationState()
 
     with ui.element("div").classes("portal-app-shell portal-spa-shell"):
-        _desktop_sidebar(user, navigation)
+        _desktop_sidebar(
+            user,
+            navigation,
+            show_particular=show_particular,
+        )
 
         with ui.element("div").classes("portal-main-shell"):
             _topbar(user, navigation)
@@ -372,7 +411,11 @@ def portal_shell(*, user: dict) -> Iterator[PortalNavigationState]:
             with ui.element("main").classes("portal-content portal-spa-content"):
                 yield navigation
 
-        _mobile_navigation(navigation, user)
+        _mobile_navigation(
+            navigation,
+            user,
+            show_particular=show_particular,
+        )
 
 
 @contextmanager

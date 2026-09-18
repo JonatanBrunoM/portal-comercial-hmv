@@ -27,6 +27,7 @@ from nicegui_app.pages.comunicados_admin import render_admin_comunicados
 from nicegui_app.pages.contingencias_admin import render_admin_contingencias
 from nicegui_app.pages.auditoria_admin import render_admin_auditoria
 from nicegui_app.pages.pesquisa import render_pesquisa
+from nicegui_app.pages.particular import render_particular
 from nicegui_app.pages.contingencias import render_contingencia_detail, render_contingencias
 from nicegui_app.pages.comunicados import render_comunicado_detail, render_comunicados
 from nicegui_app.pages.consultores import render_consultor_detail, render_consultores
@@ -42,6 +43,7 @@ from nicegui_app.theme import apply_theme
 from nicegui_app.layout import portal_shell, spa_content_mode
 from nicegui_app.data.supabase_client import warm_public_data_cache, get_supabase_server_key, get_supabase_url
 from nicegui_app.production_readiness import get_readiness_report
+from nicegui_app.repositories.particular_repository import get_access_context
 
 
 logger = logging.getLogger(__name__)
@@ -209,6 +211,7 @@ def _build_portal_routes(user: dict) -> dict[str, object]:
     return {
         "/": lambda: _render_spa_page(render_home, user),
         "/pesquisa": lambda: _render_spa_page(render_pesquisa, user),
+        "/particular": lambda: _render_spa_page(render_particular, user),
         "/operadoras": lambda: _render_spa_page(render_operadoras, user),
         "/operadoras/{operator_id}": (
             lambda operator_id: _render_spa_page(
@@ -301,6 +304,23 @@ def _build_portal_routes(user: dict) -> dict[str, object]:
     }
 
 
+def _can_show_particular(user: dict) -> bool:
+    profile_id = str(user.get("profile_id") or "").strip()
+    if not profile_id:
+        return False
+
+    try:
+        context = get_access_context(
+            actor_profile_id=profile_id,
+        )
+    except Exception:
+        logger.exception(
+            "Falha ao verificar acesso ao módulo Particular."
+        )
+        return False
+
+    return context.get("can_read") is True
+
 @ui.page("/")
 @ui.page("/{_:path}")
 def portal_page(request: Request) -> RedirectResponse | None:
@@ -318,7 +338,10 @@ def portal_page(request: Request) -> RedirectResponse | None:
     # Remove espaçamentos padrão do cliente NiceGUI; todo o layout é do Portal.
     ui.context.client.content.classes("p-0 gap-0")
 
-    with portal_shell(user=user) as navigation:
+    with portal_shell(
+        user=user,
+        show_particular=_can_show_particular(user),
+    ) as navigation:
         router = ui.sub_pages(
             _build_portal_routes(user),
             show_404=True,
