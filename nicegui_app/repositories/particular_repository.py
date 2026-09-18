@@ -592,3 +592,94 @@ def get_relation_detail(
         )
 
     return result
+
+def get_access_context(
+    *,
+    actor_profile_id: str,
+) -> dict[str, Any]:
+    """Retorna o contexto de acesso do perfil ao módulo Particular."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+
+    result = rest_rpc(
+        "particular_access_context",
+        {
+            "p_profile_id": actor_profile_id,
+        },
+        timeout=30.0,
+    )
+
+    if result is None:
+        raise RuntimeError(
+            "O Supabase não retornou o contexto de acesso ao Particular."
+        )
+
+    # RPCs RETURNS TABLE normalmente retornam uma lista com uma linha.
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError(
+                "Resposta inesperada ao consultar o acesso ao Particular."
+            )
+        result = result[0]
+
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            "Resposta inválida ao consultar o acesso ao Particular."
+        )
+
+    return result
+
+def decide_budget_relation(
+    *,
+    actor_profile_id: str,
+    relation_id: str,
+    decision: str,
+    review_reason: str,
+) -> str:
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+    relation_id = _require_uuid(
+        relation_id,
+        field="relation_id",
+    )
+
+    normalized_decision = str(decision or "").strip().upper()
+    normalized_reason = str(review_reason or "").strip()
+
+    if normalized_decision not in {
+        "CONFIRMED_DUPLICATE",
+        "REBUDGET",
+        "DISTINCT",
+    }:
+        raise ValueError("Decisão de relação inválida.")
+
+    if not normalized_reason:
+        raise ValueError("O motivo da decisão é obrigatório.")
+
+    if len(normalized_reason) > 1000:
+        raise ValueError(
+            "O motivo da decisão deve possuir no máximo 1000 caracteres."
+        )
+
+    result = rest_rpc(
+        "particular_decide_budget_relation",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_relation_id": relation_id,
+            "p_decision": normalized_decision,
+            "p_review_reason": normalized_reason,
+        },
+        timeout=30.0,
+    )
+
+    if result is None:
+        raise RuntimeError(
+            "A decisão da relação não retornou um identificador."
+        )
+
+    return str(result).strip()

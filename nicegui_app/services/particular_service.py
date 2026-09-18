@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from nicegui_app.repositories.particular_repository import (
+    decide_budget_relation,
+    get_access_context,
+    get_relation_detail,
+    list_relation_reviews,
+)
+
+class ParticularAccessDenied(PermissionError):
+    """Usuário autenticado, porém sem autorização para o módulo Particular."""
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularAccess:
+    profile_id: str
+    profile_name: str
+    profile_email: str
+    module_role: str
+    can_read: bool
+    can_write: bool
+    can_manage_access: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularContext:
+    access: ParticularAccess
+    relation_reviews: tuple[dict[str, Any], ...]
+
+
+def _session_text(user: dict[str, Any], key: str) -> str:
+    value = user.get(key)
+    return str(value or "").strip()
+
+
+def resolve_particular_access(user: dict[str, Any]) -> ParticularAccess:
+    """
+    Resolve o acesso ao módulo Particular a partir do profile_id
+    previamente validado e armazenado na sessão institucional.
+
+    O profile_id é definido pelo backend durante o login Google e não
+    é recebido da interface como fonte de confiança.
+    """
+    profile_id = _session_text(user, "profile_id")
+
+    if not profile_id:
+        raise ParticularAccessDenied(
+            "A sessão autenticada não possui perfil institucional válido."
+        )
+
+    context = get_access_context(
+        actor_profile_id=profile_id,
+    )
+
+    if context.get("profile_active") is not True:
+        raise ParticularAccessDenied(
+            "O perfil institucional não está ativo."
+        )
+
+    can_read = context.get("can_read") is True
+    can_write = context.get("can_write") is True
+
+    if not can_read:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui acesso ao módulo Particular."
+        )
+
+    return ParticularAccess(
+        profile_id=profile_id,
+        profile_name=str(
+            context.get("profile_name")
+            or _session_text(user, "name")
+        ).strip(),
+        profile_email=str(
+            context.get("profile_email")
+            or _session_text(user, "email")
+        ).strip(),
+        module_role=str(
+            context.get("particular_role") or ""
+        ).strip(),
+        can_read=True,
+        can_write=can_write,
+        can_manage_access=context.get("can_manage_access") is True,
+    )
+
+
+def get_particular_context(
+    *,
+    access: ParticularAccess,
+) -> ParticularContext:
+    """Carrega a fila operacional usando um acesso previamente validado."""
+
+    if not access.can_read:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui acesso de leitura ao módulo Particular."
+        )
+
+    rows = list_relation_reviews(
+        actor_profile_id=access.profile_id,
+    )
+
+    return ParticularContext(
+        access=access,
+        relation_reviews=tuple(rows),
+    )
+
+
+def get_particular_relation_detail(
+    *,
+    access: ParticularAccess,
+    relation_id: str,
+) -> dict[str, Any]:
+    """Abre uma relação específica para comparação dos dois orçamentos."""
+
+    if not access.can_read:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui acesso de leitura ao módulo Particular."
+        )
+
+    return get_relation_detail(
+        actor_profile_id=access.profile_id,
+        relation_id=relation_id,
+    )
+
+def decide_particular_relation(
+    *,
+    access: ParticularAccess,
+    relation_id: str,
+    decision: str,
+    review_reason: str,
+) -> str:
+    """Registra a decisão humana sobre uma possível relação entre orçamentos."""
+
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para decidir relações no módulo Particular."
+        )
+
+    normalized_relation_id = str(relation_id or "").strip()
+    normalized_decision = str(decision or "").strip().upper()
+    normalized_reason = str(review_reason or "").strip()
+
+    if not normalized_relation_id:
+        raise ValueError("A relação é obrigatória.")
+
+    if normalized_decision not in {
+        "CONFIRMED_DUPLICATE",
+        "REBUDGET",
+        "DISTINCT",
+    }:
+        raise ValueError("Decisão inválida.")
+
+    if not normalized_reason:
+        raise ValueError("A justificativa da decisão é obrigatória.")
+
+    if len(normalized_reason) > 1000:
+        raise ValueError(
+            "A justificativa deve possuir no máximo 1000 caracteres."
+        )
+
+    return decide_budget_relation(
+        actor_profile_id=access.profile_id,
+        relation_id=normalized_relation_id,
+        decision=normalized_decision,
+        review_reason=normalized_reason,
+    )
