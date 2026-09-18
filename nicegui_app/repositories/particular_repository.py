@@ -496,3 +496,99 @@ def finish_import(
         )
 
     return result.strip()
+
+def list_relation_reviews(
+    *,
+    actor_profile_id: str,
+) -> list[dict[str, Any]]:
+    """Lista a fila segura de revisão de possíveis relações entre orçamentos."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+
+    result = rest_rpc(
+        "particular_list_relation_reviews",
+        {
+            "p_profile_id": actor_profile_id,
+        },
+        timeout=30.0,
+    )
+
+    if result is None:
+        return []
+
+    if not isinstance(result, list):
+        raise RuntimeError(
+            "particular_list_relation_reviews retornou formato inesperado."
+        )
+
+    if any(not isinstance(row, dict) for row in result):
+        raise RuntimeError(
+            "particular_list_relation_reviews retornou registro inválido."
+        )
+
+    return result
+
+
+def get_relation_detail(
+    *,
+    actor_profile_id: str,
+    relation_id: str,
+) -> dict[str, Any]:
+    """Obtém o detalhe autorizado de uma relação específica entre orçamentos."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+    relation_id = _require_uuid(
+        relation_id,
+        field="relation_id",
+    )
+
+    result = rest_rpc(
+        "particular_get_relation_detail",
+        {
+            "p_profile_id": actor_profile_id,
+            "p_relation_id": relation_id,
+        },
+        timeout=30.0,
+    )
+
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            "particular_get_relation_detail retornou formato inesperado."
+        )
+
+    relation = result.get("relation")
+    budget_a = result.get("budget_a")
+    budget_b = result.get("budget_b")
+
+    if not isinstance(relation, dict):
+        raise RuntimeError(
+            "Detalhe da relação não contém o bloco relation."
+        )
+
+    if not isinstance(budget_a, dict) or not isinstance(budget_b, dict):
+        raise RuntimeError(
+            "Detalhe da relação não contém os dois orçamentos."
+        )
+
+    if str(relation.get("id") or "").strip() != relation_id:
+        raise RuntimeError(
+            "A RPC retornou uma relação diferente da solicitada."
+        )
+
+    if not isinstance(budget_a.get("items"), list):
+        raise RuntimeError(
+            "Itens do orçamento A retornaram em formato inválido."
+        )
+
+    if not isinstance(budget_b.get("items"), list):
+        raise RuntimeError(
+            "Itens do orçamento B retornaram em formato inválido."
+        )
+
+    return result
