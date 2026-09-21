@@ -683,3 +683,111 @@ def decide_budget_relation(
         )
 
     return str(result).strip()
+
+def rectify_budget_relation(
+    *,
+    actor_profile_id: str,
+    relation_id: str,
+    new_decision: str,
+    new_reason: str,
+) -> str:
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    relation_id = _require_uuid(relation_id, field="relation_id")
+    normalized_decision = str(new_decision or "").strip().upper()
+    normalized_reason = str(new_reason or "").strip()
+
+    if normalized_decision not in {"CONFIRMED_DUPLICATE", "REBUDGET", "DISTINCT"}:
+        raise ValueError("Nova decisão inválida.")
+    if not normalized_reason:
+        raise ValueError("A justificativa da retificação é obrigatória.")
+    if len(normalized_reason) > 1000:
+        raise ValueError("A justificativa deve possuir no máximo 1000 caracteres.")
+
+    result = rest_rpc(
+        "particular_rectify_budget_relation",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_relation_id": relation_id,
+            "p_new_decision": normalized_decision,
+            "p_new_reason": normalized_reason,
+        },
+        timeout=30.0,
+    )
+    if not isinstance(result, str) or not result.strip():
+        raise RuntimeError("A retificação não retornou um identificador válido.")
+    return result.strip()
+
+def register_mv_check(
+    *,
+    actor_profile_id: str,
+    budget_id: str,
+    outcome: str,
+    occurrence_id: str | None = None,
+    notice_number: str | None = None,
+    attendance_number: str | None = None,
+    account_value: str | None = None,
+    notes: str | None = None,
+) -> str:
+    """Registra uma nova conferência manual no MV."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+    budget_id = _require_uuid(
+        budget_id,
+        field="budget_id",
+    )
+
+    normalized_occurrence_id = (
+        _require_uuid(occurrence_id, field="occurrence_id")
+        if occurrence_id
+        else None
+    )
+
+    normalized_outcome = str(outcome or "").strip().upper()
+
+    if normalized_outcome not in {
+        "PENDING",
+        "REALIZED",
+        "NOT_PERFORMED",
+        "CANCELLED",
+    }:
+        raise ValueError("Resultado da conferência no MV inválido.")
+
+    normalized_notes = str(notes or "").strip() or None
+
+    if normalized_notes and len(normalized_notes) > 2000:
+        raise ValueError(
+            "As observações devem possuir no máximo 2000 caracteres."
+        )
+
+    result = rest_rpc(
+        "particular_register_mv_check",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_id": budget_id,
+            "p_occurrence_id": normalized_occurrence_id,
+            "p_outcome": normalized_outcome,
+            "p_notice_number": (
+                str(notice_number).strip() or None
+                if notice_number is not None
+                else None
+            ),
+            "p_attendance_number": (
+                str(attendance_number).strip() or None
+                if attendance_number is not None
+                else None
+            ),
+            "p_account_value": account_value,
+            "p_notes": normalized_notes,
+        },
+        timeout=30.0,
+    )
+
+    if not isinstance(result, str) or not result.strip():
+        raise RuntimeError(
+            "O registro da conferência no MV não retornou um identificador válido."
+        )
+
+    return result.strip()

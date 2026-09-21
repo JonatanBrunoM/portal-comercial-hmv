@@ -8,6 +8,7 @@ from nicegui_app.repositories.particular_repository import (
     get_access_context,
     get_relation_detail,
     list_relation_reviews,
+    rectify_budget_relation,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -166,4 +167,37 @@ def decide_particular_relation(
         relation_id=normalized_relation_id,
         decision=normalized_decision,
         review_reason=normalized_reason,
+    )
+
+def rectify_particular_relation(
+    *,
+    access: ParticularAccess,
+    relation_id: str,
+    new_decision: str,
+    new_reason: str,
+) -> str:
+    """Retifica uma decisão final por meio da RPC auditada e restrita."""
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para retificar relações no módulo Particular."
+        )
+
+    normalized_relation_id = str(relation_id or "").strip()
+    normalized_decision = str(new_decision or "").strip().upper()
+    normalized_reason = str(new_reason or "").strip()
+
+    if not normalized_relation_id:
+        raise ValueError("A relação é obrigatória.")
+    if normalized_decision not in {"CONFIRMED_DUPLICATE", "REBUDGET", "DISTINCT"}:
+        raise ValueError("Nova decisão inválida.")
+    if not normalized_reason:
+        raise ValueError("A justificativa da retificação é obrigatória.")
+    if len(normalized_reason) > 1000:
+        raise ValueError("A justificativa deve possuir no máximo 1000 caracteres.")
+
+    return rectify_budget_relation(
+        actor_profile_id=access.profile_id,
+        relation_id=normalized_relation_id,
+        new_decision=normalized_decision,
+        new_reason=normalized_reason,
     )

@@ -13,6 +13,7 @@ from nicegui_app.services.particular_service import (
     get_particular_context,
     get_particular_relation_detail,
     resolve_particular_access,
+    rectify_particular_relation,
 )
 
 
@@ -190,17 +191,94 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                 _render_budget_comparison("ORÇAMENTO A", budget_a)
                 _render_budget_comparison("ORÇAMENTO B", budget_b)
 
-            if access.can_write:
+            if current_decision != "PENDING_REVIEW":
+                ui.separator().classes("my-5")
+                with ui.column().classes("w-full gap-3"):
+                    ui.label("DECISÃO REGISTRADA").classes("text-caption text-weight-bold")
+                    ui.label(_decision_label(current_decision)).classes("text-body1 text-weight-bold")
+                    ui.label("Justificativa registrada:").classes("text-caption")
+                    ui.label(_text(relation.get("review_reason"))).classes("text-body2 whitespace-pre-wrap")
+                    ui.label("A comparação está em modo de consulta. A decisão inicial não pode ser alterada.").classes("text-body2")
+
+                    if access.can_write:
+                        def open_rectification() -> None:
+                            with ui.dialog() as rectify_dialog, ui.card().classes("w-full max-w-[650px] p-5 gap-3"):
+                                ui.label("Retificar decisão").classes("text-h6 text-weight-bold")
+                                ui.label(
+                                    f"Decisão atual: {_decision_label(current_decision)}. "
+                                    "A retificação será registrada com a decisão anterior e a nova justificativa."
+                                ).classes("text-body2")
+                                ui.label("Selecione uma classificação diferente da atual. Não inclua dados do paciente na justificativa.").classes("text-body2")
+                                choices = {
+                                    key: _decision_label(key)
+                                    for key in ("CONFIRMED_DUPLICATE", "REBUDGET", "DISTINCT")
+                                    if key != current_decision
+                                }
+                                new_decision = ui.radio(choices).props("inline")
+                                new_reason = ui.textarea(
+                                    "Nova justificativa",
+                                    placeholder="Explique o motivo da correção, sem dados do paciente.",
+                                ).props("outlined autogrow maxlength=1000 counter").classes("w-full")
+
+                                def request_rectification() -> None:
+                                    selected = str(new_decision.value or "").strip().upper()
+                                    justification = str(new_reason.value or "").strip()
+                                    if selected not in choices:
+                                        ui.notify("Selecione uma classificação diferente da atual.", type="warning", position="top")
+                                        return
+                                    if not justification or len(justification) > 1000:
+                                        ui.notify("Informe uma justificativa de até 1000 caracteres.", type="warning", position="top")
+                                        return
+
+                                    with ui.dialog() as confirm_dialog, ui.card().classes("w-full max-w-[560px] p-5 gap-3"):
+                                        ui.label("Confirmar retificação").classes("text-h6 text-weight-bold")
+                                        ui.label(
+                                            f"De {_decision_label(current_decision)} para {_decision_label(selected)}."
+                                        ).classes("text-body1")
+                                        ui.label("A alteração será registrada no histórico e na auditoria do Particular.").classes("text-body2")
+
+                                        def confirm_rectification() -> None:
+                                            try:
+                                                rectify_particular_relation(
+                                                    access=access,
+                                                    relation_id=relation_id,
+                                                    new_decision=selected,
+                                                    new_reason=justification,
+                                                )
+                                            except ParticularAccessDenied:
+                                                ui.notify("Seu perfil não possui permissão para retificar esta relação.", type="negative", position="top")
+                                                return
+                                            except ValueError as exc:
+                                                ui.notify(str(exc), type="warning", position="top")
+                                                return
+                                            except Exception:
+                                                ui.notify("Não foi possível retificar a decisão. Atualize a página e confira o estado atual da relação.", type="negative", position="top")
+                                                return
+
+                                            confirm_dialog.close()
+                                            rectify_dialog.close()
+                                            dialog.close()
+                                            ui.notify("Retificação registrada com sucesso.", type="positive", position="top")
+                                            ui.navigate.to("/particular")
+
+                                        with ui.row().classes("w-full justify-end items-center gap-3 mt-3"):
+                                            ui.button("Cancelar", on_click=confirm_dialog.close).props("flat no-caps")
+                                            ui.button("Confirmar retificação", icon="check", on_click=confirm_rectification).props("unelevated no-caps")
+                                    confirm_dialog.open()
+
+                                with ui.row().classes("w-full justify-end items-center gap-3 mt-3"):
+                                    ui.button("Cancelar", on_click=rectify_dialog.close).props("flat no-caps")
+                                    ui.button("Continuar", icon="edit", on_click=request_rectification).props("unelevated no-caps")
+                            rectify_dialog.open()
+
+                        ui.button("Retificar decisão", icon="edit", on_click=open_rectification).props("outline no-caps")
+
+            if access.can_write and current_decision == "PENDING_REVIEW":
                 ui.separator().classes("my-5")
                 with ui.column().classes("w-full gap-3"):
                     ui.label("DECISÃO DO GESTOR").classes(
                         "text-caption text-weight-bold"
                     )
-                    if current_decision != "PENDING_REVIEW":
-                        ui.label(
-                            f'Decisão atual: {_decision_label(current_decision)}. '
-                            "Uma nova decisão substituirá a decisão atual e será auditada."
-                        ).classes("text-body2")
                     ui.label(
                         "Selecione a classificação e informe uma justificativa. "
                         "Não inclua dados do paciente na justificativa."
