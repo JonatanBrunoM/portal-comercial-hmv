@@ -9,6 +9,9 @@ from nicegui_app.repositories.particular_repository import (
     get_relation_detail,
     list_relation_reviews,
     rectify_budget_relation,
+    register_mv_check,
+    get_mv_check_context,
+    list_operational_budgets,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -200,4 +203,91 @@ def rectify_particular_relation(
         relation_id=normalized_relation_id,
         new_decision=normalized_decision,
         new_reason=normalized_reason,
+    )
+
+def register_particular_mv_check(
+    *,
+    access: ParticularAccess,
+    budget_id: str,
+    outcome: str,
+    occurrence_id: str | None = None,
+    notice_number: str | None = None,
+    attendance_number: str | None = None,
+    account_value: str | None = None,
+    notes: str | None = None,
+) -> str:
+    """Registra uma nova conferência manual no MV."""
+
+    if not access.can_write or access.module_role.upper() != "MANAGER":
+        raise ParticularAccessDenied(
+            "Somente gestores do Particular podem registrar conferências no MV."
+        )
+
+    normalized_budget_id = str(budget_id or "").strip()
+
+    if not normalized_budget_id:
+        raise ValueError("O orçamento é obrigatório.")
+
+    normalized_outcome = str(outcome or "").strip().upper()
+
+    if normalized_outcome not in {
+        "PENDING",
+        "REALIZED",
+        "NOT_PERFORMED",
+        "CANCELLED",
+    }:
+        raise ValueError("Resultado da conferência no MV inválido.")
+
+    return register_mv_check(
+        actor_profile_id=access.profile_id,
+        budget_id=normalized_budget_id,
+        occurrence_id=occurrence_id,
+        outcome=normalized_outcome,
+        notice_number=notice_number,
+        attendance_number=attendance_number,
+        account_value=account_value,
+        notes=notes,
+    )
+
+def get_particular_mv_check_context(
+    *,
+    access: ParticularAccess,
+    budget_id: str,
+) -> dict[str, Any]:
+    """Consulta o orçamento e sua última conferência registrada no MV."""
+
+    if not access.can_read:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui autorização para consultar o módulo Particular."
+        )
+
+    normalized_budget_id = str(budget_id or "").strip()
+
+    if not normalized_budget_id:
+        raise ValueError("O orçamento é obrigatório.")
+
+    return get_mv_check_context(
+        actor_profile_id=access.profile_id,
+        budget_id=normalized_budget_id,
+    )
+
+def list_particular_operational_budgets(
+    *,
+    access: ParticularAccess,
+    budget_number: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """Lista os orçamentos disponíveis na área operacional."""
+
+    if not access.can_read:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui autorização para consultar o módulo Particular."
+        )
+
+    return list_operational_budgets(
+        actor_profile_id=access.profile_id,
+        budget_number=budget_number,
+        limit=limit,
+        offset=offset,
     )

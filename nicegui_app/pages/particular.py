@@ -16,6 +16,13 @@ from nicegui_app.services.particular_service import (
     rectify_particular_relation,
 )
 
+from nicegui_app.components.particular_mv_dialog import (
+    open_particular_mv_dialog,
+)
+from nicegui_app.components.particular_operational_budgets import (
+    render_particular_operational_budgets,
+)
+
 
 def _text(value: Any, fallback: str = "—") -> str:
     if value is None:
@@ -405,6 +412,30 @@ def render_particular(user: dict) -> None:
 
     with portal_layout(user=user, active="particular"):
         with ui.column().classes("w-full gap-6"):
+            with ui.card().classes("w-full p-4 gap-3"):
+                render_particular_operational_budgets(access=access)
+
+            with ui.card().classes("w-full p-4 gap-3"):
+                ui.label("Teste da conferência no MV").classes(
+                    "text-subtitle1 text-weight-bold"
+                )
+                ui.label(
+                    "Acesso temporário para validar a janela de conferência "
+                    "antes da implantação da área operacional."
+                ).classes("text-caption")
+
+                test_budget_id = (
+                    "906d1d38-67f3-4e55-aa2b-10f406e234e3"
+                )
+
+                ui.button(
+                    "Abrir conferência do orçamento 84600",
+                    icon="fact_check",
+                    on_click=lambda: open_particular_mv_dialog(
+                        access=access,
+                        budget_id=test_budget_id,
+                    ),
+                ).props("outline no-caps")
             with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
                     ui.label("PARTICULAR").classes("text-caption text-weight-bold")

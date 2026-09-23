@@ -791,3 +791,106 @@ def register_mv_check(
         )
 
     return result.strip()
+
+def get_mv_check_context(
+    *,
+    actor_profile_id: str,
+    budget_id: str,
+) -> dict[str, Any]:
+    """Consulta um orçamento e sua última conferência registrada no MV."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+    budget_id = _require_uuid(
+        budget_id,
+        field="budget_id",
+    )
+
+    result = rest_rpc(
+        "particular_get_mv_check_context",
+        {
+            "p_profile_id": actor_profile_id,
+            "p_budget_id": budget_id,
+        },
+        timeout=30.0,
+    )
+
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            "O Supabase retornou dados inválidos para a conferência no MV."
+        )
+
+    if not isinstance(result.get("budget"), dict):
+        raise RuntimeError(
+            "O orçamento não foi retornado na consulta de conferência no MV."
+        )
+
+    latest_check = result.get("latest_mv_check")
+
+    if latest_check is not None and not isinstance(latest_check, dict):
+        raise RuntimeError(
+            "A última conferência no MV possui um formato inválido."
+        )
+
+    return result
+
+def list_operational_budgets(
+    *,
+    actor_profile_id: str,
+    budget_number: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """Lista orçamentos para a área operacional do Particular."""
+
+    actor_profile_id = _require_uuid(
+        actor_profile_id,
+        field="actor_profile_id",
+    )
+
+    normalized_number = str(budget_number or "").strip() or None
+
+    if normalized_number is not None and not normalized_number.isascii():
+        raise ValueError("Informe somente números na busca por orçamento.")
+
+    if normalized_number is not None and not normalized_number.isdecimal():
+        raise ValueError("Informe somente números na busca por orçamento.")
+
+    if not isinstance(limit, int) or not 1 <= limit <= 50:
+        raise ValueError("O limite deve estar entre 1 e 50.")
+
+    if not isinstance(offset, int) or offset < 0:
+        raise ValueError("A posição inicial da consulta é inválida.")
+
+    result = rest_rpc(
+        "particular_list_operational_budgets",
+        {
+            "p_profile_id": actor_profile_id,
+            "p_budget_number": normalized_number,
+            "p_limit": limit,
+            "p_offset": offset,
+        },
+        timeout=30.0,
+    )
+
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            "O Supabase retornou uma resposta inválida para a listagem operacional."
+        )
+
+    rows = result.get("rows")
+    total = result.get("total")
+
+    if not isinstance(rows, list):
+        raise RuntimeError(
+            "A listagem operacional não retornou uma lista válida de orçamentos."
+        )
+
+    if not isinstance(total, int) or total < 0:
+        raise RuntimeError(
+            "A listagem operacional retornou uma quantidade total inválida."
+        )
+
+    return result
