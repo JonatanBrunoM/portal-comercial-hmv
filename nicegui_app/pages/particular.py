@@ -409,110 +409,158 @@ def render_particular(user: dict) -> None:
         return
 
     rows = list(context.relation_reviews)
+    pending_count = sum(
+        str(row.get("decision") or "").strip().upper() == "PENDING_REVIEW"
+        for row in rows
+    )
+    reviewed_count = len(rows) - pending_count
 
     with portal_layout(user=user, active="particular"):
-        with ui.column().classes("w-full gap-6"):
-            with ui.card().classes("w-full p-4 gap-3"):
-                render_particular_operational_budgets(access=access)
-
-            with ui.card().classes("w-full p-4 gap-3"):
-                ui.label("Teste da conferência no MV").classes(
-                    "text-subtitle1 text-weight-bold"
-                )
-                ui.label(
-                    "Acesso temporário para validar a janela de conferência "
-                    "antes da implantação da área operacional."
-                ).classes("text-caption")
-
-                test_budget_id = (
-                    "906d1d38-67f3-4e55-aa2b-10f406e234e3"
-                )
-
-                ui.button(
-                    "Abrir conferência do orçamento 84600",
-                    icon="fact_check",
-                    on_click=lambda: open_particular_mv_dialog(
-                        access=access,
-                        budget_id=test_budget_id,
-                    ),
-                ).props("outline no-caps")
+        with ui.column().classes("w-full gap-5"):
             with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
-                    ui.label("PARTICULAR").classes("text-caption text-weight-bold")
-                    ui.label("Revisão de possíveis duplicidades").classes(
-                        "text-h4 text-weight-bold"
+                    ui.label("GESTÃO COMERCIAL  /  PARTICULAR").classes(
+                        "text-caption text-weight-bold text-primary"
                     )
+                    ui.label("Particular").classes("text-h4 text-weight-bold")
                     ui.label(
-                        "Compare os orçamentos identificados pelo detector "
-                        "antes de qualquer decisão manual."
-                    ).classes("text-body1")
+                        "Acompanhamento de orçamentos, conferências no MV e revisão de duplicidades."
+                    ).classes("text-body1 text-grey-7")
+                ui.badge(
+                    "Gestor" if access.module_role == "MANAGER" else "Operador",
+                    color="primary",
+                ).props("outline")
 
-                with ui.column().classes("items-end gap-1"):
-                    ui.label(
-                        "Gestor" if access.module_role == "MANAGER" else "Operador"
-                    ).classes("text-weight-bold")
-                    ui.label(f"{len(rows)} relações para análise").classes(
-                        "text-caption"
-                    )
+            with ui.tabs().classes("w-full") as tabs:
+                overview_tab = ui.tab("Visão geral", icon="dashboard")
+                operation_tab = ui.tab("Orçamentos", icon="receipt_long")
+                review_tab = ui.tab("Duplicidades", icon="compare_arrows")
 
-            if not rows:
-                with ui.card().classes("w-full p-6"):
-                    ui.label("Nenhuma relação encontrada.").classes("text-h6")
-                    ui.label(
-                        "Não existem possíveis duplicidades aguardando análise."
-                    )
-                return
-
-            with ui.card().classes("w-full"):
-                with ui.column().classes("w-full gap-0"):
-                    for index, row in enumerate(rows):
-                        if index:
-                            ui.separator()
-
-                        with ui.row().classes(
-                            "w-full items-center justify-between gap-4 p-4 flex-wrap"
-                        ):
-                            with ui.column().classes("gap-1"):
+            with ui.tab_panels(tabs, value=overview_tab).classes("w-full"):
+                with ui.tab_panel(overview_tab):
+                    with ui.column().classes("w-full gap-5"):
+                        ui.label("Visão geral").classes("text-h5 text-weight-bold")
+                        ui.label(
+                            "Indicadores disponíveis nesta etapa. Dados financeiros e integração "
+                            "com o Google Sheets serão adicionados após a conexão da base."
+                        ).classes("text-body2 text-grey-7")
+                        with ui.row().classes("w-full gap-4 flex-wrap"):
+                            for label, value, icon in (
+                                ("Relações identificadas", len(rows), "account_tree"),
+                                ("Aguardando revisão", pending_count, "pending_actions"),
+                                ("Relações revisadas", reviewed_count, "task_alt"),
+                            ):
+                                with ui.card().classes("flex-1 min-w-[180px] p-5 gap-2"):
+                                    ui.icon(icon, size="28px").classes("text-primary")
+                                    ui.label(label).classes("text-caption text-grey-7")
+                                    ui.label(str(value)).classes("text-h4 text-weight-bold")
+                        with ui.row().classes("w-full gap-4 flex-wrap"):
+                            with ui.card().classes("flex-1 min-w-[250px] p-5 gap-3"):
+                                ui.icon("receipt_long", size="30px").classes("text-primary")
+                                ui.label("Operação de orçamentos").classes("text-h6 text-weight-bold")
                                 ui.label(
-                                    f'Orçamento {row["budget_a_number"]} '
-                                    f'× {row["budget_b_number"]}'
-                                ).classes("text-subtitle1 text-weight-bold")
+                                    "Busque pelo número do orçamento e consulte os detalhes "
+                                    "e o histórico de conferências no MV."
+                                ).classes("text-body2 text-grey-7")
+                                ui.button(
+                                    "Consultar orçamentos",
+                                    icon="arrow_forward",
+                                    on_click=lambda: tabs.set_value(operation_tab),
+                                ).props("unelevated no-caps")
+                            with ui.card().classes("flex-1 min-w-[250px] p-5 gap-3"):
+                                ui.icon("compare_arrows", size="30px").classes("text-primary")
+                                ui.label("Revisão de duplicidades").classes("text-h6 text-weight-bold")
                                 ui.label(
-                                    f'{_date(row.get("budget_a_date"))} '
-                                    f'× {_date(row.get("budget_b_date"))}'
-                                ).classes("text-caption")
+                                    "Analise as relações detectadas, registre decisões "
+                                    "e consulte o histórico das revisões."
+                                ).classes("text-body2 text-grey-7")
+                                ui.button(
+                                    "Abrir revisão",
+                                    icon="arrow_forward",
+                                    on_click=lambda: tabs.set_value(review_tab),
+                                ).props("outline no-caps")
 
-                            with ui.column().classes("gap-1"):
-                                ui.label(
-                                    _signal_label(row.get("detector_signal"))
-                                ).classes("text-body2 text-weight-medium")
-                                ui.label(
-                                    _decision_label(row.get("decision"))
-                                ).classes("text-caption")
+                with ui.tab_panel(operation_tab):
+                    render_particular_operational_budgets(access=access)
 
-                            with ui.column().classes("gap-1"):
-                                ui.label(
-                                    f'Diferença total: '
-                                    f'{_money(row.get("total_difference"))}'
-                                ).classes("text-body2")
+                with ui.tab_panel(review_tab):
+                    with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
+                        with ui.column().classes("gap-1"):
+                            ui.label("PARTICULAR").classes("text-caption text-weight-bold")
+                            ui.label("Revisão de possíveis duplicidades").classes(
+                                "text-h4 text-weight-bold"
+                            )
+                            ui.label(
+                                "Compare os orçamentos identificados pelo detector "
+                                "antes de qualquer decisão manual."
+                            ).classes("text-body1")
 
-                                days = row.get("days_apart")
-                                ui.label(
-                                    "Mesmo dia"
-                                    if days == 0
-                                    else (
-                                        f"{days} dia de diferença"
-                                        if days == 1
-                                        else f"{days} dias de diferença"
-                                    )
-                                ).classes("text-caption")
+                        with ui.column().classes("items-end gap-1"):
+                            ui.label(
+                                "Gestor" if access.module_role == "MANAGER" else "Operador"
+                            ).classes("text-weight-bold")
+                            ui.label(f"{len(rows)} relações para análise").classes(
+                                "text-caption"
+                            )
 
-                            relation_id = str(row.get("relation_id") or "").strip()
+                    if not rows:
+                        with ui.card().classes("w-full p-6"):
+                            ui.label("Nenhuma relação encontrada.").classes("text-h6")
+                            ui.label(
+                                "Não existem possíveis duplicidades aguardando análise."
+                            )
+                        return
 
-                            ui.button(
-                                "Comparar",
-                                icon="compare_arrows",
-                                on_click=lambda relation_id=relation_id: (
-                                    _open_relation_comparison(access, relation_id)
-                                ),
-                            ).props("outline no-caps")
+                    with ui.card().classes("w-full"):
+                        with ui.column().classes("w-full gap-0"):
+                            for index, row in enumerate(rows):
+                                if index:
+                                    ui.separator()
+
+                                with ui.row().classes(
+                                    "w-full items-center justify-between gap-4 p-4 flex-wrap"
+                                ):
+                                    with ui.column().classes("gap-1"):
+                                        ui.label(
+                                            f'Orçamento {row["budget_a_number"]} '
+                                            f'× {row["budget_b_number"]}'
+                                        ).classes("text-subtitle1 text-weight-bold")
+                                        ui.label(
+                                            f'{_date(row.get("budget_a_date"))} '
+                                            f'× {_date(row.get("budget_b_date"))}'
+                                        ).classes("text-caption")
+
+                                    with ui.column().classes("gap-1"):
+                                        ui.label(
+                                            _signal_label(row.get("detector_signal"))
+                                        ).classes("text-body2 text-weight-medium")
+                                        ui.label(
+                                            _decision_label(row.get("decision"))
+                                        ).classes("text-caption")
+
+                                    with ui.column().classes("gap-1"):
+                                        ui.label(
+                                            f'Diferença total: '
+                                            f'{_money(row.get("total_difference"))}'
+                                        ).classes("text-body2")
+
+                                        days = row.get("days_apart")
+                                        ui.label(
+                                            "Mesmo dia"
+                                            if days == 0
+                                            else (
+                                                f"{days} dia de diferença"
+                                                if days == 1
+                                                else f"{days} dias de diferença"
+                                            )
+                                        ).classes("text-caption")
+
+                                    relation_id = str(row.get("relation_id") or "").strip()
+
+                                    ui.button(
+                                        "Comparar",
+                                        icon="compare_arrows",
+                                        on_click=lambda relation_id=relation_id: (
+                                            _open_relation_comparison(access, relation_id)
+                                        ),
+                                    ).props("outline no-caps")
