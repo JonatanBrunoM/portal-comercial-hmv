@@ -8,6 +8,9 @@ from nicegui import ui
 from nicegui_app.components.particular_mv_dialog import (
     open_particular_mv_dialog,
 )
+from nicegui_app.components.particular_sheet_budget_search import (
+    render_particular_sheet_budget_search,
+)
 from nicegui_app.services.particular_service import (
     ParticularAccess,
     list_particular_operational_budgets,
@@ -42,6 +45,8 @@ def render_particular_operational_budgets(
     current_offset = 0
 
     with ui.column().classes("w-full gap-4"):
+        render_particular_sheet_budget_search(access=access)
+
         ui.label("Operação de orçamentos").classes(
             "text-xl font-semibold"
         )
