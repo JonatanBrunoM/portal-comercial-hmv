@@ -11,6 +11,9 @@ from nicegui_app.components.particular_mv_dialog import (
 from nicegui_app.components.particular_sheet_budget_search import (
     render_particular_sheet_budget_search,
 )
+from nicegui_app.components.particular_sheet_budget_dialog import (
+    open_particular_sheet_budget_dialog,
+)
 from nicegui_app.services.particular_service import (
     ParticularAccess,
     list_particular_operational_budgets,
@@ -165,6 +168,17 @@ def render_particular_operational_budgets(
                                 open_particular_mv_dialog(
                                     access=access,
                                     budget_id=bid,
+                                )
+                            ),
+                        ).props("outline")
+
+                        ui.button(
+                            "Consultar nas grades",
+                            icon="table_view",
+                            on_click=lambda _=None, number=budget_number: (
+                                open_particular_sheet_budget_dialog(
+                                    access=access,
+                                    budget_number=number,
                                 )
                             ),
                         ).props("outline")
