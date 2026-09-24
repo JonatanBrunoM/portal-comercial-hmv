@@ -4,15 +4,11 @@ import logging
 from datetime import date
 
 from nicegui import ui
-
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
 from nicegui_app.components.particular_sheet_budget_search import render_particular_sheet_budget_search
 from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
-from nicegui_app.services.particular_service import (
-    ParticularAccess,
-    list_particular_operational_budgets,
-    get_particular_mv_status_batch,
-)
+from nicegui_app.services.particular_service import ParticularAccess, list_particular_operational_budgets
+from nicegui_app.services.particular_mv_status_batch import get_particular_mv_status_batch
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 20
@@ -42,7 +38,6 @@ def render_particular_operational_budgets(*, access: ParticularAccess) -> None:
 
     search_value = ''
     current_offset = 0
-
     with ui.column().classes('w-full gap-4'):
         render_particular_sheet_budget_search(access=access)
         ui.label('Operação de orçamentos').classes('text-xl font-semibold')
@@ -78,8 +73,6 @@ def render_particular_operational_budgets(*, access: ParticularAccess) -> None:
             ui.notify('Não foi possível consultar os orçamentos.', type='negative')
             return
 
-        # Uma única requisição ao backend para os indicadores desta página.
-        # Se a consulta falhar, nunca exibir ausência de conferência como fato.
         statuses = None
         if rows:
             try:
