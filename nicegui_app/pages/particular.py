@@ -19,6 +19,9 @@ from nicegui_app.services.particular_service import (
 from nicegui_app.components.particular_mv_dialog import (
     open_particular_mv_dialog,
 )
+from nicegui_app.services.particular_sheets_service import (
+    get_particular_sheets_summary,
+)
 from nicegui_app.components.particular_operational_budgets import (
     render_particular_operational_budgets,
 )
@@ -440,6 +443,94 @@ def render_particular(user: dict) -> None:
                 with ui.tab_panel(overview_tab):
                     with ui.column().classes("w-full gap-5"):
                         ui.label("Visão geral").classes("text-h5 text-weight-bold")
+                        with ui.card().classes("w-full p-5 gap-4"):
+                            ui.label("Indicadores das grades").classes(
+                                "text-h6 text-weight-bold"
+                            )
+                            ui.label(
+                                "Dados da cópia de testes do Google Sheets. "
+                                "Os totais representam números de orçamento distintos "
+                                "nas grades, não procedimentos realizados no MV."
+                            ).classes("text-body2 text-grey-7")
+
+                            sheets_result = ui.column().classes("w-full gap-3")
+
+                            async def load_sheets_summary():
+                                from nicegui import run
+
+                                load_button.disable()
+                                sheets_result.clear()
+
+                                with sheets_result:
+                                    ui.label("Consultando as três grades...").classes(
+                                        "text-body2 text-grey-7"
+                                    )
+
+                                try:
+                                    summary = await run.io_bound(
+                                        get_particular_sheets_summary,
+                                        access,
+                                    )
+                                except Exception:
+                                    sheets_result.clear()
+                                    with sheets_result:
+                                        ui.label(
+                                            "Não foi possível carregar os indicadores "
+                                            "das grades. Tente novamente mais tarde."
+                                        ).classes("text-negative")
+                                    return
+                                finally:
+                                    load_button.enable()
+
+                                sheets_result.clear()
+
+                                with sheets_result:
+                                    with ui.row().classes("w-full gap-4 flex-wrap"):
+                                        with ui.card().classes(
+                                            "flex-1 min-w-[180px] p-4 gap-2"
+                                        ):
+                                            ui.label("Orçamentos distintos nas três grades")
+                                            ui.label(
+                                                f'{summary["orcamentos_distintos_total"]:,}'
+                                                .replace(",", ".")
+                                            ).classes("text-h4 text-weight-bold")
+
+                                        with ui.card().classes(
+                                            "flex-1 min-w-[180px] p-4 gap-2"
+                                        ):
+                                            ui.label("Presentes em mais de uma grade")
+                                            ui.label(
+                                                f'{summary["orcamentos_em_mais_de_uma_aba"]:,}'
+                                                .replace(",", ".")
+                                            ).classes("text-h4 text-weight-bold")
+
+                                    with ui.row().classes("w-full gap-4 flex-wrap"):
+                                        for name, stats in summary["abas"].items():
+                                            with ui.card().classes(
+                                                "flex-1 min-w-[180px] p-4 gap-2"
+                                            ):
+                                                ui.label(name).classes(
+                                                    "text-subtitle2 text-weight-bold"
+                                                )
+                                                ui.label(
+                                                    f'{stats["orcamentos_distintos"]:,}'
+                                                    .replace(",", ".")
+                                                ).classes("text-h5 text-weight-bold")
+                                                ui.label(
+                                                    "Orçamentos distintos nesta grade"
+                                                ).classes("text-caption text-grey-7")
+
+                                    ui.label(
+                                        "Um mesmo orçamento pode constar em várias grades. "
+                                        "A presença de aviso ou contato não comprova "
+                                        "a realização do procedimento."
+                                    ).classes("text-caption text-grey-7")
+
+                            load_button = ui.button(
+                                "Atualizar indicadores das grades",
+                                icon="refresh",
+                                on_click=load_sheets_summary,
+                            ).props("outline no-caps")
                         ui.label(
                             "Indicadores disponíveis nesta etapa. Dados financeiros e integração "
                             "com o Google Sheets serão adicionados após a conexão da base."
