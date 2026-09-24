@@ -7,6 +7,7 @@ from nicegui import run, ui
 
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_sheets_lookup import get_particular_sheet_budget_matches
+from nicegui_app.services.particular_grade_comparison import compare_grade_occurrences
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def open_particular_sheet_budget_dialog(*, access: ParticularAccess, budget_numb
         ui.label('Consulta somente leitura à cópia de testes. Presença nas grades não comprova realização no MV.').classes('text-sm text-gray-600')
         status = ui.label('Consultando as três grades...').classes('text-sm text-gray-600')
         with ui.scroll_area().classes('w-full').style('max-height: 65vh'):
+            comparison = ui.column().classes('w-full gap-2')
             results = ui.column().classes('w-full gap-3')
         ui.button('Fechar', on_click=dialog.close).props('outline')
 
@@ -48,13 +50,22 @@ def open_particular_sheet_budget_dialog(*, access: ParticularAccess, budget_numb
             data = await run.io_bound(get_particular_sheet_budget_matches, access, number)
         except Exception:
             logger.error('Falha ao consultar as grades para orçamento operacional.')
-            status.set_text('Não foi possível consultar as grades. Tente novamente.')
+            if not dialog.is_deleted:
+                status.set_text('Não foi possível consultar as grades. Tente novamente.')
             return
         if dialog.is_deleted:
             return
         total = data['total']
         status.set_text(f'{total} ocorrência(s) para o orçamento {number}.' +
                         (' Exibindo somente as primeiras 40.' if data['limitado'] else ''))
+        comparison.clear()
+        with comparison:
+            if total:
+                with ui.card().classes('w-full p-3 gap-2 bg-blue-50'):
+                    ui.label('Pontos para conferência').classes('font-semibold')
+                    ui.label('Comparação informativa apenas entre ocorrências deste orçamento. Não identifica pacientes nem confirma negativa, transferência ou realização no MV.').classes('text-xs text-gray-600')
+                    for notice in compare_grade_occurrences(data):
+                        ui.label('• ' + notice).classes('text-sm whitespace-pre-wrap break-words')
         results.clear()
         with results:
             if not total:
