@@ -71,12 +71,28 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                 with table_area:
                     if transcription:
                         total = sum((_money(r.get('valor_bruto_importado')) for r in transcription), Decimal(0))
-                        ui.label(f'Transcrições identificadas por CONSULTORIO: {sum(int(r.get("orcamentos_importados") or 0) for r in transcription)} orçamento(s) · {format_brl(total)}').classes('text-subtitle2')
+                        identified = sum(int(r.get('orcamentos_importados') or 0) for r in transcription)
+                        classified = sum(int(r.get('orcamentos_transcricao') or 0) for r in transcription)
+                        classified_value = sum((_money(r.get('valor_transcricao')) for r in transcription), Decimal(0))
+                        pending = sum(int(r.get('orcamentos_aguardando_analise') or 0) for r in transcription)
+                        excluded = sum(int(r.get('orcamentos_excluidos') or 0) for r in transcription)
+                        incomplete = sum(int(r.get('orcamentos_decisao_incompleta') or 0) for r in transcription)
+                        ui.label(
+                            f'CONSULTORIO identificado: {identified} orçamento(s) · {format_brl(total)} bruto'
+                        ).classes('text-subtitle2')
+                        ui.label(
+                            f'Classificados como transcrição: {classified} orçamento(s) · {format_brl(classified_value)}'
+                        ).classes('text-body2 text-grey-8')
+                        if pending or excluded or incomplete:
+                            ui.label(
+                                f'Os demais registros com CONSULTORIO permanecem em classificações prioritárias: '
+                                f'{pending} pendente(s), {excluded} excluído(s) por duplicidade e '
+                                f'{incomplete} com decisão incompleta.'
+                            ).classes('text-caption text-grey-7')
                         inconsistent = sum(int(r.get('orcamentos_liberados') or 0) for r in transcription)
                         if inconsistent:
                             ui.label(
-                                f'Atenção: {inconsistent} orçamento(s) com CONSULTORIO ainda aparecem como liberados na visão financeira do banco. '
-                                'A separação visual não altera os totais oficiais; é necessário ajustar a classificação nas visões mensais, semanais e por médico antes de considerar o fechamento definitivo.'
+                                f'Atenção: {inconsistent} orçamento(s) com CONSULTORIO ainda aparecem como liberados na visão financeira do banco.'
                             ).classes('text-warning text-weight-bold')
                     if not doctors:
                         ui.label('Nenhum orçamento associado a médico neste mês.').classes('text-caption')
