@@ -48,6 +48,10 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                 item_value = sum((_decimal(row.get("valor_itens")) for row in rows), Decimal(0))
                 item_records = sum(int(row.get("registros_item") or 0) for row in rows)
                 coverage = item_value / released * Decimal("100") if released else Decimal(0)
+                top_value_rows = rows[:10]
+                top_value = sum((_decimal(row.get("valor_itens")) for row in top_value_rows), Decimal(0))
+                top_concentration = top_value / item_value * Decimal("100") if item_value else Decimal(0)
+                recurring_rows = sorted(rows, key=lambda row: (int(row.get("orcamentos") or 0), _decimal(row.get("valor_itens"))), reverse=True)[:10]
 
                 with area:
                     if not rows:
@@ -59,14 +63,14 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                             ("Valor dos itens detalhados", format_brl(item_value), "Não equivale ao total dos orçamentos"),
                             ("Cobertura financeira dos itens", f"{coverage:.2f}%".replace(".", ","), f"Sobre {format_brl(released)} liberados"),
                             ("Registros de itens", f"{item_records:,}".replace(",", "."), "Itens ativos agregados"),
-                            ("Códigos/descrições", f"{len(rows):,}".replace(",", "."), "Combinações distintas na visão"),
+                            ("Concentração Top 10", f"{top_concentration:.2f}%".replace(".", ","), f"{format_brl(top_value)} dos itens detalhados"),
                         ):
                             with ui.card().classes("flex-1 min-w-[210px] p-4 gap-1"):
                                 ui.label(label).classes("text-caption text-grey-7")
                                 ui.label(value).classes("text-h5 text-weight-bold")
                                 ui.label(note).classes("text-caption text-grey-7")
 
-                    top = rows[:10]
+                    top = top_value_rows
                     ui.label("Itens com maior valor acumulado").classes("text-h6 text-weight-bold")
                     ui.echart({
                         "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
@@ -88,6 +92,16 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                         "o eixo horizontal está em milhares de reais."
                     ).classes("text-caption text-grey-7")
 
+                    ui.label("Itens presentes em mais orçamentos").classes("text-h6 text-weight-bold")
+                    ui.echart({
+                        "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+                        "grid": {"left": 155, "right": 35, "bottom": 30, "top": 20},
+                        "xAxis": {"type": "value", "name": "Orçamentos", "minInterval": 1},
+                        "yAxis": {"type": "category", "inverse": True, "data": [str(row.get("codigo") or "SEM_CODIGO") for row in recurring_rows]},
+                        "series": [{"name": "Orçamentos", "type": "bar", "data": [int(row.get("orcamentos") or 0) for row in recurring_rows]}],
+                    }).classes("w-full h-96")
+                    ui.label("Recorrência = quantidade de orçamentos liberados em que cada código/descrição aparece; não corresponde à quantidade física do item.").classes("text-caption text-grey-7")
+
                     columns = [
                         {"name": "codigo", "label": "Código", "field": "codigo", "align": "left", "sortable": True},
                         {"name": "descricao", "label": "Descrição", "field": "descricao", "align": "left", "sortable": True},
@@ -98,6 +112,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                     ]
                     data = [
                         {
+                            "row_key": str(row.get("codigo") or "SEM_CODIGO") + "::" + str(row.get("descricao") or "Descrição não informada"),
                             "codigo": str(row.get("codigo") or "SEM_CODIGO"),
                             "descricao": str(row.get("descricao") or "Descrição não informada"),
                             "orcamentos": int(row.get("orcamentos") or 0),
@@ -107,7 +122,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                         }
                         for row in rows
                     ]
-                    ui.table(columns=columns, rows=data, row_key="codigo", pagination=10).classes("w-full")
+                    ui.table(columns=columns, rows=data, row_key="row_key", pagination=10).classes("w-full")
                     ui.label(
                         "Cobertura financeira = soma dos itens detalhados ÷ valor dos orçamentos liberados. "
                         "Não interpretar esta composição como faturamento realizado ou receita por procedimento."
