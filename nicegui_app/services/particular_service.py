@@ -135,6 +135,7 @@ def decide_particular_relation(
     relation_id: str,
     decision: str,
     review_reason: str,
+    retained_budget_id: str | None = None,
 ) -> str:
     """Registra a decisão humana sobre uma possível relação entre orçamentos."""
 
@@ -146,6 +147,7 @@ def decide_particular_relation(
     normalized_relation_id = str(relation_id or "").strip()
     normalized_decision = str(decision or "").strip().upper()
     normalized_reason = str(review_reason or "").strip()
+    normalized_retained_budget_id = str(retained_budget_id or "").strip() or None
 
     if not normalized_relation_id:
         raise ValueError("A relação é obrigatória.")
@@ -170,6 +172,7 @@ def decide_particular_relation(
         relation_id=normalized_relation_id,
         decision=normalized_decision,
         review_reason=normalized_reason,
+        retained_budget_id=normalized_retained_budget_id,
     )
 
 def rectify_particular_relation(
@@ -178,6 +181,7 @@ def rectify_particular_relation(
     relation_id: str,
     new_decision: str,
     new_reason: str,
+    retained_budget_id: str | None = None,
 ) -> str:
     """Retifica uma decisão final por meio da RPC auditada e restrita."""
     if not access.can_write:
@@ -188,6 +192,7 @@ def rectify_particular_relation(
     normalized_relation_id = str(relation_id or "").strip()
     normalized_decision = str(new_decision or "").strip().upper()
     normalized_reason = str(new_reason or "").strip()
+    normalized_retained_budget_id = str(retained_budget_id or "").strip() or None
 
     if not normalized_relation_id:
         raise ValueError("A relação é obrigatória.")
@@ -203,6 +208,7 @@ def rectify_particular_relation(
         relation_id=normalized_relation_id,
         new_decision=normalized_decision,
         new_reason=normalized_reason,
+        retained_budget_id=normalized_retained_budget_id,
     )
 
 def register_particular_mv_check(
