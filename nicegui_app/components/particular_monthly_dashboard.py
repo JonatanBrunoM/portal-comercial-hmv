@@ -9,6 +9,7 @@ from nicegui_app.services.particular_monthly_dashboard import (
 )
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.components.particular_doctor_dashboard import render_doctor_dashboard
+from nicegui_app.components.particular_financial_composition import render_financial_composition
 from nicegui_app.components.particular_item_dashboard import render_item_dashboard
 
 
@@ -35,6 +36,7 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     weekly_cache: dict[str, list[dict]] = {}
     weekly_content = ui.column().classes("w-full gap-3")
     render_doctor_dashboard(access, months, rows_by_month)
+    render_financial_composition(access, months, rows_by_month)
     render_item_dashboard(access, months, rows_by_month)
     selection_version = 0
 
