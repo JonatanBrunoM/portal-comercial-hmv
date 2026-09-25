@@ -225,9 +225,15 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                                 choices = {
                                     key: _decision_label(key)
                                     for key in ("CONFIRMED_DUPLICATE", "REBUDGET", "DISTINCT")
-                                    if key != current_decision
+                                    if key != current_decision or key == "CONFIRMED_DUPLICATE"
                                 }
                                 new_decision = ui.radio(choices).props("inline")
+                                retained_options = {
+                                    str(budget_a.get("id")): f'Manter orçamento {_text(budget_a.get("budget_number"))}',
+                                    str(budget_b.get("id")): f'Manter orçamento {_text(budget_b.get("budget_number"))}',
+                                }
+                                retained_budget = ui.radio(retained_options).props("inline")
+                                ui.label("Ao confirmar duplicidade, selecione obrigatoriamente qual orçamento deve ser mantido.").classes("text-caption")
                                 new_reason = ui.textarea(
                                     "Nova justificativa",
                                     placeholder="Explique o motivo da correção, sem dados do paciente.",
@@ -236,8 +242,12 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                                 def request_rectification() -> None:
                                     selected = str(new_decision.value or "").strip().upper()
                                     justification = str(new_reason.value or "").strip()
+                                    retained_id = str(retained_budget.value or "").strip() or None
                                     if selected not in choices:
                                         ui.notify("Selecione uma classificação diferente da atual.", type="warning", position="top")
+                                        return
+                                    if selected == "CONFIRMED_DUPLICATE" and retained_id not in retained_options:
+                                        ui.notify("Selecione qual orçamento deve ser mantido.", type="warning", position="top")
                                         return
                                     if not justification or len(justification) > 1000:
                                         ui.notify("Informe uma justificativa de até 1000 caracteres.", type="warning", position="top")
@@ -257,6 +267,7 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                                                     relation_id=relation_id,
                                                     new_decision=selected,
                                                     new_reason=justification,
+                                                    retained_budget_id=retained_id if selected == "CONFIRMED_DUPLICATE" else None,
                                                 )
                                             except ParticularAccessDenied:
                                                 ui.notify("Seu perfil não possui permissão para retificar esta relação.", type="negative", position="top")
@@ -305,6 +316,13 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                         }
                     ).props("inline")
 
+                    retained_options = {
+                        str(budget_a.get("id")): f'Manter orçamento {_text(budget_a.get("budget_number"))}',
+                        str(budget_b.get("id")): f'Manter orçamento {_text(budget_b.get("budget_number"))}',
+                    }
+                    retained_budget = ui.radio(retained_options).props("inline")
+                    ui.label("Ao confirmar duplicidade, selecione obrigatoriamente qual orçamento deve ser mantido.").classes("text-caption")
+
                     reason = ui.textarea(
                         "Justificativa",
                         placeholder="Descreva o motivo sem incluir dados do paciente.",
@@ -313,6 +331,7 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                     def request_confirmation() -> None:
                         selected = str(decision.value or "").strip().upper()
                         justification = str(reason.value or "").strip()
+                        retained_id = str(retained_budget.value or "").strip() or None
 
                         if selected not in {
                             "CONFIRMED_DUPLICATE",
@@ -320,6 +339,9 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                             "DISTINCT",
                         }:
                             ui.notify("Selecione uma decisão.", type="warning", position="top")
+                            return
+                        if selected == "CONFIRMED_DUPLICATE" and retained_id not in retained_options:
+                            ui.notify("Selecione qual orçamento deve ser mantido.", type="warning", position="top")
                             return
                         if not justification:
                             ui.notify(
@@ -349,6 +371,7 @@ def _open_relation_comparison(access: Any, relation_id: str) -> None:
                                         relation_id=relation_id,
                                         decision=selected,
                                         review_reason=justification,
+                                        retained_budget_id=retained_id if selected == "CONFIRMED_DUPLICATE" else None,
                                     )
                                 except ParticularAccessDenied:
                                     ui.notify(
