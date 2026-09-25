@@ -9,6 +9,7 @@ from nicegui_app.services.particular_monthly_dashboard import (
     list_monthly_validation, list_weekly_validation, format_brl, month_label,
 )
 from nicegui_app.services.particular_service import ParticularAccess
+from nicegui_app.components.particular_item_dashboard import render_item_dashboard
 
 
 _WEEK_LABELS = ("1–7", "8–14", "15–21", "22–28", "29–fim")
@@ -33,6 +34,7 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     rows_by_month: dict[str, dict] = {}
     weekly_cache: dict[str, list[dict]] = {}
     weekly_content = ui.column().classes("w-full gap-3")
+    render_item_dashboard(access, months, rows_by_month)
     selection_version = 0
 
     def render_month(value: str | None) -> None:
