@@ -26,9 +26,10 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
         "Não representam faturamento realizado nem comprovam cobertura completa do mês."
     ).classes("text-body2 text-grey-7")
 
-    content = ui.column().classes("w-full gap-4")
-    months = ui.select(options={}, label="Mês de referência").classes("min-w-[220px]")
+    with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
+        months = ui.select(options={}, label="Mês de referência").classes("min-w-[220px]")
     months.set_visibility(False)
+    content = ui.column().classes("w-full gap-4")
     rows_by_month: dict[str, dict] = {}
     weekly_cache: dict[str, list[dict]] = {}
     weekly_content = ui.column().classes("w-full gap-3")
@@ -110,17 +111,18 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                 ).classes("text-negative text-weight-bold")
                 return
             ui.echart({
-                "tooltip": {"trigger": "axis", "valueFormatter": "function (v) { return new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(v); }"},
+                "tooltip": {"trigger": "axis"},
                 "legend": {"top": 0},
-                "grid": {"left": 85, "right": 25, "bottom": 45, "top": 55},
+                "grid": {"left": 95, "right": 25, "bottom": 45, "top": 55},
                 "xAxis": {"type": "category", "name": "Dias do mês", "data": list(_WEEK_LABELS)},
-                "yAxis": {"type": "value", "axisLabel": {"formatter": "function (v) { return 'R$ ' + (v / 1000000).toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' mi'; }"}},
+                "yAxis": {"type": "value", "name": "Valor (R$ milhões)", "axisLabel": {"formatter": "{value}"}},
                 "series": [
                     {"name": label, "type": "bar", "itemStyle": {"color": color},
-                     "data": [float(Decimal(str(by_week.get(week, {}).get(field) or 0))) for week in range(1, 6)]}
+                     "data": [float(Decimal(str(by_week.get(week, {}).get(field) or 0)) / Decimal("1000000")) for week in range(1, 6)]}
                     for label, field, color in _WEEK_FIELDS
                 ],
             }).classes("w-full h-80")
+            ui.label("Eixo vertical em milhões de reais; valores exatos nos cartões abaixo.").classes("text-caption text-grey-7")
             with ui.row().classes("w-full gap-3 flex-wrap"):
                 for week in range(1, 6):
                     record = by_week.get(week)
