@@ -1,4 +1,3 @@
-"""Painel mensal e evolução semanal de validação dos orçamentos do Particular."""
 from __future__ import annotations
 
 from decimal import Decimal
@@ -9,6 +8,7 @@ from nicegui_app.services.particular_monthly_dashboard import (
     list_monthly_validation, list_weekly_validation, format_brl, month_label,
 )
 from nicegui_app.services.particular_service import ParticularAccess
+from nicegui_app.components.particular_doctor_dashboard import render_doctor_dashboard
 from nicegui_app.components.particular_item_dashboard import render_item_dashboard
 
 
@@ -34,6 +34,7 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     rows_by_month: dict[str, dict] = {}
     weekly_cache: dict[str, list[dict]] = {}
     weekly_content = ui.column().classes("w-full gap-3")
+    render_doctor_dashboard(access, months, rows_by_month)
     render_item_dashboard(access, months, rows_by_month)
     selection_version = 0
 
