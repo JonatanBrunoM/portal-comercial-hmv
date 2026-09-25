@@ -638,6 +638,7 @@ def decide_budget_relation(
     relation_id: str,
     decision: str,
     review_reason: str,
+    retained_budget_id: str | None = None,
 ) -> str:
     actor_profile_id = _require_uuid(
         actor_profile_id,
@@ -650,6 +651,10 @@ def decide_budget_relation(
 
     normalized_decision = str(decision or "").strip().upper()
     normalized_reason = str(review_reason or "").strip()
+    normalized_retained_budget_id = (
+        _require_uuid(retained_budget_id, field="retained_budget_id")
+        if retained_budget_id else None
+    )
 
     if normalized_decision not in {
         "CONFIRMED_DUPLICATE",
@@ -673,6 +678,7 @@ def decide_budget_relation(
             "p_relation_id": relation_id,
             "p_decision": normalized_decision,
             "p_review_reason": normalized_reason,
+            "p_retained_budget_id": normalized_retained_budget_id,
         },
         timeout=30.0,
     )
@@ -690,11 +696,16 @@ def rectify_budget_relation(
     relation_id: str,
     new_decision: str,
     new_reason: str,
+    retained_budget_id: str | None = None,
 ) -> str:
     actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
     relation_id = _require_uuid(relation_id, field="relation_id")
     normalized_decision = str(new_decision or "").strip().upper()
     normalized_reason = str(new_reason or "").strip()
+    normalized_retained_budget_id = (
+        _require_uuid(retained_budget_id, field="retained_budget_id")
+        if retained_budget_id else None
+    )
 
     if normalized_decision not in {"CONFIRMED_DUPLICATE", "REBUDGET", "DISTINCT"}:
         raise ValueError("Nova decisão inválida.")
@@ -710,6 +721,7 @@ def rectify_budget_relation(
             "p_relation_id": relation_id,
             "p_new_decision": normalized_decision,
             "p_new_reason": normalized_reason,
+            "p_retained_budget_id": normalized_retained_budget_id,
         },
         timeout=30.0,
     )
