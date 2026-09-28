@@ -54,6 +54,7 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                     ("Liberado por duplicidade", "valor_liberado_duplicidade", "orcamentos_liberados"),
                     ("Retido para análise", "valor_aguardando_analise", "orcamentos_aguardando_analise"),
                     ("Excluído por duplicidade", "valor_excluido_duplicidade", "orcamentos_excluidos"),
+                    ("Anulado confirmado", "valor_anulado", "orcamentos_anulados"),
                 ):
                     with ui.card().classes("flex-1 min-w-[210px] p-4 gap-1"):
                         ui.label(label).classes("text-caption text-grey-7")
@@ -70,6 +71,12 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                         "Esses valores não integram o total liberado. "
                         "Consulte a aba Duplicidades para concluir as revisões."
                     )
+            annulled = int(row.get("orcamentos_anulados") or 0)
+            if annulled:
+                ui.label(
+                    f"{annulled} orçamento(s) anulado(s) confirmado(s) estão preservados para auditoria, "
+                    "mas não integram os totais gerenciais liberados."
+                ).classes("text-body2 text-grey-7")
             if int(row.get("orcamentos_transcricao") or 0):
                 ui.label("Transcrições são apresentadas separadamente e não integram o total liberado.").classes("text-body2 text-grey-7")
             if int(row.get("orcamentos_valor_nao_validado") or 0):
@@ -106,6 +113,8 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                 ("orcamentos_transcricao", "orcamentos_transcricao"),
                 ("valor_transcricao", "valor_transcricao"),
                 ("orcamentos_valor_nao_validado", "orcamentos_valor_nao_validado"),
+                ("orcamentos_anulados", "orcamentos_anulados"),
+                ("valor_anulado", "valor_anulado"),
             )
             if any(
                 sum(Decimal(str(row.get(weekly_field) or 0)) for row in rows)
@@ -140,6 +149,11 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                         ui.label(f'{int(record.get("orcamentos_importados") or 0)} orçamentos').classes("text-caption")
                         for label, field, _ in _WEEK_FIELDS:
                             ui.label(f'{label}: {format_brl(record.get(field))}').classes("text-body2")
+                        annulled = int(record.get("orcamentos_anulados") or 0)
+                        if annulled:
+                            ui.label(
+                                f'Anulados: {annulled} · {format_brl(record.get("valor_anulado"))}'
+                            ).classes("text-body2 text-grey-7")
             ui.label(
                 "O gráfico compara valores de orçamentos importados. Valores de outras classificações "
                 "(como transcrições e decisões incompletas) não estão nas três séries exibidas."
