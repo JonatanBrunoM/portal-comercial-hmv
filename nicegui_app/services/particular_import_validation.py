@@ -86,19 +86,55 @@ def _normalize_marker(value: Any) -> str:
     return "".join(ch for ch in raw if not unicodedata.combining(ch))
 
 
-def _is_explicitly_annulled(record: dict[str, Any]) -> bool:
-    """Reconhece ANULADO apenas quando a própria fonte o declara explicitamente.
+def _annulment_signals(
+    record: dict[str, Any],
+    *,
+    procedure: Decimal,
+    material: Decimal,
+    total: Decimal,
+) -> list[str]:
+    """Retorna evidências objetivas de possível orçamento anulado.
 
-    O XML HMV2670 pode continuar trazendo valor para um orçamento que foi anulado
-    em uma fonte operacional posterior. Nesses casos, a decisão do banco prevalece
-    no preflight; esta função não tenta inferir anulação pelo valor ou pelos itens.
+    A origem HMV2670 não informa um status ANULADO confiável. Portanto o motor
+    não transforma automaticamente texto estranho em anulação: ele aponta sinais
+    para conferência humana. O valor original permanece intacto.
     """
 
-    for field in ("STATUS", "SITUACAO", "NOME_MEDICO", "NOME_PACIENTE", "SOLICITANTE"):
-        if _normalize_marker(record.get(field)) == "ANULADO":
-            return True
-    return False
+    signals: list[str] = []
+    patient = str(record.get("NOME_PACIENTE") or "").strip()
+    doctor = str(record.get("NOME_MEDICO") or "").strip()
+    requester = str(record.get("SOLICITANTE") or "").strip()
+    items = record.get("ITEMS") or []
 
+    if total == 0:
+        signals.append("TOTAL_ZERO")
+    if total == 0 and len(items) > 0:
+        signals.append("TOTAL_ZERO_COM_ITENS")
+    if total > 0 and len(items) == 0 and _normalize_marker(requester) not in {"NEGATIVA"}:
+        signals.append("TOTAL_POSITIVO_SEM_ITENS")
+    if not patient:
+        signals.append("PACIENTE_AUSENTE")
+    if not doctor:
+        signals.append("MEDICO_AUSENTE")
+    if not requester:
+        signals.append("SOLICITANTE_AUSENTE")
+
+    # Nome de uma única palavra é apenas um indício de baixa qualidade cadastral.
+    # Pode ser legítimo; por isso nunca confirma anulação sozinho.
+    patient_normalized = _normalize_marker(patient)
+    if patient_normalized and " " not in patient_normalized and len(patient_normalized) >= 4:
+        signals.append("PACIENTE_NOME_ATIPICO")
+
+    # Inconsistência extrema: há itens valorizados, mas o cabeçalho foi zerado.
+    item_total = Decimal("0")
+    for item in items:
+        parsed = _decimal(item.get("VALOR_TOTAL1"))
+        if parsed is not None:
+            item_total += parsed
+    if total == 0 and item_total > 0:
+        signals.append("ITENS_VALORIZADOS_CABECALHO_ZERO")
+
+    return signals
 
 def _analyse_records(
     *,
@@ -123,8 +159,7 @@ def _analyse_records(
     eligible_total_value = Decimal("0")
     eligible_procedure_value = Decimal("0")
     eligible_material_value = Decimal("0")
-    annulled_value = Decimal("0")
-    annulled_budget_numbers: list[str] = []
+    annulment_candidates: list[dict[str, Any]] = []
 
     for record in records:
         budget_number = str(record.get("SEQ_ORCAMENTO") or "").strip()
@@ -152,15 +187,25 @@ def _analyse_records(
         material_value += material
         total_value += total
 
-        is_annulled = _is_explicitly_annulled(record)
-        record["IS_ANNULLED"] = is_annulled
-        if is_annulled:
-            annulled_budget_numbers.append(budget_number)
-            annulled_value += total
-        else:
-            eligible_procedure_value += procedure
-            eligible_material_value += material
-            eligible_total_value += total
+        signals = _annulment_signals(
+            record,
+            procedure=procedure,
+            material=material,
+            total=total,
+        )
+        record["ANNULMENT_SIGNALS"] = signals
+        if signals:
+            annulment_candidates.append({
+                "budget_number": budget_number,
+                "signals": signals,
+                "total_value": str(total),
+            })
+
+        # Candidato a anulação NÃO é excluído automaticamente. A exclusão financeira
+        # só ocorrerá após confirmação operacional persistida no banco.
+        eligible_procedure_value += procedure
+        eligible_material_value += material
+        eligible_total_value += total
 
         if procedure < 0 or material < 0 or total < 0:
             negative_financial += 1
@@ -179,12 +224,12 @@ def _analyse_records(
         issues.append(ValidationIssue("CRITICAL", "DUPLICATE_BUDGET_HEADER", f"{len(repeated_budget_headers)} número(s) de orçamento aparecem mais de uma vez no mesmo arquivo."))
     if negative_financial:
         issues.append(ValidationIssue("WARNING", "NEGATIVE_VALUES", f"{negative_financial} orçamento(s) possuem valor financeiro negativo e exigem conferência."))
-    if annulled_budget_numbers:
+    if annulment_candidates:
         issues.append(ValidationIssue(
             "WARNING",
-            "ANNULLED_EXCLUDED",
-            f"{len(annulled_budget_numbers)} orçamento(s) estão explicitamente marcados como ANULADO na fonte. "
-            "O valor original é preservado para auditoria, mas não compõe o total mensal considerado.",
+            "POSSIBLE_ANNULMENTS",
+            f"{len(annulment_candidates)} orçamento(s) possuem sinais compatíveis com cadastro incompleto/anulação. "
+            "Nenhum foi excluído automaticamente do total; exigem conferência.",
         ))
 
     competences = sorted({(d.year, d.month) for d in dates})
@@ -228,11 +273,9 @@ def _analyse_records(
         "procedure_value_label": _money(procedure_value),
         "material_value_label": _money(material_value),
         "total_value_label": _money(total_value),
-        "annulled_count": len(annulled_budget_numbers),
-        "annulled_budget_numbers": annulled_budget_numbers,
-        "annulled_value": str(annulled_value),
-        "annulled_value_label": _money(annulled_value),
-        "eligible_budgets": len(budget_numbers) - len(annulled_budget_numbers),
+        "annulment_candidate_count": len(annulment_candidates),
+        "annulment_candidates": annulment_candidates,
+        "eligible_budgets": len(budget_numbers),
         "eligible_procedure_value": str(eligible_procedure_value),
         "eligible_material_value": str(eligible_material_value),
         "eligible_total_value": str(eligible_total_value),
