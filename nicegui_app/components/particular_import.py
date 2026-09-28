@@ -178,17 +178,29 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 columns = [
                                     {"name": "budget", "label": "Orçamento", "field": "budget", "align": "left"},
                                     {"name": "date", "label": "Data", "field": "date", "align": "left"},
-                                    {"name": "proc", "label": "Δ Procedimento", "field": "proc", "align": "right"},
-                                    {"name": "mat", "label": "Δ Material", "field": "mat", "align": "right"},
-                                    {"name": "total", "label": "Δ Total", "field": "total", "align": "right"},
+                                    {"name": "proc_old", "label": "Proced. anterior", "field": "proc_old", "align": "right"},
+                                    {"name": "proc_new", "label": "Proced. novo", "field": "proc_new", "align": "right"},
+                                    {"name": "proc_diff", "label": "Δ Proced.", "field": "proc_diff", "align": "right"},
+                                    {"name": "mat_old", "label": "Material anterior", "field": "mat_old", "align": "right"},
+                                    {"name": "mat_new", "label": "Material novo", "field": "mat_new", "align": "right"},
+                                    {"name": "mat_diff", "label": "Δ Material", "field": "mat_diff", "align": "right"},
+                                    {"name": "total_old", "label": "Total anterior", "field": "total_old", "align": "right"},
+                                    {"name": "total_new", "label": "Total novo", "field": "total_new", "align": "right"},
+                                    {"name": "total_diff", "label": "Δ Total", "field": "total_diff", "align": "right"},
                                 ]
                                 rows = [
                                     {
                                         "budget": str(row["budget_number"]),
                                         "date": _date_br(row["budget_date"]),
-                                        "proc": _money_br(row["diff_procedure"]),
-                                        "mat": _money_br(row["diff_material"]),
-                                        "total": _money_br(row["diff_total"]),
+                                        "proc_old": _money_br(row["old_procedure"]),
+                                        "proc_new": _money_br(row["new_procedure"]),
+                                        "proc_diff": _money_br(row["diff_procedure"]),
+                                        "mat_old": _money_br(row["old_material"]),
+                                        "mat_new": _money_br(row["new_material"]),
+                                        "mat_diff": _money_br(row["diff_material"]),
+                                        "total_old": _money_br(row["old_total"]),
+                                        "total_new": _money_br(row["new_total"]),
+                                        "total_diff": _money_br(row["diff_total"]),
                                     }
                                     for row in details
                                     if any(Decimal(row[key]) != 0 for key in ("diff_procedure", "diff_material", "diff_total"))
@@ -198,7 +210,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     rows=rows,
                                     row_key="budget",
                                     pagination={"rowsPerPage": 10},
-                                ).classes("w-full").props("dense flat bordered")
+                                ).classes("w-full").props("dense flat bordered wrap-cells")
                                 ui.label(
                                     "A tabela mostra somente diferenças financeiras entre o valor ORIGINAL vigente "
                                     "na base e o novo XML. Nenhuma alteração foi gravada."
