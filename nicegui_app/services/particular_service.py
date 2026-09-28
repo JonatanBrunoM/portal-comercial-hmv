@@ -325,7 +325,25 @@ def preflight_particular_import(
             return Decimal("0")
 
     def date_text(value: Any) -> str:
-        return str(value or "").strip()[:10]
+        """Normaliza datas do XML (DD/MM/YY ou DD/MM/YYYY) e do banco (YYYY-MM-DD)."""
+        from datetime import date as date_type, datetime as datetime_type
+
+        if isinstance(value, datetime_type):
+            return value.date().isoformat()
+        if isinstance(value, date_type):
+            return value.isoformat()
+
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+
+        for fmt in ("%d/%m/%y", "%d/%m/%Y", "%Y-%m-%d"):
+            try:
+                return datetime_type.strptime(raw[:10], fmt).date().isoformat()
+            except ValueError:
+                continue
+
+        return raw[:10]
 
     file_by_number: dict[int, dict[str, Any]] = {}
     for row in records:
