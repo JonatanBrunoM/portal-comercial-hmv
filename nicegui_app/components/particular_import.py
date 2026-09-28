@@ -216,6 +216,91 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     "na base e o novo XML. Nenhuma alteração foi gravada."
                                 ).classes("text-caption text-grey-7")
 
+                            comparisons = preflight.get("item_comparison", {})
+                            if comparisons:
+                                with ui.expansion(
+                                    "Explicar alterações pelos itens",
+                                    icon="manage_search",
+                                ).classes("w-full border rounded"):
+                                    for detail in details:
+                                        number = int(detail["budget_number"])
+                                        comparison = comparisons.get(number) or comparisons.get(str(number)) or {}
+                                        added_items = comparison.get("added", [])
+                                        removed_items = comparison.get("removed", [])
+                                        modified_items = comparison.get("modified", [])
+                                        unchanged_items = comparison.get("unchanged", False)
+
+                                        with ui.expansion(
+                                            f'Orçamento {number} · {_date_br(detail["budget_date"])}',
+                                            icon="receipt_long",
+                                        ).classes("w-full"):
+                                            if unchanged_items:
+                                                ui.label(
+                                                    "Itens sem alteração. A diferença está no cabeçalho financeiro do orçamento."
+                                                ).classes("text-positive text-weight-medium")
+                                            else:
+                                                ui.label(
+                                                    f'{len(added_items)} incluído(s) · '
+                                                    f'{len(removed_items)} removido(s) · '
+                                                    f'{len(modified_items)} alterado(s)'
+                                                ).classes("text-body2 text-weight-medium")
+
+                                                for title, items, icon in (
+                                                    ("Itens incluídos", added_items, "add_circle"),
+                                                    ("Itens removidos", removed_items, "remove_circle"),
+                                                ):
+                                                    if items:
+                                                        ui.label(title).classes("text-subtitle2 text-weight-bold")
+                                                        item_rows = [
+                                                            {
+                                                                "code": row["item_code"],
+                                                                "description": row["description"],
+                                                                "quantity": row["quantity"],
+                                                                "unit": _money_br(row["unit_value"]),
+                                                                "total": _money_br(row["total_value"]),
+                                                            }
+                                                            for row in items
+                                                        ]
+                                                        ui.table(
+                                                            columns=[
+                                                                {"name": "code", "label": "Código", "field": "code"},
+                                                                {"name": "description", "label": "Descrição", "field": "description"},
+                                                                {"name": "quantity", "label": "Qtd.", "field": "quantity", "align": "right"},
+                                                                {"name": "unit", "label": "Valor unit.", "field": "unit", "align": "right"},
+                                                                {"name": "total", "label": "Total", "field": "total", "align": "right"},
+                                                            ],
+                                                            rows=item_rows,
+                                                            row_key="code",
+                                                            pagination={"rowsPerPage": 5},
+                                                        ).classes("w-full").props("dense flat bordered")
+
+                                                if modified_items:
+                                                    ui.label("Itens alterados").classes("text-subtitle2 text-weight-bold")
+                                                    mod_rows = [
+                                                        {
+                                                            "code": row["item_code"],
+                                                            "description": row["description"],
+                                                            "changes": ", ".join(row["changes"]),
+                                                            "qty": f'{row["old_quantity"]} → {row["new_quantity"]}',
+                                                            "unit": f'{_money_br(row["old_unit_value"])} → {_money_br(row["new_unit_value"])}',
+                                                            "total": f'{_money_br(row["old_total_value"])} → {_money_br(row["new_total_value"])}',
+                                                        }
+                                                        for row in modified_items
+                                                    ]
+                                                    ui.table(
+                                                        columns=[
+                                                            {"name": "code", "label": "Código", "field": "code"},
+                                                            {"name": "description", "label": "Descrição", "field": "description"},
+                                                            {"name": "changes", "label": "Alteração", "field": "changes"},
+                                                            {"name": "qty", "label": "Quantidade", "field": "qty"},
+                                                            {"name": "unit", "label": "Valor unit.", "field": "unit"},
+                                                            {"name": "total", "label": "Total", "field": "total"},
+                                                        ],
+                                                        rows=mod_rows,
+                                                        row_key="code",
+                                                        pagination={"rowsPerPage": 5},
+                                                    ).classes("w-full").props("dense flat bordered")
+
             ui.upload(
                 label="Selecionar relatório HMV2670",
                 on_upload=handle_upload,
