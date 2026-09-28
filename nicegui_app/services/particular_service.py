@@ -12,6 +12,7 @@ from nicegui_app.repositories.particular_repository import (
     register_mv_check,
     get_mv_check_context,
     list_operational_budgets,
+    import_preflight,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -297,3 +298,93 @@ def list_particular_operational_budgets(
         limit=limit,
         offset=offset,
     )
+
+
+def preflight_particular_import(
+    *,
+    access: ParticularAccess,
+    validated_report: dict[str, Any],
+) -> dict[str, Any]:
+    """Compara deterministicamente o arquivo validado com a base atual."""
+
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para importar dados no módulo Particular."
+        )
+
+    records = validated_report.get("budget_records")
+    if not validated_report.get("valid_for_import") or not isinstance(records, list):
+        raise ValueError("O relatório precisa passar pela pré-validação antes do preflight.")
+
+    from decimal import Decimal, InvalidOperation
+
+    def dec(value: Any) -> Decimal:
+        try:
+            return Decimal(str(value if value is not None else "0"))
+        except InvalidOperation:
+            return Decimal("0")
+
+    def date_text(value: Any) -> str:
+        return str(value or "").strip()[:10]
+
+    file_by_number: dict[int, dict[str, Any]] = {}
+    for row in records:
+        number = int(str(row.get("SEQ_ORCAMENTO") or "").strip())
+        file_by_number[number] = row
+
+    existing_rows = import_preflight(
+        actor_profile_id=access.profile_id,
+        budget_numbers=list(file_by_number),
+    )
+    existing_by_number = {
+        int(row["budget_number"]): row
+        for row in existing_rows
+        if row.get("budget_number") is not None
+    }
+
+    new_numbers: list[int] = []
+    identical_numbers: list[int] = []
+    changed_numbers: list[int] = []
+    conflict_numbers: list[int] = []
+    new_value = Decimal("0")
+    changed_value = Decimal("0")
+
+    for number, incoming in file_by_number.items():
+        current = existing_by_number.get(number)
+        incoming_total = dec(incoming.get("VALOR_TOTAL"))
+        if current is None:
+            new_numbers.append(number)
+            new_value += incoming_total
+            continue
+
+        current_total = dec(current.get("total_value"))
+        same_date = date_text(incoming.get("DATA")) == date_text(current.get("budget_date"))
+        same_values = (
+            dec(incoming.get("VALOR")) == dec(current.get("procedure_value"))
+            and dec(incoming.get("VALOR_MATERIAL_ESPECIAL")) == dec(current.get("material_value"))
+            and incoming_total == current_total
+        )
+
+        if same_date and same_values:
+            identical_numbers.append(number)
+        elif same_date:
+            changed_numbers.append(number)
+            changed_value += incoming_total - current_total
+        else:
+            conflict_numbers.append(number)
+
+    safe = len(conflict_numbers) == 0
+    return {
+        "safe_to_import": safe,
+        "total_file": len(file_by_number),
+        "new_count": len(new_numbers),
+        "identical_count": len(identical_numbers),
+        "changed_count": len(changed_numbers),
+        "conflict_count": len(conflict_numbers),
+        "new_value": str(new_value),
+        "changed_value": str(changed_value),
+        "new_numbers": new_numbers,
+        "identical_numbers": identical_numbers,
+        "changed_numbers": changed_numbers,
+        "conflict_numbers": conflict_numbers,
+    }
