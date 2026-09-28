@@ -110,8 +110,6 @@ def _annulment_signals(
         signals.append("TOTAL_ZERO")
     if total == 0 and len(items) > 0:
         signals.append("TOTAL_ZERO_COM_ITENS")
-    if total > 0 and len(items) == 0 and _normalize_marker(requester) not in {"NEGATIVA"}:
-        signals.append("TOTAL_POSITIVO_SEM_ITENS")
     if not patient:
         signals.append("PACIENTE_AUSENTE")
     if not doctor:
@@ -119,8 +117,10 @@ def _annulment_signals(
     if not requester:
         signals.append("SOLICITANTE_AUSENTE")
 
-    # Nome de uma única palavra é apenas um indício de baixa qualidade cadastral.
-    # Pode ser legítimo; por isso nunca confirma anulação sozinho.
+    # Calibração HMV2670 (agosto/2026): total positivo sem itens gerou falsos
+    # positivos em orçamentos reais e, portanto, não é evidência de anulação.
+    # Nome de uma única palavra continua sendo apenas um indício de baixa
+    # qualidade cadastral e nunca confirma anulação sozinho.
     patient_normalized = _normalize_marker(patient)
     if patient_normalized and " " not in patient_normalized and len(patient_normalized) >= 4:
         signals.append("PACIENTE_NOME_ATIPICO")
