@@ -7,7 +7,7 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
-from nicegui_app.services.particular_service import ParticularAccess, preflight_particular_import
+from nicegui_app.services.particular_service import (\n    ParticularAccess,\n    decide_particular_annulment,\n    preflight_particular_import,\n)
 
 
 def _money_br(value) -> str:
@@ -144,6 +144,85 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 rows=candidate_rows,
                                 row_key="budget",
                             ).classes("w-full").props("flat bordered dense")
+
+                            if access.can_write:
+                                ui.label(
+                                    "Decisão humana · a justificativa é obrigatória e a evidência do arquivo permanece preservada."
+                                ).classes("text-caption text-grey-7")
+                                for candidate in result.get("annulment_candidates", []):
+                                    budget_number = int(candidate.get("budget_number"))
+                                    signals_text = ", ".join(
+                                        signal_labels.get(signal, signal)
+                                        for signal in candidate.get("signals", [])
+                                    )
+                                    decision_area = ui.column().classes("w-full gap-2")
+
+                                    with ui.expansion(
+                                        f"Revisar orçamento {budget_number}",
+                                        icon="fact_check",
+                                    ).classes("w-full border rounded"):
+                                        ui.label(f"Evidências: {signals_text}").classes("text-body2")
+                                        ui.label(
+                                            f"Valor informado no arquivo: {_money_br(candidate.get('total_value'))}"
+                                        ).classes("text-body2 text-weight-medium")
+                                        reason = ui.textarea(
+                                            "Justificativa da decisão",
+                                            placeholder="Descreva a conferência realizada antes de confirmar.",
+                                        ).props("outlined autogrow maxlength=1000").classes("w-full")
+
+                                        async def decide_candidate(
+                                            decision: str,
+                                            *,
+                                            number: int = budget_number,
+                                            reason_input=reason,
+                                            area=decision_area,
+                                        ) -> None:
+                                            justification = str(reason_input.value or "").strip()
+                                            if not justification:
+                                                ui.notify("Informe a justificativa da decisão.", type="warning")
+                                                return
+                                            try:
+                                                saved = await run.io_bound(
+                                                    decide_particular_annulment,
+                                                    access=access,
+                                                    budget_number=number,
+                                                    decision=decision,
+                                                    reason=justification,
+                                                )
+                                            except Exception as exc:
+                                                ui.notify(f"Não foi possível registrar a decisão: {exc}", type="negative")
+                                                return
+
+                                            area.clear()
+                                            with area:
+                                                status = str(saved.get("annulment_status") or decision).upper()
+                                                if status == "CONFIRMED":
+                                                    ui.label(
+                                                        "Anulação confirmada e persistida na base."
+                                                    ).classes("text-negative text-weight-bold")
+                                                else:
+                                                    ui.label(
+                                                        "Orçamento confirmado como normal."
+                                                    ).classes("text-positive text-weight-bold")
+                                                ui.label(
+                                                    "A decisão já será considerada nas próximas consultas dos indicadores."
+                                                ).classes("text-caption text-grey-7")
+                                            reason_input.disable()
+                                            ui.notify("Decisão registrada com rastreabilidade.", type="positive")
+
+                                        with ui.row().classes("w-full gap-2 flex-wrap"):
+                                            ui.button(
+                                                "Confirmar como normal",
+                                                icon="check_circle",
+                                                on_click=lambda _, fn=decide_candidate: fn("NORMAL"),
+                                            ).props("outline")
+                                            ui.button(
+                                                "Confirmar anulação",
+                                                icon="block",
+                                                on_click=lambda _, fn=decide_candidate: fn("CONFIRMED"),
+                                            ).props("color=negative")
+
+                                        decision_area
 
                     ui.label("Validações").classes("text-subtitle1 text-weight-bold")
                     for issue in result.get("issues", []):
