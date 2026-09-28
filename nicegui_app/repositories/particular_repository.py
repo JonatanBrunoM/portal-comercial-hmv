@@ -20,6 +20,50 @@ class ParticularBudgetImportResult:
     budget_id: str
     operation: str
 
+
+def decide_annulment(
+    *,
+    actor_profile_id: str,
+    budget_number: int,
+    decision: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Registra a decisão humana sobre uma possível anulação."""
+
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    normalized_decision = str(decision or "").strip().upper()
+    normalized_reason = str(reason or "").strip()
+
+    if int(budget_number) <= 0:
+        raise ValueError("budget_number inválido.")
+    if normalized_decision not in {"NORMAL", "CONFIRMED"}:
+        raise ValueError("Decisão de anulação inválida.")
+    if not normalized_reason:
+        raise ValueError("A justificativa da decisão é obrigatória.")
+    if len(normalized_reason) > 1000:
+        raise ValueError("A justificativa deve possuir no máximo 1000 caracteres.")
+
+    result = rest_rpc(
+        "particular_decide_annulment",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_number": int(budget_number),
+            "p_decision": normalized_decision,
+            "p_reason": normalized_reason,
+        },
+        timeout=30.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("particular_decide_annulment retornou formato inesperado.")
+        result = result[0]
+
+    if not isinstance(result, dict):
+        raise RuntimeError("particular_decide_annulment retornou resposta inválida.")
+
+    return result
+
 def import_preflight(
     *,
     actor_profile_id: str,
