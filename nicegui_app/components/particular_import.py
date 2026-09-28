@@ -78,7 +78,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                             for label, value, icon in (
                                 ("Orçamentos únicos", f'{result["budgets"]:,}'.replace(",", "."), "receipt_long"),
                                 ("Linhas de itens", f'{result["item_rows"]:,}'.replace(",", "."), "format_list_numbered"),
-                                ("Linhas físicas", f'{result["physical_rows"]:,}'.replace(",", "."), "table_rows"),
+                                ("Registros de orçamento", f'{result["physical_rows"]:,}'.replace(",", "."), "table_rows"),
                                 ("Diferença financeira", result["financial_difference_label"], "balance"),
                             ):
                                 with ui.card().classes("flex-1 min-w-[190px] p-4 gap-1"):
