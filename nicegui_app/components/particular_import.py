@@ -6,7 +6,7 @@ from datetime import date
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
-from nicegui_app.services.particular_service import ParticularAccess
+from nicegui_app.services.particular_service import ParticularAccess, preflight_particular_import
 
 
 def _date_br(value: str | None) -> str:
@@ -48,6 +48,9 @@ def render_particular_import(access: ParticularAccess) -> None:
                     with result_area:
                         ui.label("Analisando estrutura e integridade do relatório...").classes("text-body2 text-grey-7")
                     result = await run.io_bound(inspect_hmv2670, content, filename)
+                    preflight = None
+                    if result.get("valid_for_import"):
+                        preflight = await run.io_bound(preflight_particular_import, access=access, validated_report=result)
                 except Exception as exc:
                     result_area.clear()
                     with result_area:
@@ -114,11 +117,37 @@ def render_particular_import(access: ParticularAccess) -> None:
                         "do mesmo arquivo. Identificadores de pacientes não são exibidos nesta tela."
                     ).classes("text-caption text-grey-7")
 
-                    if result["valid_for_import"]:
-                        ui.label(
-                            "Pré-validação concluída. A confirmação/gravação será habilitada na próxima etapa, "
-                            "após validarmos este fluxo com o relatório semanal de setembro."
-                        ).classes("text-body2 text-weight-medium")
+                    if result["valid_for_import"] and preflight is not None:
+                        ui.separator()
+                        ui.label("Verificação contra a base").classes("text-h6 text-weight-bold")
+                        with ui.row().classes("w-full gap-3 flex-wrap"):
+                            for label, value, icon in (
+                                ("Novos", preflight["new_count"], "add_circle"),
+                                ("Já existentes idênticos", preflight["identical_count"], "verified"),
+                                ("Com alteração", preflight["changed_count"], "sync"),
+                                ("Conflitos", preflight["conflict_count"], "report_problem"),
+                            ):
+                                with ui.card().classes("flex-1 min-w-[190px] p-4 gap-1"):
+                                    ui.icon(icon, size="24px").classes("text-primary")
+                                    ui.label(label).classes("text-caption text-grey-7")
+                                    ui.label(str(value)).classes("text-h6 text-weight-bold")
+
+                        if preflight["safe_to_import"]:
+                            ui.label(
+                                "Preflight concluído: nenhum conflito estrutural foi encontrado. "
+                                "A gravação continua desabilitada nesta etapa de teste."
+                            ).classes("text-positive text-weight-bold")
+                        else:
+                            ui.label(
+                                "Importação bloqueada: existem orçamentos cujo número já está na base "
+                                "com data diferente. Esses conflitos precisam ser revisados antes da gravação."
+                            ).classes("text-negative text-weight-bold")
+
+                        if preflight["changed_count"]:
+                            ui.label(
+                                f'{preflight["changed_count"]} orçamento(s) existente(s) possuem valores diferentes '
+                                "na mesma data. Eles serão tratados como atualização somente após a etapa de confirmação."
+                            ).classes("text-warning text-body2")
 
             ui.upload(
                 label="Selecionar relatório HMV2670",
