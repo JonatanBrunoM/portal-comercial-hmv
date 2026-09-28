@@ -234,6 +234,27 @@ def render_particular_import(access: ParticularAccess) -> None:
                                             f'Orçamento {number} · {_date_br(detail["budget_date"])}',
                                             icon="receipt_long",
                                         ).classes("w-full"):
+                                            item_delta = comparison.get("item_delta", "0")
+                                            residual_delta = comparison.get("residual_delta", "0")
+                                            total_delta = comparison.get("total_delta", detail.get("delta_total", "0"))
+                                            reconciled = comparison.get("reconciled", False)
+
+                                            with ui.card().classes("w-full bg-blue-1"):
+                                                ui.label("Explicação da variação").classes("text-subtitle2 text-weight-bold")
+                                                ui.label(
+                                                    f'Itens detalhados: {_money_br(item_delta)} · '
+                                                    f'Fora dos itens detalhados: {_money_br(residual_delta)} · '
+                                                    f'Variação total: {_money_br(total_delta)}'
+                                                ).classes("text-body2")
+                                                if reconciled:
+                                                    ui.label(
+                                                        "Conciliação fechada: as parcelas explicadas correspondem à variação total."
+                                                    ).classes("text-positive text-weight-medium")
+                                                else:
+                                                    ui.label(
+                                                        "Conciliação não fechou. Revisão obrigatória antes de qualquer gravação."
+                                                    ).classes("text-negative text-weight-bold")
+
                                             if unchanged_items:
                                                 ui.label(
                                                     "Itens sem alteração. A diferença está no cabeçalho financeiro do orçamento."
