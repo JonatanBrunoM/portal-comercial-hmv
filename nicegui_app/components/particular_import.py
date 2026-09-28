@@ -2,11 +2,20 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
 from nicegui_app.services.particular_service import ParticularAccess, preflight_particular_import
+
+
+def _money_br(value) -> str:
+    amount = Decimal(str(value or "0"))
+    sign = "- " if amount < 0 else ""
+    amount = abs(amount)
+    text = f"{amount:,.2f}".replace(",", "#").replace(".", ",").replace("#", ".")
+    return f"{sign}R$ {text}"
 
 
 def _date_br(value: str | None) -> str:
@@ -148,6 +157,52 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 f'{preflight["changed_count"]} orçamento(s) existente(s) possuem valores diferentes '
                                 "na mesma data. Eles serão tratados como atualização somente após a etapa de confirmação."
                             ).classes("text-warning text-body2")
+
+                            details = preflight.get("changed_details", [])
+                            total_proc = sum((Decimal(row["diff_procedure"]) for row in details), Decimal("0"))
+                            total_mat = sum((Decimal(row["diff_material"]) for row in details), Decimal("0"))
+                            total_diff = sum((Decimal(row["diff_total"]) for row in details), Decimal("0"))
+
+                            with ui.card().classes("w-full p-4 gap-3"):
+                                ui.label("Diferenças financeiras detectadas").classes("text-subtitle1 text-weight-bold")
+                                with ui.row().classes("w-full gap-3 flex-wrap"):
+                                    for label, value in (
+                                        ("Δ Procedimentos", _money_br(total_proc)),
+                                        ("Δ Materiais", _money_br(total_mat)),
+                                        ("Δ Total", _money_br(total_diff)),
+                                    ):
+                                        with ui.column().classes("flex-1 min-w-[180px] gap-0"):
+                                            ui.label(label).classes("text-caption text-grey-7")
+                                            ui.label(value).classes("text-h6 text-weight-bold")
+
+                                columns = [
+                                    {"name": "budget", "label": "Orçamento", "field": "budget", "align": "left"},
+                                    {"name": "date", "label": "Data", "field": "date", "align": "left"},
+                                    {"name": "proc", "label": "Δ Procedimento", "field": "proc", "align": "right"},
+                                    {"name": "mat", "label": "Δ Material", "field": "mat", "align": "right"},
+                                    {"name": "total", "label": "Δ Total", "field": "total", "align": "right"},
+                                ]
+                                rows = [
+                                    {
+                                        "budget": str(row["budget_number"]),
+                                        "date": _date_br(row["budget_date"]),
+                                        "proc": _money_br(row["diff_procedure"]),
+                                        "mat": _money_br(row["diff_material"]),
+                                        "total": _money_br(row["diff_total"]),
+                                    }
+                                    for row in details
+                                    if any(Decimal(row[key]) != 0 for key in ("diff_procedure", "diff_material", "diff_total"))
+                                ]
+                                ui.table(
+                                    columns=columns,
+                                    rows=rows,
+                                    row_key="budget",
+                                    pagination={"rowsPerPage": 10},
+                                ).classes("w-full").props("dense flat bordered")
+                                ui.label(
+                                    "A tabela mostra somente diferenças financeiras entre o valor ORIGINAL vigente "
+                                    "na base e o novo XML. Nenhuma alteração foi gravada."
+                                ).classes("text-caption text-grey-7")
 
             ui.upload(
                 label="Selecionar relatório HMV2670",
