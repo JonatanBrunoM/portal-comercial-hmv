@@ -108,6 +108,43 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     ui.label(label).classes("text-caption text-grey-7")
                                     ui.label(value).classes("text-h5 text-weight-bold")
 
+                    if result.get("annulment_candidate_count"):
+                        with ui.card().classes("w-full p-4 gap-3"):
+                            ui.label("Possíveis anulações · requer conferência").classes("text-subtitle1 text-weight-bold text-warning")
+                            ui.label(
+                                "O HMV2670 não informa ANULADO como status confiável. O Portal detecta evidências "
+                                "objetivas, mas não retira valor do mês sem confirmação operacional."
+                            ).classes("text-body2 text-grey-7")
+                            candidate_rows = []
+                            signal_labels = {
+                                "TOTAL_ZERO": "total zerado",
+                                "TOTAL_ZERO_COM_ITENS": "total zerado com itens",
+                                "TOTAL_POSITIVO_SEM_ITENS": "total positivo sem itens",
+                                "PACIENTE_AUSENTE": "paciente ausente",
+                                "MEDICO_AUSENTE": "médico ausente",
+                                "SOLICITANTE_AUSENTE": "solicitante ausente",
+                                "PACIENTE_NOME_ATIPICO": "nome do paciente atípico",
+                                "ITENS_VALORIZADOS_CABECALHO_ZERO": "itens valorizados com cabeçalho zerado",
+                            }
+                            for candidate in result.get("annulment_candidates", []):
+                                candidate_rows.append({
+                                    "budget": candidate.get("budget_number"),
+                                    "signals": ", ".join(
+                                        signal_labels.get(signal, signal)
+                                        for signal in candidate.get("signals", [])
+                                    ),
+                                    "total": _money_br(candidate.get("total_value")),
+                                })
+                            ui.table(
+                                columns=[
+                                    {"name": "budget", "label": "Orçamento", "field": "budget", "align": "left"},
+                                    {"name": "signals", "label": "Evidências encontradas", "field": "signals", "align": "left"},
+                                    {"name": "total", "label": "Valor original", "field": "total", "align": "right"},
+                                ],
+                                rows=candidate_rows,
+                                row_key="budget",
+                            ).classes("w-full").props("flat bordered dense")
+
                     ui.label("Validações").classes("text-subtitle1 text-weight-bold")
                     for issue in result.get("issues", []):
                         severity = issue.get("severity")
@@ -144,14 +181,14 @@ def render_particular_import(access: ParticularAccess) -> None:
                         with ui.card().classes("w-full p-4 gap-3"):
                             ui.label("Regra de total mensal").classes("text-subtitle1 text-weight-bold")
                             ui.label(
-                                "O valor bruto do arquivo é preservado para auditoria. Orçamentos ANULADOS, quando "
-                                "declarados pela fonte ou informados pela base, permanecem rastreáveis, mas contribuem "
-                                "com R$ 0,00 para o total mensal considerado."
+                                "O valor bruto do arquivo é preservado para auditoria. Somente um orçamento com "
+                                "anulação confirmada e persistida na base poderá contribuir com R$ 0,00 para o total "
+                                "mensal. Sinais detectados no XML não excluem valores automaticamente."
                             ).classes("text-body2 text-grey-7")
                             with ui.row().classes("w-full gap-3 flex-wrap"):
                                 for label, value in (
                                     ("Bruto do arquivo", _money_br(preflight.get("raw_total_value"))),
-                                    ("Anulados excluídos", _money_br(preflight.get("annulled_value"))),
+                                    ("Anulados confirmados excluídos", _money_br(preflight.get("annulled_value"))),
                                     ("Total considerado no mês", _money_br(preflight.get("effective_total_value"))),
                                 ):
                                     with ui.column().classes("flex-1 min-w-[190px] gap-0"):
