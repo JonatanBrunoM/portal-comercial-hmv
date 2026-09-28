@@ -319,10 +319,22 @@ def preflight_particular_import(
     from decimal import Decimal, InvalidOperation
 
     def dec(value: Any) -> Decimal:
-        try:
-            return Decimal(str(value if value is not None else "0"))
-        except InvalidOperation:
+        """Converte valores financeiros do XML/Banco sem perder formato pt-BR.
+
+        Oracle Reports entrega números como 6053,6 e ,01; o Supabase devolve
+        representação decimal com ponto. Ambos precisam resultar no mesmo Decimal.
+        """
+        if value is None or str(value).strip() == "":
             return Decimal("0")
+
+        raw = str(value).strip()
+        if "," in raw:
+            raw = raw.replace(".", "").replace(",", ".")
+
+        try:
+            return Decimal(raw)
+        except InvalidOperation as exc:
+            raise ValueError(f"Valor financeiro inválido no preflight: {value!r}") from exc
 
     def date_text(value: Any) -> str:
         """Normaliza datas do XML (DD/MM/YY ou DD/MM/YYYY) e do banco (YYYY-MM-DD)."""
