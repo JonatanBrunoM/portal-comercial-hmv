@@ -33,7 +33,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                 with ui.column().classes("gap-1"):
                     ui.label("Relatório de orçamentos confeccionados · HMV2670").classes("text-h6 text-weight-bold")
                     ui.label(
-                        "Envie um .xlsx. O Portal identificará automaticamente período, competência, "
+                        "Envie o relatório original .XML ou a versão .XLSX. O Portal identificará automaticamente período, competência, "
                         "quantidade de orçamentos e fechamento financeiro."
                     ).classes("text-body2 text-grey-7")
                 ui.badge("PRÉ-VALIDAÇÃO · NÃO GRAVA DADOS", color="primary").props("outline")
@@ -125,4 +125,4 @@ def render_particular_import(access: ParticularAccess) -> None:
                 on_upload=handle_upload,
                 auto_upload=True,
                 max_files=1,
-            ).props('accept=".xlsx"').classes("w-full")
+            ).props('accept=".xml,.XML,.xlsx"').classes("w-full")
