@@ -213,14 +213,28 @@ def _inspect_xml(content: bytes, filename: str, digest: str) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     item_rows = 0
     for node in budget_nodes:
+        item_nodes = node.findall("./LIST_G_SEQ_ORCAMENTO_ITEM/G_SEQ_ORCAMENTO_ITEM")
+        items: list[dict[str, Any]] = []
+        for position, item in enumerate(item_nodes, start=1):
+            items.append({
+                "source_position": position,
+                "item_code": item.findtext("CD_ITEM"),
+                "description": item.findtext("DS_ITEM"),
+                "quantity": item.findtext("QT_ITEM"),
+                "unit_value": item.findtext("VL_UNITARIO"),
+                "total_value": item.findtext("VL_TOTAL"),
+                "unit": item.findtext("TP_UNIDADE"),
+            })
+
         records.append({
             "SEQ_ORCAMENTO": node.findtext("SEQ_ORCAMENTO"),
             "DATA": node.findtext("DATA"),
             "VALOR": node.findtext("VALOR"),
             "VALOR_MATERIAL_ESPECIAL": node.findtext("VALOR_MATERIAL_ESPECIAL"),
             "VALOR_TOTAL": node.findtext("VALOR_TOTAL"),
+            "ITEMS": items,
         })
-        item_rows += len(node.findall("./LIST_G_SEQ_ORCAMENTO_ITEM/G_SEQ_ORCAMENTO_ITEM"))
+        item_rows += len(item_nodes)
 
     return _analyse_records(
         records=records,
