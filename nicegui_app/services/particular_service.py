@@ -500,11 +500,51 @@ def preflight_particular_import(
                         "new_total_value": str(dec(new.get("total_value"))),
                     })
 
+            item_delta = sum(
+                (dec(row.get("total_value")) for row in added),
+                Decimal("0"),
+            ) - sum(
+                (dec(row.get("total_value")) for row in removed),
+                Decimal("0"),
+            )
+            for row in modified:
+                item_delta += dec(row.get("new_total_value")) - dec(row.get("old_total_value"))
+
+            financial_detail = next(
+                (row for row in changed_details if int(row["budget_number"]) == number),
+                None,
+            )
+            procedure_delta = dec(financial_detail.get("delta_procedure")) if financial_detail else Decimal("0")
+            material_delta = dec(financial_detail.get("delta_material")) if financial_detail else Decimal("0")
+            total_delta = dec(financial_detail.get("delta_total")) if financial_detail else Decimal("0")
+            residual_delta = total_delta - item_delta
+
+            explanation_parts: list[dict[str, str]] = []
+            if item_delta != 0:
+                explanation_parts.append({
+                    "origin": "ITENS",
+                    "label": "Variação líquida dos itens detalhados",
+                    "value": str(item_delta),
+                })
+            if residual_delta != 0:
+                explanation_parts.append({
+                    "origin": "CABECALHO",
+                    "label": "Variação financeira fora dos itens detalhados",
+                    "value": str(residual_delta),
+                })
+
             item_comparison[number] = {
                 "added": added,
                 "removed": removed,
                 "modified": modified,
                 "unchanged": not added and not removed and not modified,
+                "item_delta": str(item_delta),
+                "procedure_delta": str(procedure_delta),
+                "material_delta": str(material_delta),
+                "total_delta": str(total_delta),
+                "residual_delta": str(residual_delta),
+                "reconciled": item_delta + residual_delta == total_delta,
+                "explanation_parts": explanation_parts,
             }
 
     safe = len(conflict_numbers) == 0
