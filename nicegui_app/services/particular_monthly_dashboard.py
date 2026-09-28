@@ -25,7 +25,8 @@ def list_monthly_validation(access: ParticularAccess) -> list[dict[str, Any]]:
             "orcamentos_aguardando_analise,valor_aguardando_analise,"
             "orcamentos_excluidos,valor_excluido_duplicidade,"
             "orcamentos_decisao_incompleta,valor_decisao_incompleta,"
-            "orcamentos_transcricao,valor_transcricao,orcamentos_valor_nao_validado"
+            "orcamentos_transcricao,valor_transcricao,orcamentos_valor_nao_validado,"
+            "orcamentos_anulados,valor_anulado"
         ),
         params={"order": "mes_referencia.desc", "limit": "120"},
     )
