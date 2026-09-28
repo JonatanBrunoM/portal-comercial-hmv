@@ -514,9 +514,9 @@ def preflight_particular_import(
                 (row for row in changed_details if int(row["budget_number"]) == number),
                 None,
             )
-            procedure_delta = dec(financial_detail.get("delta_procedure")) if financial_detail else Decimal("0")
-            material_delta = dec(financial_detail.get("delta_material")) if financial_detail else Decimal("0")
-            total_delta = dec(financial_detail.get("delta_total")) if financial_detail else Decimal("0")
+            procedure_delta = dec(financial_detail.get("diff_procedure")) if financial_detail else Decimal("0")
+            material_delta = dec(financial_detail.get("diff_material")) if financial_detail else Decimal("0")
+            total_delta = dec(financial_detail.get("diff_total")) if financial_detail else Decimal("0")
             residual_delta = total_delta - item_delta
 
             explanation_parts: list[dict[str, str]] = []
