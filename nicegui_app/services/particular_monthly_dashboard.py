@@ -47,7 +47,8 @@ def list_weekly_validation(access: ParticularAccess, month: str) -> list[dict[st
             "orcamentos_aguardando_analise,valor_aguardando_analise,"
             "orcamentos_excluidos,valor_excluido_duplicidade,"
             "orcamentos_decisao_incompleta,valor_decisao_incompleta,"
-            "orcamentos_transcricao,valor_transcricao,orcamentos_valor_nao_validado"
+            "orcamentos_transcricao,valor_transcricao,orcamentos_valor_nao_validado,"
+            "orcamentos_anulados,valor_anulado"
         ),
         params={"mes_referencia": f"eq.{reference.isoformat()}", "order": "semana_mes.asc", "limit": "5"},
     )
