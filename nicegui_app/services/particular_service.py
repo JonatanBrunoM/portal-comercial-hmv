@@ -391,6 +391,30 @@ def preflight_particular_import(
         else:
             conflict_numbers.append(number)
 
+    changed_details: list[dict[str, Any]] = []
+    for number in changed_numbers:
+        incoming = file_by_number[number]
+        current = existing_by_number[number]
+        old_procedure = dec(current.get("procedure_value"))
+        old_material = dec(current.get("material_value"))
+        old_total = dec(current.get("total_value"))
+        new_procedure = dec(incoming.get("VALOR"))
+        new_material = dec(incoming.get("VALOR_MATERIAL_ESPECIAL"))
+        new_total = dec(incoming.get("VALOR_TOTAL"))
+        changed_details.append({
+            "budget_number": number,
+            "budget_date": date_text(incoming.get("DATA")),
+            "old_procedure": str(old_procedure),
+            "new_procedure": str(new_procedure),
+            "diff_procedure": str(new_procedure - old_procedure),
+            "old_material": str(old_material),
+            "new_material": str(new_material),
+            "diff_material": str(new_material - old_material),
+            "old_total": str(old_total),
+            "new_total": str(new_total),
+            "diff_total": str(new_total - old_total),
+        })
+
     safe = len(conflict_numbers) == 0
     return {
         "safe_to_import": safe,
@@ -405,4 +429,5 @@ def preflight_particular_import(
         "identical_numbers": identical_numbers,
         "changed_numbers": changed_numbers,
         "conflict_numbers": conflict_numbers,
+        "changed_details": changed_details,
     }
