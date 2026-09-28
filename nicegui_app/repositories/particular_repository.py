@@ -64,6 +64,34 @@ def decide_annulment(
 
     return result
 
+
+def annulment_preflight(
+    *,
+    actor_profile_id: str,
+    budget_numbers: list[int],
+) -> list[dict[str, Any]]:
+    """Consulta o estado persistido de anulação dos orçamentos."""
+
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    normalized = sorted({int(value) for value in budget_numbers if int(value) > 0})
+    if not normalized:
+        return []
+
+    result = rest_rpc(
+        "particular_annulment_preflight",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_numbers": normalized,
+        },
+        timeout=30.0,
+    )
+
+    if result is None:
+        return []
+    if not isinstance(result, list) or any(not isinstance(row, dict) for row in result):
+        raise RuntimeError("particular_annulment_preflight retornou formato inesperado.")
+    return result
+
 def import_preflight(
     *,
     actor_profile_id: str,
