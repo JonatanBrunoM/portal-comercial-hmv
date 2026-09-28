@@ -337,6 +337,22 @@ def preflight_particular_import(
         except InvalidOperation as exc:
             raise ValueError(f"Valor financeiro inválido no preflight: {value!r}") from exc
 
+    def norm_marker(value: Any) -> str:
+        import unicodedata
+
+        raw = unicodedata.normalize("NFKD", str(value or "").strip().upper())
+        return "".join(ch for ch in raw if not unicodedata.combining(ch))
+
+    def row_is_annulled(row: dict[str, Any] | None) -> bool:
+        if not row:
+            return False
+        if row.get("IS_ANNULLED") is True or row.get("is_annulled") is True:
+            return True
+        for key in ("status", "budget_status", "operational_status", "status_operacional", "classification"):
+            if norm_marker(row.get(key)) == "ANULADO":
+                return True
+        return False
+
     def date_text(value: Any) -> str:
         """Normaliza datas do XML (DD/MM/YY ou DD/MM/YYYY) e do banco (YYYY-MM-DD)."""
         from datetime import date as date_type, datetime as datetime_type
@@ -377,12 +393,38 @@ def preflight_particular_import(
     identical_numbers: list[int] = []
     changed_numbers: list[int] = []
     conflict_numbers: list[int] = []
+    annulled_numbers: list[int] = []
+    annulled_sources: dict[int, str] = {}
     new_value = Decimal("0")
     changed_value = Decimal("0")
+    raw_procedure_value = Decimal("0")
+    raw_material_value = Decimal("0")
+    raw_total_value = Decimal("0")
+    annulled_procedure_value = Decimal("0")
+    annulled_material_value = Decimal("0")
+    annulled_value = Decimal("0")
 
     for number, incoming in file_by_number.items():
         current = existing_by_number.get(number)
+        incoming_procedure = dec(incoming.get("VALOR"))
+        incoming_material = dec(incoming.get("VALOR_MATERIAL_ESPECIAL"))
         incoming_total = dec(incoming.get("VALOR_TOTAL"))
+
+        raw_procedure_value += incoming_procedure
+        raw_material_value += incoming_material
+        raw_total_value += incoming_total
+
+        file_annulled = row_is_annulled(incoming)
+        database_annulled = row_is_annulled(current)
+        if file_annulled or database_annulled:
+            annulled_numbers.append(number)
+            annulled_sources[number] = (
+                "ARQUIVO_E_BASE" if file_annulled and database_annulled
+                else ("ARQUIVO" if file_annulled else "BASE")
+            )
+            annulled_procedure_value += incoming_procedure
+            annulled_material_value += incoming_material
+            annulled_value += incoming_total
         if current is None:
             new_numbers.append(number)
             new_value += incoming_total
@@ -547,6 +589,10 @@ def preflight_particular_import(
                 "explanation_parts": explanation_parts,
             }
 
+    effective_procedure_value = raw_procedure_value - annulled_procedure_value
+    effective_material_value = raw_material_value - annulled_material_value
+    effective_total_value = raw_total_value - annulled_value
+
     safe = len(conflict_numbers) == 0
     return {
         "safe_to_import": safe,
@@ -555,6 +601,17 @@ def preflight_particular_import(
         "identical_count": len(identical_numbers),
         "changed_count": len(changed_numbers),
         "conflict_count": len(conflict_numbers),
+        "annulled_count": len(annulled_numbers),
+        "effective_count": len(file_by_number) - len(annulled_numbers),
+        "annulled_numbers": annulled_numbers,
+        "annulled_sources": annulled_sources,
+        "annulled_value": str(annulled_value),
+        "raw_procedure_value": str(raw_procedure_value),
+        "raw_material_value": str(raw_material_value),
+        "raw_total_value": str(raw_total_value),
+        "effective_procedure_value": str(effective_procedure_value),
+        "effective_material_value": str(effective_material_value),
+        "effective_total_value": str(effective_total_value),
         "new_value": str(new_value),
         "changed_value": str(changed_value),
         "new_numbers": new_numbers,
