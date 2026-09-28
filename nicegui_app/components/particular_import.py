@@ -102,7 +102,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                             for label, value in (
                                 ("Procedimentos", result["procedure_value_label"]),
                                 ("Materiais", result["material_value_label"]),
-                                ("Total do relatório", result["total_value_label"]),
+                                ("Total bruto do arquivo", result["total_value_label"]),
                             ):
                                 with ui.card().classes("flex-1 min-w-[220px] p-4 gap-1"):
                                     ui.label(label).classes("text-caption text-grey-7")
@@ -140,6 +140,30 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     ui.icon(icon, size="24px").classes("text-primary")
                                     ui.label(label).classes("text-caption text-grey-7")
                                     ui.label(str(value)).classes("text-h6 text-weight-bold")
+
+                        with ui.card().classes("w-full p-4 gap-3"):
+                            ui.label("Regra de total mensal").classes("text-subtitle1 text-weight-bold")
+                            ui.label(
+                                "O valor bruto do arquivo é preservado para auditoria. Orçamentos ANULADOS, quando "
+                                "declarados pela fonte ou informados pela base, permanecem rastreáveis, mas contribuem "
+                                "com R$ 0,00 para o total mensal considerado."
+                            ).classes("text-body2 text-grey-7")
+                            with ui.row().classes("w-full gap-3 flex-wrap"):
+                                for label, value in (
+                                    ("Bruto do arquivo", _money_br(preflight.get("raw_total_value"))),
+                                    ("Anulados excluídos", _money_br(preflight.get("annulled_value"))),
+                                    ("Total considerado no mês", _money_br(preflight.get("effective_total_value"))),
+                                ):
+                                    with ui.column().classes("flex-1 min-w-[190px] gap-0"):
+                                        ui.label(label).classes("text-caption text-grey-7")
+                                        ui.label(value).classes("text-h6 text-weight-bold")
+                            ui.label(
+                                f'{preflight.get("effective_count", preflight["total_file"])} orçamento(s) considerados · '
+                                f'{preflight.get("annulled_count", 0)} anulado(s) excluído(s) do total.'
+                            ).classes("text-caption text-grey-7")
+                            if preflight.get("annulled_numbers"):
+                                numbers = ", ".join(str(value) for value in preflight["annulled_numbers"])
+                                ui.label(f"Anulados identificados: {numbers}").classes("text-warning text-body2")
 
                         if preflight["safe_to_import"]:
                             ui.label(
