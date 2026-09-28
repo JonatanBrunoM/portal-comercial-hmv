@@ -13,6 +13,7 @@ from nicegui_app.repositories.particular_repository import (
     get_mv_check_context,
     list_operational_budgets,
     import_preflight,
+    import_items_preflight,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -427,6 +428,85 @@ def preflight_particular_import(
             "diff_total": str(new_total - old_total),
         })
 
+    item_comparison: dict[int, dict[str, Any]] = {}
+    if changed_numbers:
+        db_item_rows = import_items_preflight(
+            actor_profile_id=access.profile_id,
+            budget_numbers=changed_numbers,
+        )
+        db_items_by_budget: dict[int, list[dict[str, Any]]] = {}
+        for row in db_item_rows:
+            db_items_by_budget.setdefault(int(row["budget_number"]), []).append(row)
+
+        def norm_text(value: Any) -> str:
+            import unicodedata
+            raw = unicodedata.normalize("NFKD", str(value or "").strip().upper())
+            return "".join(ch for ch in raw if not unicodedata.combining(ch))
+
+        def item_key(row: dict[str, Any]) -> tuple[str, str]:
+            code = str(row.get("item_code") or row.get("CD_ITEM") or "").strip()
+            desc = norm_text(row.get("description_original") or row.get("description") or row.get("DS_ITEM"))
+            return code, desc
+
+        for number in changed_numbers:
+            incoming_items = file_by_number[number].get("ITEMS") or []
+            current_items = db_items_by_budget.get(number, [])
+            incoming_map = {item_key(row): row for row in incoming_items}
+            current_map = {item_key(row): row for row in current_items}
+            added: list[dict[str, Any]] = []
+            removed: list[dict[str, Any]] = []
+            modified: list[dict[str, Any]] = []
+
+            for key in sorted(incoming_map.keys() - current_map.keys()):
+                row = incoming_map[key]
+                added.append({
+                    "item_code": key[0],
+                    "description": row.get("description") or "",
+                    "quantity": str(dec(row.get("quantity"))),
+                    "unit_value": str(dec(row.get("unit_value"))),
+                    "total_value": str(dec(row.get("total_value"))),
+                })
+
+            for key in sorted(current_map.keys() - incoming_map.keys()):
+                row = current_map[key]
+                removed.append({
+                    "item_code": key[0],
+                    "description": row.get("description_original") or "",
+                    "quantity": str(dec(row.get("quantity"))),
+                    "unit_value": str(dec(row.get("unit_value"))),
+                    "total_value": str(dec(row.get("total_value"))),
+                })
+
+            for key in sorted(incoming_map.keys() & current_map.keys()):
+                new = incoming_map[key]
+                old = current_map[key]
+                changes: list[str] = []
+                if dec(new.get("quantity")) != dec(old.get("quantity")):
+                    changes.append("QUANTIDADE")
+                if dec(new.get("unit_value")) != dec(old.get("unit_value")):
+                    changes.append("VALOR_UNITARIO")
+                if dec(new.get("total_value")) != dec(old.get("total_value")):
+                    changes.append("VALOR_TOTAL")
+                if changes:
+                    modified.append({
+                        "item_code": key[0],
+                        "description": new.get("description") or old.get("description_original") or "",
+                        "changes": changes,
+                        "old_quantity": str(dec(old.get("quantity"))),
+                        "new_quantity": str(dec(new.get("quantity"))),
+                        "old_unit_value": str(dec(old.get("unit_value"))),
+                        "new_unit_value": str(dec(new.get("unit_value"))),
+                        "old_total_value": str(dec(old.get("total_value"))),
+                        "new_total_value": str(dec(new.get("total_value"))),
+                    })
+
+            item_comparison[number] = {
+                "added": added,
+                "removed": removed,
+                "modified": modified,
+                "unchanged": not added and not removed and not modified,
+            }
+
     safe = len(conflict_numbers) == 0
     return {
         "safe_to_import": safe,
@@ -442,4 +522,5 @@ def preflight_particular_import(
         "changed_numbers": changed_numbers,
         "conflict_numbers": conflict_numbers,
         "changed_details": changed_details,
+        "item_comparison": item_comparison,
     }
