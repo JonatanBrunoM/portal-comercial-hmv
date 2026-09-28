@@ -7,7 +7,11 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
-from nicegui_app.services.particular_service import (\n    ParticularAccess,\n    decide_particular_annulment,\n    preflight_particular_import,\n)
+from nicegui_app.services.particular_service import (
+    ParticularAccess,
+    decide_particular_annulment,
+    preflight_particular_import,
+)
 
 
 def _money_br(value) -> str:
