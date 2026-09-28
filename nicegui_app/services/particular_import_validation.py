@@ -218,12 +218,12 @@ def _inspect_xml(content: bytes, filename: str, digest: str) -> dict[str, Any]:
         for position, item in enumerate(item_nodes, start=1):
             items.append({
                 "source_position": position,
-                "item_code": item.findtext("CD_ITEM"),
-                "description": item.findtext("DS_ITEM"),
-                "quantity": item.findtext("QT_ITEM"),
-                "unit_value": item.findtext("VL_UNITARIO"),
-                "total_value": item.findtext("VL_TOTAL"),
-                "unit": item.findtext("TP_UNIDADE"),
+                "item_code": item.findtext("CD_PRO_FAT"),
+                "description": item.findtext("DESCRICAO_PRO_FAT"),
+                "quantity": item.findtext("QUANTIDADE"),
+                "unit_value": item.findtext("VALOR_UNITARIO"),
+                "total_value": item.findtext("VALOR_TOTAL1"),
+                "unit": item.findtext("UNIDADE"),
             })
 
         records.append({
