@@ -257,13 +257,41 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     decision_area
 
                     ui.label("Validações").classes("text-subtitle1 text-weight-bold")
+                    annulment_pending = (preflight or {}).get("annulment_pending_count")
+                    annulment_reviewed = (preflight or {}).get("annulment_reviewed_count", 0)
+                    annulment_signals = (preflight or {}).get(
+                        "annulment_signal_count", result.get("annulment_candidate_count", 0)
+                    )
                     for issue in result.get("issues", []):
                         severity = issue.get("severity")
+                        message = issue.get("message", "")
+
+                        if (
+                            preflight is not None
+                            and result.get("annulment_candidate_count")
+                            and "anula" in str(message).lower()
+                            and "confer" in str(message).lower()
+                        ):
+                            if annulment_pending == 0:
+                                severity = "OK"
+                                message = (
+                                    f"{annulment_signals} orçamento(s) apresentaram sinais compatíveis com "
+                                    f"cadastro incompleto/anulação; {annulment_reviewed} já foram revisados "
+                                    "e não há conferências pendentes."
+                                )
+                            else:
+                                severity = "WARNING"
+                                message = (
+                                    f"{annulment_signals} orçamento(s) apresentaram sinais compatíveis com "
+                                    f"cadastro incompleto/anulação; {annulment_reviewed} já revisado(s) e "
+                                    f"{annulment_pending} ainda exigem conferência."
+                                )
+
                         icon = "check_circle" if severity == "OK" else ("warning" if severity == "WARNING" else "error")
                         css = "text-positive" if severity == "OK" else ("text-warning" if severity == "WARNING" else "text-negative")
                         with ui.row().classes("w-full items-start gap-2"):
                             ui.icon(icon, size="20px").classes(css)
-                            ui.label(issue.get("message", "")).classes("text-body2")
+                            ui.label(message).classes("text-body2")
 
                     ui.separator()
                     ui.label(
