@@ -14,6 +14,7 @@ from nicegui_app.repositories.particular_repository import (
     list_operational_budgets,
     import_preflight,
     import_items_preflight,
+    decide_annulment,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -300,6 +301,40 @@ def list_particular_operational_budgets(
         offset=offset,
     )
 
+
+
+def decide_particular_annulment(
+    *,
+    access: ParticularAccess,
+    budget_number: int,
+    decision: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Resolve humanamente um candidato de possível anulação."""
+
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para decidir anulações no módulo Particular."
+        )
+
+    normalized_decision = str(decision or "").strip().upper()
+    normalized_reason = str(reason or "").strip()
+
+    if int(budget_number) <= 0:
+        raise ValueError("O orçamento é obrigatório.")
+    if normalized_decision not in {"NORMAL", "CONFIRMED"}:
+        raise ValueError("Decisão de anulação inválida.")
+    if not normalized_reason:
+        raise ValueError("A justificativa da decisão é obrigatória.")
+    if len(normalized_reason) > 1000:
+        raise ValueError("A justificativa deve possuir no máximo 1000 caracteres.")
+
+    return decide_annulment(
+        actor_profile_id=access.profile_id,
+        budget_number=int(budget_number),
+        decision=normalized_decision,
+        reason=normalized_reason,
+    )
 
 def preflight_particular_import(
     *,
