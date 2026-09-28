@@ -79,6 +79,27 @@ def _money(value: Decimal) -> str:
     return f"R$ {text}"
 
 
+def _normalize_marker(value: Any) -> str:
+    import unicodedata
+
+    raw = unicodedata.normalize("NFKD", str(value or "").strip().upper())
+    return "".join(ch for ch in raw if not unicodedata.combining(ch))
+
+
+def _is_explicitly_annulled(record: dict[str, Any]) -> bool:
+    """Reconhece ANULADO apenas quando a própria fonte o declara explicitamente.
+
+    O XML HMV2670 pode continuar trazendo valor para um orçamento que foi anulado
+    em uma fonte operacional posterior. Nesses casos, a decisão do banco prevalece
+    no preflight; esta função não tenta inferir anulação pelo valor ou pelos itens.
+    """
+
+    for field in ("STATUS", "SITUACAO", "NOME_MEDICO", "NOME_PACIENTE", "SOLICITANTE"):
+        if _normalize_marker(record.get(field)) == "ANULADO":
+            return True
+    return False
+
+
 def _analyse_records(
     *,
     records: list[dict[str, Any]],
@@ -99,6 +120,11 @@ def _analyse_records(
     total_value = Decimal("0")
     procedure_value = Decimal("0")
     material_value = Decimal("0")
+    eligible_total_value = Decimal("0")
+    eligible_procedure_value = Decimal("0")
+    eligible_material_value = Decimal("0")
+    annulled_value = Decimal("0")
+    annulled_budget_numbers: list[str] = []
 
     for record in records:
         budget_number = str(record.get("SEQ_ORCAMENTO") or "").strip()
@@ -125,6 +151,17 @@ def _analyse_records(
         procedure_value += procedure
         material_value += material
         total_value += total
+
+        is_annulled = _is_explicitly_annulled(record)
+        record["IS_ANNULLED"] = is_annulled
+        if is_annulled:
+            annulled_budget_numbers.append(budget_number)
+            annulled_value += total
+        else:
+            eligible_procedure_value += procedure
+            eligible_material_value += material
+            eligible_total_value += total
+
         if procedure < 0 or material < 0 or total < 0:
             negative_financial += 1
         if abs((procedure + material) - total) > Decimal("0.01"):
@@ -142,6 +179,13 @@ def _analyse_records(
         issues.append(ValidationIssue("CRITICAL", "DUPLICATE_BUDGET_HEADER", f"{len(repeated_budget_headers)} número(s) de orçamento aparecem mais de uma vez no mesmo arquivo."))
     if negative_financial:
         issues.append(ValidationIssue("WARNING", "NEGATIVE_VALUES", f"{negative_financial} orçamento(s) possuem valor financeiro negativo e exigem conferência."))
+    if annulled_budget_numbers:
+        issues.append(ValidationIssue(
+            "WARNING",
+            "ANNULLED_EXCLUDED",
+            f"{len(annulled_budget_numbers)} orçamento(s) estão explicitamente marcados como ANULADO na fonte. "
+            "O valor original é preservado para auditoria, mas não compõe o total mensal considerado.",
+        ))
 
     competences = sorted({(d.year, d.month) for d in dates})
     if len(competences) > 1:
@@ -184,6 +228,17 @@ def _analyse_records(
         "procedure_value_label": _money(procedure_value),
         "material_value_label": _money(material_value),
         "total_value_label": _money(total_value),
+        "annulled_count": len(annulled_budget_numbers),
+        "annulled_budget_numbers": annulled_budget_numbers,
+        "annulled_value": str(annulled_value),
+        "annulled_value_label": _money(annulled_value),
+        "eligible_budgets": len(budget_numbers) - len(annulled_budget_numbers),
+        "eligible_procedure_value": str(eligible_procedure_value),
+        "eligible_material_value": str(eligible_material_value),
+        "eligible_total_value": str(eligible_total_value),
+        "eligible_procedure_value_label": _money(eligible_procedure_value),
+        "eligible_material_value_label": _money(eligible_material_value),
+        "eligible_total_value_label": _money(eligible_total_value),
         "financial_difference": str(difference),
         "financial_difference_label": _money(difference),
         "issues": [asdict(issue) for issue in issues],
@@ -229,6 +284,9 @@ def _inspect_xml(content: bytes, filename: str, digest: str) -> dict[str, Any]:
         records.append({
             "SEQ_ORCAMENTO": node.findtext("SEQ_ORCAMENTO"),
             "DATA": node.findtext("DATA"),
+            "NOME_MEDICO": node.findtext("NOME_MEDICO"),
+            "NOME_PACIENTE": node.findtext("NOME_PACIENTE"),
+            "SOLICITANTE": node.findtext("SOLICITANTE"),
             "VALOR": node.findtext("VALOR"),
             "VALOR_MATERIAL_ESPECIAL": node.findtext("VALOR_MATERIAL_ESPECIAL"),
             "VALOR_TOTAL": node.findtext("VALOR_TOTAL"),
@@ -287,6 +345,9 @@ def _inspect_xlsx(content: bytes, filename: str, digest: str) -> dict[str, Any]:
         records.append({
             "SEQ_ORCAMENTO": budget_raw,
             "DATA": row[positions["DATA"]],
+            "NOME_MEDICO": row[positions["NOME_MEDICO"]],
+            "NOME_PACIENTE": row[positions["NOME_PACIENTE"]] if "NOME_PACIENTE" in positions else None,
+            "SOLICITANTE": row[positions["SOLICITANTE"]],
             "VALOR": row[positions["VALOR"]],
             "VALOR_MATERIAL_ESPECIAL": row[positions["VALOR_MATERIAL_ESPECIAL"]],
             "VALOR_TOTAL": row[positions["VALOR_TOTAL"]],
