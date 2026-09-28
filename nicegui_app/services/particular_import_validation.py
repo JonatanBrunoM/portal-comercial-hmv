@@ -167,6 +167,7 @@ def _analyse_records(
         "sha256": digest,
         "source_format": source_format,
         "source_label": source_label,
+        "budget_records": records,
         "valid_for_import": not any(issue.severity == "CRITICAL" for issue in issues),
         "physical_rows": len(records),
         "budgets": len(budget_numbers),
