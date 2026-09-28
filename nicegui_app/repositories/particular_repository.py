@@ -20,6 +20,34 @@ class ParticularBudgetImportResult:
     budget_id: str
     operation: str
 
+def import_preflight(
+    *,
+    actor_profile_id: str,
+    budget_numbers: list[int],
+) -> list[dict[str, Any]]:
+    """Consulta em lote os orçamentos já existentes antes da importação."""
+
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    normalized = sorted({int(value) for value in budget_numbers if int(value) > 0})
+    if not normalized:
+        return []
+
+    result = rest_rpc(
+        "particular_import_preflight",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_numbers": normalized,
+        },
+        timeout=30.0,
+    )
+
+    if result is None:
+        return []
+    if not isinstance(result, list) or any(not isinstance(row, dict) for row in result):
+        raise RuntimeError("particular_import_preflight retornou formato inesperado.")
+    return result
+
+
 def start_xml_import(
     *,
     actor_profile_id: str,
