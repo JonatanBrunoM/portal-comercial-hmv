@@ -14,6 +14,7 @@ from nicegui_app.repositories.particular_repository import (
     list_operational_budgets,
     import_preflight,
     import_items_preflight,
+    annulment_preflight,
     decide_annulment,
 )
 
@@ -424,6 +425,42 @@ def preflight_particular_import(
         if row.get("budget_number") is not None
     }
 
+    candidate_numbers = [
+        int(candidate.get("budget_number"))
+        for candidate in validated_report.get("annulment_candidates", [])
+        if candidate.get("budget_number") is not None
+    ]
+    annulment_rows = annulment_preflight(
+        actor_profile_id=access.profile_id,
+        budget_numbers=candidate_numbers,
+    )
+    annulment_by_number = {
+        int(row["budget_number"]): row
+        for row in annulment_rows
+        if row.get("budget_number") is not None
+    }
+
+    annulment_reviews: dict[int, dict[str, Any]] = {}
+    for number in candidate_numbers:
+        persisted = annulment_by_number.get(number)
+        status = str((persisted or {}).get("annulment_status") or "").strip().upper()
+        reason = str((persisted or {}).get("annulment_reason") or "").strip()
+
+        if status == "CONFIRMED":
+            review_state = "CONFIRMED"
+        elif status == "NORMAL" and reason:
+            review_state = "NORMAL_REVIEWED"
+        else:
+            review_state = "PENDING"
+
+        annulment_reviews[number] = {
+            "review_state": review_state,
+            "annulment_status": status or "NORMAL",
+            "reason": reason or None,
+            "confirmed_at": (persisted or {}).get("annulment_confirmed_at"),
+            "confirmed_by": (persisted or {}).get("annulment_confirmed_by"),
+        }
+
     new_numbers: list[int] = []
     identical_numbers: list[int] = []
     changed_numbers: list[int] = []
@@ -655,4 +692,14 @@ def preflight_particular_import(
         "conflict_numbers": conflict_numbers,
         "changed_details": changed_details,
         "item_comparison": item_comparison,
+        "annulment_reviews": annulment_reviews,
+        "annulment_signal_count": len(candidate_numbers),
+        "annulment_reviewed_count": sum(
+            1 for row in annulment_reviews.values()
+            if row["review_state"] in {"CONFIRMED", "NORMAL_REVIEWED"}
+        ),
+        "annulment_pending_count": sum(
+            1 for row in annulment_reviews.values()
+            if row["review_state"] == "PENDING"
+        ),
     }
