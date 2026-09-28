@@ -28,6 +28,7 @@ from nicegui_app.components.particular_operational_budgets import (
 from nicegui_app.components.particular_monthly_dashboard import (
     render_particular_monthly_dashboard,
 )
+from nicegui_app.components.particular_import import render_particular_import
 
 
 def _text(value: Any, fallback: str = "—") -> str:
@@ -464,6 +465,7 @@ def render_particular(user: dict) -> None:
                 overview_tab = ui.tab("Visão geral", icon="dashboard")
                 operation_tab = ui.tab("Orçamentos", icon="receipt_long")
                 review_tab = ui.tab("Duplicidades", icon="compare_arrows")
+                import_tab = ui.tab("Importação", icon="upload_file")
 
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full"):
                 with ui.tab_panel(overview_tab):
@@ -614,6 +616,9 @@ def render_particular(user: dict) -> None:
 
                 with ui.tab_panel(operation_tab):
                     render_particular_operational_budgets(access=access)
+
+                with ui.tab_panel(import_tab):
+                    render_particular_import(access=access)
 
                 with ui.tab_panel(review_tab):
                     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
