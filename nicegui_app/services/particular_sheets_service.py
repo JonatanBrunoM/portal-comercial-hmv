@@ -323,6 +323,39 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         'notes_original',
         'source_row_hash',
     )
+    exact_identity_collisions = [
+        rows for rows in identity_collisions
+        if len({str(row.get('source_row_hash') or '') for row in rows}) == 1
+    ]
+    exact_collision_sizes = Counter(len(rows) for rows in exact_identity_collisions)
+    exact_collision_distances = Counter(
+        min(
+            abs(int(a.get('source_row_number') or 0) - int(b.get('source_row_number') or 0))
+            for index, a in enumerate(rows)
+            for b in rows[index + 1:]
+        )
+        for rows in exact_identity_collisions
+        if len(rows) > 1
+    )
+    exact_collision_details = []
+    for rows in exact_identity_collisions[:30]:
+        row_numbers = sorted(int(row.get('source_row_number') or 0) for row in rows)
+        exact_collision_details.append({
+            'source_sheet': rows[0].get('source_sheet'),
+            'budget_number': rows[0].get('budget_number'),
+            'budget_reference_raw': rows[0].get('budget_reference_raw'),
+            'notice_number': rows[0].get('notice_number'),
+            'procedure_date': rows[0].get('procedure_date'),
+            'patient_name': rows[0].get('patient_name'),
+            'occurrences': len(rows),
+            'row_numbers': row_numbers,
+            'min_row_distance': min(
+                (b - a for a, b in zip(row_numbers, row_numbers[1:])),
+                default=0,
+            ),
+            'source_row_hash': rows[0].get('source_row_hash'),
+        })
+
     collision_details = []
     for rows in identity_collisions[:50]:
         varying_fields = [
@@ -381,6 +414,11 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
             for rows in identity_collisions
         ),
         'identity_collision_details': collision_details,
+        'identity_collision_exact_size_counts': dict(sorted(exact_collision_sizes.items())),
+        'identity_collision_exact_distance_counts': dict(
+            sorted(exact_collision_distances.items())
+        ),
+        'identity_collision_exact_details': exact_collision_details,
         'occurrences': occurrences,
     }
 
