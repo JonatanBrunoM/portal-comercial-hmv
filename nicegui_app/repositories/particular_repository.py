@@ -624,6 +624,54 @@ def finish_import(
 
     return result.strip()
 
+def commit_xml_import(
+    *,
+    actor_profile_id: str,
+    source_filename: str,
+    file_sha256: str,
+    records: list[dict[str, Any]],
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Executa a gravação XML atômica por meio da RPC orquestradora."""
+
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    normalized_filename = str(source_filename or "").strip()
+    normalized_hash = str(file_sha256 or "").strip().lower()
+
+    if not normalized_filename:
+        raise ValueError("source_filename é obrigatório.")
+    if len(normalized_hash) != 64:
+        raise ValueError("file_sha256 inválido.")
+    if not records:
+        raise ValueError("Nenhum orçamento foi informado para gravação.")
+
+    result = rest_rpc(
+        "particular_commit_xml_import",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_source_filename": normalized_filename,
+            "p_file_sha256": normalized_hash,
+            "p_records": records,
+            "p_metadata": metadata or {},
+        },
+        timeout=180.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("particular_commit_xml_import retornou formato inesperado.")
+        result = result[0]
+
+    if not isinstance(result, dict):
+        raise RuntimeError("particular_commit_xml_import retornou resposta inválida.")
+
+    status = str(result.get("status") or "").strip().upper()
+    if status not in {"COMPLETED", "FAILED"}:
+        raise RuntimeError("particular_commit_xml_import retornou status inválido.")
+
+    return result
+
+
 def list_relation_reviews(
     *,
     actor_profile_id: str,
