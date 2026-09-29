@@ -306,9 +306,10 @@ def render_particular_import(access: ParticularAccess) -> None:
                                         "text-h6 text-weight-bold"
                                     )
                                     ui.label(
-                                        f'{preview["total_occurrences"]} ocorrência(s) serão enviadas em uma '
-                                        "transação atômica. Em caso de erro, a sincronização deve ser revertida "
-                                        "pelo banco."
+                                        f'{preview.get("source_evidence_rows", preview["total_occurrences"])} linha(s)-fonte e '
+                                        f'{preview.get("consolidated_occurrences_count", 0)} ocorrência(s) consolidada(s) '
+                                        "serão enviadas pelo protocolo V3 em lotes controlados. Cada lote é validado "
+                                        "pelo banco e a sincronização só é finalizada após a conferência dos totais."
                                     ).classes("text-body2")
                                     ui.label(
                                         f'{preview.get("to_do_occurrences", 0)} ocorrência(s) possuem referência '
@@ -350,13 +351,12 @@ def render_particular_import(access: ParticularAccess) -> None:
                                                 "text-positive text-h6 text-weight-bold"
                                             )
                                             ui.label(
-                                                f'Lote {sync_result.get("sync_id", "—")} · '
-                                                f'{sync_result.get("rows_total", preview["total_occurrences"])} '
-                                                "ocorrência(s) processada(s) · "
-                                                f'{sync_result.get("rows_new", 0)} nova(s) · '
-                                                f'{sync_result.get("rows_changed", 0)} alterada(s) · '
-                                                f'{sync_result.get("rows_unchanged", 0)} sem alteração · '
-                                                f'{sync_result.get("rows_review", 0)} para revisão.'
+                                                f'Sync {sync_result.get("sync_id", "—")} · '
+                                                f'{sync_result.get("source_rows", preview.get("source_evidence_rows", 0))} '
+                                                "linha(s)-fonte preservada(s) · "
+                                                f'{sync_result.get("consolidated_occurrences", preview.get("consolidated_occurrences_count", 0))} '
+                                                "ocorrência(s) consolidada(s) · "
+                                                f'{sync_result.get("expected_batches", 0)} lote(s) V3 concluído(s).'
                                             ).classes("text-body2")
                                         ui.notify(
                                             "Sincronização das grades concluída.",
@@ -380,8 +380,9 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     on_click=grade_sync_dialog.open,
                                 ).props("color=primary")
                                 ui.label(
-                                    "Baseline V2: todas as linhas-fonte serão preservadas como evidência e as "
-                                    "identidades repetidas serão consolidadas sem classificação automática."
+                                    "Baseline V3: todas as linhas-fonte serão preservadas como evidência, os grupos "
+                                    "semânticos não serão divididos entre lotes e nenhuma classificação operacional "
+                                    "será inferida automaticamente."
                                 ).classes("text-caption text-grey-7")
                     grade_preview_button.enable()
 
