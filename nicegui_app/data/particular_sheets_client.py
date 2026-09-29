@@ -107,6 +107,24 @@ def check_sheets_connection() -> dict[str, Any]:
     }
 
 
+
+def read_sheet_all(sheet_name: str) -> list[list[str]]:
+    """Lê uma aba inteira em uma única chamada, inclusive linhas ocultas."""
+    if sheet_name not in SHEET_NAMES:
+        raise ValueError("Aba não autorizada para o Particular.")
+    real_name = _real_sheet_names(_spreadsheet_id())[sheet_name]
+    escaped_name = real_name.replace("'", "''")
+    a1_range = f"'{escaped_name}'!A:AZ"
+    payload = _get(
+        f"values/{quote(a1_range, safe='')}",
+        {"valueRenderOption": "FORMATTED_VALUE"},
+    )
+    rows = payload.get("values", [])
+    if not isinstance(rows, list):
+        raise RuntimeError("Resposta inválida do Google Sheets.")
+    return rows
+
+
 def read_sheet_range(sheet_name: str, first_row: int, last_row: int) -> list[list[str]]:
     """Lê até 500 linhas, inclusive ocultas; chamar apenas no backend autorizado."""
     if sheet_name not in SHEET_NAMES:
