@@ -7,7 +7,10 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
-from nicegui_app.services.particular_sheets_service import cross_particular_budgets_with_sheets
+from nicegui_app.services.particular_sheets_service import (
+    cross_particular_budgets_with_sheets,
+    get_particular_occurrences_preview,
+)
 from nicegui_app.services.particular_service import (
     ParticularAccess,
     decide_particular_annulment,
@@ -54,6 +57,122 @@ def render_particular_import(access: ParticularAccess) -> None:
                 ui.badge("PRÉ-VALIDAÇÃO + CONFIRMAÇÃO", color="primary").props("outline")
 
             result_area = ui.column().classes("w-full gap-4")
+
+            with ui.card().classes("w-full p-4 gap-3 bg-grey-1"):
+                with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+                    with ui.column().classes("gap-1"):
+                        ui.label("Diagnóstico das grades operacionais").classes(
+                            "text-subtitle1 text-weight-bold"
+                        )
+                        ui.label(
+                            "Lê GRADE CIRÚRGICA, Negativas e GRADE PONTAL por completo, "
+                            "normaliza as ocorrências e valida a estrutura. Nenhum dado é gravado no Supabase."
+                        ).classes("text-body2 text-grey-7")
+                    grade_preview_button = ui.button(
+                        "Analisar grades",
+                        icon="fact_check",
+                    ).props("outline color=primary")
+
+                grade_preview_area = ui.column().classes("w-full gap-3")
+
+                async def analyze_grades() -> None:
+                    grade_preview_button.disable()
+                    grade_preview_area.clear()
+                    with grade_preview_area:
+                        ui.label("Lendo e validando as três grades...").classes(
+                            "text-primary text-weight-medium"
+                        )
+                    try:
+                        preview = await run.io_bound(
+                            get_particular_occurrences_preview,
+                            access,
+                        )
+                    except Exception as exc:
+                        grade_preview_area.clear()
+                        with grade_preview_area:
+                            ui.label(f"Diagnóstico não concluído: {exc}").classes(
+                                "text-negative text-weight-bold"
+                            )
+                            ui.label(
+                                "Nenhuma informação foi gravada no Supabase."
+                            ).classes("text-caption text-grey-7")
+                        grade_preview_button.enable()
+                        return
+
+                    grade_preview_area.clear()
+                    with grade_preview_area:
+                        ui.label("Leitura das grades concluída").classes(
+                            "text-positive text-weight-bold"
+                        )
+                        with ui.row().classes("w-full gap-3 flex-wrap"):
+                            for label, value, icon in (
+                                ("Ocorrências normalizadas", preview["total_occurrences"], "event_available"),
+                                ("Orçamentos repetidos na mesma grade", preview["repeated_budget_sheet_pairs"], "history"),
+                            ):
+                                with ui.card().classes("flex-1 min-w-[220px] p-3 gap-1"):
+                                    ui.icon(icon, size="22px").classes("text-primary")
+                                    ui.label(label).classes("text-caption text-grey-7")
+                                    ui.label(str(value)).classes("text-h6 text-weight-bold")
+
+                        stats = preview.get("sheet_stats", {})
+                        with ui.row().classes("w-full gap-3 flex-wrap"):
+                            for sheet_name in ("GRADE CIRÚRGICA", "Negativas", "GRADE PONTAL"):
+                                sheet = stats.get(sheet_name, {})
+                                with ui.card().classes("flex-1 min-w-[250px] p-3 gap-1"):
+                                    ui.label(sheet_name).classes("text-subtitle2 text-weight-bold")
+                                    ui.label(
+                                        f'{sheet.get("valid_occurrences", 0)} ocorrência(s) válida(s)'
+                                    ).classes("text-body2")
+                                    ui.label(
+                                        f'{sheet.get("invalid_or_missing_date", 0)} com data ausente/inválida · '
+                                        f'{sheet.get("nonempty_rows_without_budget", 0)} linha(s) preenchida(s) sem orçamento'
+                                    ).classes("text-caption text-grey-7")
+
+                        occurrences = preview.get("occurrences", [])
+                        attention = [
+                            row for row in occurrences
+                            if row.get("procedure_date") is None
+                            or row.get("budget_number") == 84992
+                        ]
+                        if attention:
+                            with ui.expansion(
+                                f"Inspecionar amostra de validação · {len(attention)} ocorrência(s)",
+                                icon="manage_search",
+                            ).classes("w-full border rounded"):
+                                rows = [
+                                    {
+                                        "budget": row.get("budget_number"),
+                                        "sheet": row.get("source_sheet"),
+                                        "date": _date_br(row.get("procedure_date")),
+                                        "notice": row.get("notice_number") or "—",
+                                        "location": row.get("location") or "—",
+                                        "value": _money_br(row.get("operational_value"))
+                                        if row.get("operational_value") is not None else "—",
+                                        "row": row.get("source_row_number"),
+                                    }
+                                    for row in attention[:100]
+                                ]
+                                ui.table(
+                                    columns=[
+                                        {"name": "budget", "label": "Orçamento", "field": "budget"},
+                                        {"name": "sheet", "label": "Grade", "field": "sheet"},
+                                        {"name": "date", "label": "Data", "field": "date"},
+                                        {"name": "notice", "label": "Aviso", "field": "notice"},
+                                        {"name": "location", "label": "Local", "field": "location"},
+                                        {"name": "value", "label": "Valor", "field": "value", "align": "right"},
+                                        {"name": "row", "label": "Linha fonte", "field": "row", "align": "right"},
+                                    ],
+                                    rows=rows,
+                                    row_key="row",
+                                    pagination={"rowsPerPage": 10},
+                                ).classes("w-full").props("dense flat bordered wrap-cells")
+
+                        ui.label(
+                            "Diagnóstico somente leitura: nenhuma ocorrência foi persistida."
+                        ).classes("text-caption text-grey-7")
+                    grade_preview_button.enable()
+
+                grade_preview_button.on("click", analyze_grades)
 
             async def handle_upload(event) -> None:
                 result_area.clear()
