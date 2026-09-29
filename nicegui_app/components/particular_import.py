@@ -379,11 +379,10 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     icon="cloud_sync",
                                     on_click=grade_sync_dialog.open,
                                 ).props("color=primary")
-                                grade_sync_button.disable()
                                 ui.label(
-                                    "Sincronização temporariamente bloqueada até validarmos a nova consolidação V2. "
-                                    "A posição física da linha não é usada como identidade da ocorrência."
-                                ).classes("text-caption text-warning text-weight-medium")
+                                    "Baseline V2: todas as linhas-fonte serão preservadas como evidência e as "
+                                    "identidades repetidas serão consolidadas sem classificação automática."
+                                ).classes("text-caption text-grey-7")
                     grade_preview_button.enable()
 
                 grade_preview_button.on("click", analyze_grades)
