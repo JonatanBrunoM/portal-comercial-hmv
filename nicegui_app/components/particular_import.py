@@ -10,6 +10,7 @@ from nicegui_app.services.particular_import_validation import inspect_hmv2670
 from nicegui_app.services.particular_sheets_service import (
     cross_particular_budgets_with_sheets,
     get_particular_occurrences_preview,
+    commit_particular_occurrences_preview,
 )
 from nicegui_app.services.particular_service import (
     ParticularAccess,
@@ -180,8 +181,103 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 ).classes("w-full").props("dense flat bordered wrap-cells")
 
                         ui.label(
-                            "Diagnóstico somente leitura: nenhuma ocorrência foi persistida."
+                            "Diagnóstico concluído. Até este ponto nenhuma ocorrência foi persistida."
                         ).classes("text-caption text-grey-7")
+
+                        if access.can_write:
+                            ui.separator()
+                            with ui.card().classes("w-full p-4 gap-3 border border-primary"):
+                                ui.label("Sincronização das grades no Supabase").classes(
+                                    "text-subtitle1 text-weight-bold"
+                                )
+                                ui.label(
+                                    "A gravação utilizará exatamente esta fotografia já analisada. "
+                                    "Orçamentos identificados serão relacionados à base e referências FAZER "
+                                    "serão preservadas sem criar orçamento fictício."
+                                ).classes("text-body2 text-grey-7")
+                                grade_sync_status = ui.column().classes("w-full gap-2")
+
+                                with ui.dialog() as grade_sync_dialog, ui.card().classes("p-5 gap-4"):
+                                    ui.label("Confirmar sincronização das grades?").classes(
+                                        "text-h6 text-weight-bold"
+                                    )
+                                    ui.label(
+                                        f'{preview["total_occurrences"]} ocorrência(s) serão enviadas em uma '
+                                        "transação atômica. Em caso de erro, a sincronização deve ser revertida "
+                                        "pelo banco."
+                                    ).classes("text-body2")
+                                    ui.label(
+                                        f'{preview.get("to_do_occurrences", 0)} ocorrência(s) possuem referência '
+                                        "FAZER e permanecerão sem budget_id até existir evidência segura de vínculo."
+                                    ).classes("text-body2 text-weight-medium")
+
+                                    async def execute_grade_sync() -> None:
+                                        grade_sync_confirm_button.disable()
+                                        grade_sync_button.disable()
+                                        grade_sync_dialog.close()
+                                        grade_sync_status.clear()
+                                        with grade_sync_status:
+                                            ui.label("Sincronizando fotografia validada...").classes(
+                                                "text-primary text-weight-bold"
+                                            )
+                                        try:
+                                            sync_result = await run.io_bound(
+                                                commit_particular_occurrences_preview,
+                                                access,
+                                                preview,
+                                            )
+                                        except Exception as exc:
+                                            grade_sync_status.clear()
+                                            with grade_sync_status:
+                                                ui.label(
+                                                    f"Sincronização não concluída: {exc}"
+                                                ).classes("text-negative text-weight-bold")
+                                                ui.label(
+                                                    "Nenhuma correção automática foi aplicada. "
+                                                    "Revise a mensagem antes de tentar novamente."
+                                                ).classes("text-caption text-grey-7")
+                                            grade_sync_button.enable()
+                                            grade_sync_confirm_button.enable()
+                                            return
+
+                                        grade_sync_status.clear()
+                                        with grade_sync_status:
+                                            ui.label("Grades sincronizadas e auditadas.").classes(
+                                                "text-positive text-h6 text-weight-bold"
+                                            )
+                                            ui.label(
+                                                f'Lote {sync_result.get("sync_id", "—")} · '
+                                                f'{sync_result.get("rows_total", preview["total_occurrences"])} '
+                                                "ocorrência(s) processada(s) · "
+                                                f'{sync_result.get("rows_new", 0)} nova(s) · '
+                                                f'{sync_result.get("rows_changed", 0)} alterada(s) · '
+                                                f'{sync_result.get("rows_unchanged", 0)} sem alteração · '
+                                                f'{sync_result.get("rows_review", 0)} para revisão.'
+                                            ).classes("text-body2")
+                                        ui.notify(
+                                            "Sincronização das grades concluída.",
+                                            color="positive",
+                                        )
+
+                                    with ui.row().classes("w-full justify-end gap-2"):
+                                        ui.button(
+                                            "Cancelar",
+                                            on_click=grade_sync_dialog.close,
+                                        ).props("flat")
+                                        grade_sync_confirm_button = ui.button(
+                                            "Confirmar sincronização",
+                                            icon="sync",
+                                            on_click=execute_grade_sync,
+                                        ).props("color=primary")
+
+                                grade_sync_button = ui.button(
+                                    "Sincronizar grades no Supabase",
+                                    icon="cloud_sync",
+                                    on_click=grade_sync_dialog.open,
+                                ).props("color=primary")
+                                ui.label(
+                                    "A posição física da linha não é usada como identidade da ocorrência."
+                                ).classes("text-caption text-grey-7")
                     grade_preview_button.enable()
 
                 grade_preview_button.on("click", analyze_grades)
