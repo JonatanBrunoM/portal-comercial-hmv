@@ -98,6 +98,19 @@ def _normalize_budget(value: Any) -> str | None:
     return text if text.isdigit() else None
 
 
+def _budget_reference(value: Any) -> tuple[str | None, str, str | None]:
+    raw = _normalize_text(value)
+    budget = _normalize_budget(value)
+    if budget is not None:
+        return budget, 'IDENTIFIED', raw
+
+    normalized = _normalize_header(raw)
+    if normalized == 'FAZER':
+        return None, 'TO_DO', raw
+
+    return None, 'UNIDENTIFIED', raw
+
+
 def _normalize_header(value: Any) -> str:
     text = unicodedata.normalize('NFKD', str(value or '').strip().upper())
     text = ''.join(ch for ch in text if not unicodedata.combining(ch))
@@ -180,13 +193,17 @@ def _cell(row: list[Any], index: int | None) -> Any:
 def _build_occurrence_payload(
     *, sheet_name: str, row_number: int, row: list[Any], columns: dict[str, int]
 ) -> dict[str, Any] | None:
-    budget_number = _normalize_budget(_cell(row, columns.get('budget_number')))
-    if budget_number is None:
+    budget_number, budget_reference_status, budget_reference_raw = _budget_reference(
+        _cell(row, columns.get('budget_number'))
+    )
+    if budget_reference_status == 'UNIDENTIFIED':
         return None
     payload = {
         'source_sheet': sheet_name,
         'source_row_number': row_number,
-        'budget_number': int(budget_number),
+        'budget_number': int(budget_number) if budget_number is not None else None,
+        'budget_reference_status': budget_reference_status,
+        'budget_reference_raw': budget_reference_raw,
         'notice_number': _normalize_integer_text(_cell(row, columns.get('notice_number'))),
         'procedure_date': _normalize_date(_cell(row, columns.get('procedure_date'))),
         'location': _LOCATION_BY_SHEET[sheet_name],
@@ -224,6 +241,8 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         valid = 0
         invalid_date = 0
         rows_without_budget = 0
+        to_do_rows = 0
+        unidentified_budget_rows = 0
         pages = 0
         row_number = 2
 
@@ -232,12 +251,15 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
             pages += 1
             for row in data_rows:
                 raw_budget = _cell(row, columns.get('budget_number'))
-                budget = _normalize_budget(raw_budget)
-                if budget is None:
+                _, budget_reference_status, _ = _budget_reference(raw_budget)
+                if budget_reference_status == 'UNIDENTIFIED':
                     if any(str(cell or '').strip() for cell in row):
                         rows_without_budget += 1
+                        unidentified_budget_rows += 1
                     row_number += 1
                     continue
+                if budget_reference_status == 'TO_DO':
+                    to_do_rows += 1
 
                 occurrence = _build_occurrence_payload(
                     sheet_name=sheet_name,
@@ -265,6 +287,8 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
             'valid_occurrences': valid,
             'invalid_or_missing_date': invalid_date,
             'nonempty_rows_without_budget': rows_without_budget,
+            'to_do_rows': to_do_rows,
+            'unidentified_budget_rows': unidentified_budget_rows,
             'pages_read': pages,
             'resolved_columns': sorted(columns),
         }
@@ -272,6 +296,7 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
     repeated = Counter(
         (row['source_sheet'], row['budget_number'])
         for row in occurrences
+        if row.get('budget_number') is not None
     )
     repeated_budgets = sum(count > 1 for count in repeated.values())
 
@@ -280,6 +305,10 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         'total_occurrences': len(occurrences),
         'sheet_stats': sheet_stats,
         'repeated_budget_sheet_pairs': repeated_budgets,
+        'to_do_occurrences': sum(
+            row.get('budget_reference_status') == 'TO_DO'
+            for row in occurrences
+        ),
         'occurrences': occurrences,
     }
 
