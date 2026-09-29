@@ -112,6 +112,7 @@ def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
         raise RuntimeError('Resposta incompleta das grades Particular.')
 
     distinct_by_sheet: dict[str, set[str]] = {}
+    occurrences_by_sheet: dict[str, dict[str, int]] = {}
     stats: dict[str, dict[str, int]] = {}
     for name, value_range in zip(SHEET_NAMES, value_ranges):
         counts = Counter()
@@ -120,6 +121,7 @@ def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
             if budget is not None:
                 counts[budget] += 1
         distinct_by_sheet[name] = set(counts)
+        occurrences_by_sheet[name] = dict(counts)
         stats[name] = {
             'linhas_com_orcamento': sum(counts.values()),
             'orcamentos_distintos': len(counts),
@@ -133,11 +135,12 @@ def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
         'orcamentos_distintos_total': len(appearances),
         'orcamentos_em_mais_de_uma_aba': sum(qty > 1 for qty in appearances.values()),
         'atualizado_em_epoch': int(time.time()),
+        '_budget_occurrences_by_sheet': occurrences_by_sheet,
     }
 
 
-def get_particular_sheets_summary(access: ParticularAccess) -> dict[str, Any]:
-    """Indicadores agregados; acesso validado inclusive quando há cache."""
+def _get_cached_aggregate(access: ParticularAccess) -> dict[str, Any]:
+    """Retorna a leitura consolidada preservando o cache e a autorização."""
     _require_read(access)
     spreadsheet_id = os.getenv('PARTICULAR_SHEETS_SPREADSHEET_ID', _DEFAULT_ID).strip()
     if not spreadsheet_id or not all(c.isalnum() or c in '-_' for c in spreadsheet_id):
@@ -150,3 +153,93 @@ def get_particular_sheets_summary(access: ParticularAccess) -> dict[str, Any]:
         _cache.update(id=spreadsheet_id, value=result,
                       until=time.monotonic() + _CACHE_SECONDS)
         return dict(result)
+
+
+def get_particular_sheets_summary(access: ParticularAccess) -> dict[str, Any]:
+    """Indicadores agregados; não expõe o índice operacional de orçamentos."""
+    result = _get_cached_aggregate(access)
+    return {key: value for key, value in result.items() if not key.startswith('_')}
+
+
+def cross_particular_budgets_with_sheets(
+    access: ParticularAccess,
+    budget_numbers: list[int | str],
+) -> dict[str, Any]:
+    """Cruza orçamentos do HMV2670 com as três grades sem duplicar casos.
+
+    O número do orçamento é a chave operacional. Repetições dentro de uma grade
+    são preservadas como ocorrências/histórico, mas o orçamento continua sendo
+    contado uma única vez no cruzamento.
+    """
+    result = _get_cached_aggregate(access)
+    occurrences = result.get('_budget_occurrences_by_sheet') or {}
+    normalized = sorted({
+        budget
+        for value in budget_numbers
+        if (budget := _normalize_budget(value)) is not None
+    }, key=int)
+
+    cases: list[dict[str, Any]] = []
+    by_sheet = {name: 0 for name in SHEET_NAMES}
+    found_any = 0
+    multi_grade = 0
+    repeated_history = 0
+    context_counts: Counter[str] = Counter()
+
+    for budget in normalized:
+        grades = [
+            name for name in SHEET_NAMES
+            if int((occurrences.get(name) or {}).get(budget, 0)) > 0
+        ]
+        grade_occurrences = {
+            name: int((occurrences.get(name) or {}).get(budget, 0))
+            for name in grades
+        }
+        for name in grades:
+            by_sheet[name] += 1
+
+        grade_set = set(grades)
+        if not grades:
+            context = 'SEM GRADE'
+        elif grade_set == {'GRADE CIRÚRGICA'}:
+            context = 'SEDE'
+        elif grade_set == {'GRADE PONTAL'}:
+            context = 'PONTAL'
+        elif grade_set == {'Negativas'}:
+            context = 'NEGATIVA'
+        elif grade_set == {'GRADE CIRÚRGICA', 'Negativas'}:
+            context = 'NEGATIVA TOTAL'
+        elif grade_set == {'GRADE CIRÚRGICA', 'GRADE PONTAL'}:
+            context = 'TRANSFERÊNCIA SEDE ↔ PONTAL'
+        elif grade_set == {'GRADE PONTAL', 'Negativas'}:
+            context = 'REVISAR PONTAL + NEGATIVAS'
+        else:
+            context = 'REVISAR FLUXO MÚLTIPLO'
+
+        has_history = any(qty > 1 for qty in grade_occurrences.values())
+        if grades:
+            found_any += 1
+        if len(grades) > 1:
+            multi_grade += 1
+        if has_history:
+            repeated_history += 1
+        context_counts[context] += 1
+
+        cases.append({
+            'budget_number': budget,
+            'grades': grades,
+            'grade_occurrences': grade_occurrences,
+            'context': context,
+            'has_repeated_history': has_history,
+        })
+
+    return {
+        'total_xml': len(normalized),
+        'found_any_grade': found_any,
+        'without_grade': len(normalized) - found_any,
+        'multiple_grades': multi_grade,
+        'repeated_history': repeated_history,
+        'by_sheet': by_sheet,
+        'context_counts': dict(context_counts),
+        'cases': cases,
+    }
