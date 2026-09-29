@@ -12,6 +12,7 @@ from nicegui_app.services.particular_service import (
     ParticularAccess,
     decide_particular_annulment,
     preflight_particular_import,
+    commit_particular_xml_import,
 )
 
 
@@ -38,8 +39,8 @@ def render_particular_import(access: ParticularAccess) -> None:
             ui.label("IMPORTAÇÃO INTELIGENTE").classes("text-caption text-weight-bold text-primary")
             ui.label("Importar relatórios").classes("text-h4 text-weight-bold")
             ui.label(
-                "O arquivo é analisado antes de qualquer gravação. Nesta primeira etapa, "
-                "nenhum dado enviado nesta tela é incorporado ao Supabase."
+                "O arquivo é analisado antes de qualquer gravação. A persistência no Supabase "
+                "só é liberada após pré-validação, conferências e confirmação explícita."
             ).classes("text-body1 text-grey-7")
 
         with ui.card().classes("w-full p-5 gap-4"):
@@ -50,7 +51,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                         "Envie o relatório original .XML ou a versão .XLSX. O Portal identificará automaticamente período, competência, "
                         "quantidade de orçamentos e fechamento financeiro."
                     ).classes("text-body2 text-grey-7")
-                ui.badge("PRÉ-VALIDAÇÃO · NÃO GRAVA DADOS", color="primary").props("outline")
+                ui.badge("PRÉ-VALIDAÇÃO + CONFIRMAÇÃO", color="primary").props("outline")
 
             result_area = ui.column().classes("w-full gap-4")
 
@@ -439,7 +440,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                         if preflight["safe_to_import"]:
                             ui.label(
                                 "Preflight concluído: nenhum conflito estrutural foi encontrado. "
-                                "A gravação continua desabilitada nesta etapa de teste."
+                                "A gravação poderá ser confirmada ao final desta análise."
                             ).classes("text-positive text-weight-bold")
                         else:
                             ui.label(
@@ -616,6 +617,101 @@ def render_particular_import(access: ParticularAccess) -> None:
                                                         row_key="code",
                                                         pagination={"rowsPerPage": 5},
                                                     ).classes("w-full").props("dense flat bordered")
+
+                        if (
+                            preflight["safe_to_import"]
+                            and int(preflight.get("annulment_pending_count") or 0) == 0
+                            and result.get("source_format") == "XML"
+                        ):
+                            ui.separator()
+                            with ui.card().classes("w-full p-4 gap-3 border border-primary"):
+                                ui.label("Gravação real no Supabase").classes("text-h6 text-weight-bold")
+                                ui.label(
+                                    "Esta ação persistirá orçamentos, identidade, itens e o valor ORIGINAL "
+                                    "do HMV2670. A operação é atômica: se qualquer orçamento ou item falhar, "
+                                    "as alterações do lote são revertidas."
+                                ).classes("text-body2 text-grey-7")
+
+                                import_status_area = ui.column().classes("w-full gap-2")
+
+                                with ui.dialog() as confirm_import_dialog, ui.card().classes("p-5 gap-4"):
+                                    ui.label("Confirmar importação real?").classes("text-h6 text-weight-bold")
+                                    ui.label(
+                                        f'{preflight["total_file"]} orçamento(s) serão processados. '
+                                        f'{preflight["new_count"]} novo(s), '
+                                        f'{preflight["changed_count"]} com alteração e '
+                                        f'{preflight["identical_count"]} já existente(s) idêntico(s).'
+                                    ).classes("text-body2")
+                                    ui.label(
+                                        f'Total bruto auditável: {_money_br(preflight.get("raw_total_value"))} · '
+                                        f'Total gerencial após anulações confirmadas: '
+                                        f'{_money_br(preflight.get("effective_total_value"))}.'
+                                    ).classes("text-body2 text-weight-medium")
+
+                                    async def execute_real_import() -> None:
+                                        confirm_import_button.disable()
+                                        import_button.disable()
+                                        confirm_import_dialog.close()
+                                        import_status_area.clear()
+                                        with import_status_area:
+                                            ui.label(
+                                                "Gravando lote validado no Supabase..."
+                                            ).classes("text-primary text-weight-bold")
+                                        try:
+                                            commit_result = await run.io_bound(
+                                                commit_particular_xml_import,
+                                                access=access,
+                                                validated_report=result,
+                                                preflight=preflight,
+                                            )
+                                        except Exception as exc:
+                                            import_status_area.clear()
+                                            with import_status_area:
+                                                ui.label(
+                                                    f"Importação não concluída: {exc}"
+                                                ).classes("text-negative text-weight-bold")
+                                                ui.label(
+                                                    "A transação foi bloqueada/revertida; revise a mensagem antes de tentar novamente."
+                                                ).classes("text-caption text-grey-7")
+                                            import_button.enable()
+                                            confirm_import_button.enable()
+                                            return
+
+                                        import_status_area.clear()
+                                        with import_status_area:
+                                            ui.label(
+                                                "Importação concluída e auditada."
+                                            ).classes("text-positive text-h6 text-weight-bold")
+                                            ui.label(
+                                                f'Lote {commit_result.get("batch_id", "—")} · '
+                                                f'{commit_result.get("records_processed", 0)} orçamento(s) · '
+                                                f'{commit_result.get("items_processed", 0)} item(ns) processado(s) · '
+                                                f'{commit_result.get("items_deactivated", 0)} item(ns) antigo(s) desativado(s).'
+                                            ).classes("text-body2")
+                                            ui.label(
+                                                "O mesmo arquivo fica protegido contra importação acidental pela assinatura SHA-256."
+                                            ).classes("text-caption text-grey-7")
+                                        ui.notify("Importação concluída com sucesso.", color="positive")
+
+                                    with ui.row().classes("w-full justify-end gap-2"):
+                                        ui.button(
+                                            "Cancelar",
+                                            on_click=confirm_import_dialog.close,
+                                        ).props("flat")
+                                        confirm_import_button = ui.button(
+                                            "Confirmar gravação",
+                                            icon="save",
+                                            on_click=execute_real_import,
+                                        ).props("color=primary")
+
+                                import_button = ui.button(
+                                    "Confirmar importação real",
+                                    icon="cloud_upload",
+                                    on_click=confirm_import_dialog.open,
+                                ).props("color=primary")
+                                ui.label(
+                                    "Reenvio do mesmo arquivo concluído é bloqueado pela assinatura SHA-256."
+                                ).classes("text-caption text-grey-7")
 
             ui.upload(
                 label="Selecionar relatório HMV2670",
