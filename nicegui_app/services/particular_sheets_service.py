@@ -243,6 +243,82 @@ def _build_occurrence_payload(
 
 
 
+_CONSOLIDATED_MUTABLE_FIELDS = (
+    'operational_value',
+    'patient_name',
+    'doctor_name',
+    'differential',
+    'negative_type_value',
+    'contact_status',
+    'patient_confirmation',
+    'evolution_status',
+    'notes_original',
+)
+
+
+def _consolidate_occurrence_group(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Consolida uma identidade operacional sem escolher arbitrariamente entre evidências conflitantes."""
+    if not rows:
+        raise ValueError('Grupo de ocorrência vazio.')
+
+    ordered = sorted(rows, key=lambda row: int(row.get('source_row_number') or 0))
+    first = ordered[0]
+    consolidated = {
+        'source_sheet': first.get('source_sheet'),
+        'source_row_key': first.get('source_row_key'),
+        'source_row_number': (
+            first.get('source_row_number') if len(ordered) == 1 else None
+        ),
+        'budget_number': first.get('budget_number'),
+        'budget_reference_status': first.get('budget_reference_status'),
+        'budget_reference_raw': first.get('budget_reference_raw'),
+        'notice_number': first.get('notice_number'),
+        'procedure_date': first.get('procedure_date'),
+        'location': first.get('location'),
+    }
+
+    conflicting_fields: list[str] = []
+    for field in _CONSOLIDATED_MUTABLE_FIELDS:
+        values = {json.dumps(row.get(field), ensure_ascii=False, sort_keys=True) for row in ordered}
+        if len(values) == 1:
+            consolidated[field] = ordered[0].get(field)
+        else:
+            consolidated[field] = None
+            conflicting_fields.append(field)
+
+    evidence_hashes = sorted(str(row.get('source_row_hash') or '') for row in ordered)
+    consolidated['source_row_hash'] = hashlib.sha256(
+        json.dumps(
+            evidence_hashes,
+            ensure_ascii=False,
+            separators=(',', ':'),
+        ).encode('utf-8')
+    ).hexdigest()
+    consolidated['evidence_count'] = len(ordered)
+    consolidated['has_conflicting_evidence'] = bool(conflicting_fields)
+    consolidated['conflicting_fields'] = conflicting_fields
+    return consolidated
+
+
+def _consolidate_occurrences(
+    occurrences: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in occurrences:
+        key = (
+            str(row.get('source_sheet') or ''),
+            str(row.get('source_row_key') or ''),
+        )
+        if not key[0] or not key[1]:
+            raise ValueError('Há linha-fonte sem identidade operacional.')
+        groups.setdefault(key, []).append(row)
+
+    return [
+        _consolidate_occurrence_group(rows)
+        for rows in groups.values()
+    ]
+
+
 def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, Any]:
     """Lê e normaliza as três grades sem persistir dados no Supabase."""
     _require_read(access)
@@ -394,9 +470,18 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
             ],
         })
 
+    consolidated_occurrences = _consolidate_occurrences(occurrences)
+    consolidated_conflicts = sum(
+        bool(row.get('has_conflicting_evidence'))
+        for row in consolidated_occurrences
+    )
+
     return {
         'persisted': False,
         'total_occurrences': len(occurrences),
+        'source_evidence_rows': len(occurrences),
+        'consolidated_occurrences_count': len(consolidated_occurrences),
+        'consolidated_conflict_occurrences': consolidated_conflicts,
         'sheet_stats': sheet_stats,
         'repeated_budget_sheet_pairs': repeated_budgets,
         'to_do_occurrences': sum(
@@ -420,6 +505,7 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         ),
         'identity_collision_exact_details': exact_collision_details,
         'occurrences': occurrences,
+        'consolidated_occurrences': consolidated_occurrences,
     }
 
 
