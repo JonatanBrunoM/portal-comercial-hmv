@@ -136,27 +136,57 @@ def render_particular_import(access: ParticularAccess) -> None:
 
                         collision_groups = int(preview.get("identity_collision_groups") or 0)
                         if collision_groups:
-                            with ui.card().classes("w-full p-4 gap-2 bg-orange-1"):
+                            with ui.card().classes("w-full p-4 gap-3 bg-orange-1"):
                                 ui.label(
                                     f"Identidades operacionais duplicadas · {collision_groups} grupo(s)"
                                 ).classes("text-warning text-weight-bold")
                                 ui.label(
-                                    f'{preview.get("identity_collision_occurrences", 0)} ocorrência(s) '
-                                    "compartilham a mesma identidade semântica. A sincronização continua "
-                                    "bloqueada até estes casos serem entendidos."
+                                    f'{preview.get("identity_collision_exact_groups", 0)} grupo(s) têm conteúdo '
+                                    f'idêntico e {preview.get("identity_collision_different_groups", 0)} grupo(s) '
+                                    "possuem diferenças em campos operacionais."
                                 ).classes("text-body2")
-                                for row in preview.get("identity_collision_sample", [])[:30]:
+                                ui.label(
+                                    "A sincronização permanece bloqueada. O quadro abaixo mostra quais campos "
+                                    "realmente diferenciam as linhas; nenhuma ocorrência será descartada."
+                                ).classes("text-caption text-grey-7")
+
+                                for index, group in enumerate(
+                                    preview.get("identity_collision_details", [])[:20],
+                                    start=1,
+                                ):
+                                    rows_group = group.get("rows") or []
+                                    if not rows_group:
+                                        continue
+                                    first = rows_group[0]
                                     budget_label = (
-                                        str(row.get("budget_number"))
-                                        if row.get("budget_number") is not None
-                                        else row.get("budget_reference_raw") or "—"
+                                        str(first.get("budget_number"))
+                                        if first.get("budget_number") is not None
+                                        else first.get("budget_reference_raw") or "—"
                                     )
-                                    ui.label(
-                                        f'{row.get("source_sheet")} · {budget_label} · '
-                                        f'aviso {row.get("notice_number") or "—"} · '
-                                        f'{_date_br(row.get("procedure_date"))} · '
-                                        f'{row.get("patient_name") or "—"} · linha {row.get("source_row_number")}'
-                                    ).classes("text-caption")
+                                    varying = ", ".join(group.get("varying_fields") or []) or "nenhum"
+                                    with ui.expansion(
+                                        f'Grupo {index} · {first.get("source_sheet")} · {budget_label} · '
+                                        f'aviso {first.get("notice_number") or "—"} · '
+                                        f'{_date_br(first.get("procedure_date"))} · diferenças: {varying}',
+                                        icon="difference",
+                                    ).classes("w-full border rounded"):
+                                        for row in rows_group:
+                                            ui.label(
+                                                f'Linha {row.get("source_row_number")} · '
+                                                f'valor {_money_br(row.get("operational_value")) if row.get("operational_value") is not None else "—"} · '
+                                                f'médico {row.get("doctor_name") or "—"} · '
+                                                f'diferencial {row.get("differential") or "—"} · '
+                                                f'tipo/valor negativa {row.get("negative_type_value") or "—"} · '
+                                                f'contato {row.get("contact_status") or "—"} · '
+                                                f'confirmação {row.get("patient_confirmation") or "—"} · '
+                                                f'evolução {row.get("evolution_status") or "—"}'
+                                            ).classes("text-caption")
+                                            ui.label(
+                                                f'Observação: {row.get("notes_original") or "—"}'
+                                            ).classes("text-caption text-grey-7")
+                                            ui.label(
+                                                f'Hash: {row.get("source_row_hash") or "—"}'
+                                            ).classes("text-caption text-grey-6")
 
                         occurrences = preview.get("occurrences", [])
                         attention = [
