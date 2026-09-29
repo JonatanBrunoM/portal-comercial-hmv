@@ -430,9 +430,12 @@ def preflight_particular_import(
         for candidate in validated_report.get("annulment_candidates", [])
         if candidate.get("budget_number") is not None
     ]
+    # O estado persistido precisa ser consultado para TODOS os orçamentos do
+    # arquivo, não apenas para os que o XML atual voltou a sinalizar. Assim uma
+    # anulação já confirmada continua valendo em reimportações futuras.
     annulment_rows = annulment_preflight(
         actor_profile_id=access.profile_id,
-        budget_numbers=candidate_numbers,
+        budget_numbers=list(file_by_number),
     )
     annulment_by_number = {
         int(row["budget_number"]): row
@@ -486,14 +489,17 @@ def preflight_particular_import(
         raw_material_value += incoming_material
         raw_total_value += incoming_total
 
-        file_annulled = row_is_annulled(incoming)
-        database_annulled = row_is_annulled(current)
-        if file_annulled or database_annulled:
+        # O HMV2670 não possui um status ANULADO confiável. Sinais do arquivo
+        # nunca excluem valor automaticamente; somente a decisão humana
+        # persistida como CONFIRMED pode zerar a contribuição gerencial.
+        persisted_annulment = annulment_by_number.get(number) or {}
+        database_annulled = (
+            str(persisted_annulment.get("annulment_status") or "").strip().upper()
+            == "CONFIRMED"
+        )
+        if database_annulled:
             annulled_numbers.append(number)
-            annulled_sources[number] = (
-                "ARQUIVO_E_BASE" if file_annulled and database_annulled
-                else ("ARQUIVO" if file_annulled else "BASE")
-            )
+            annulled_sources[number] = "BASE_CONFIRMADA"
             annulled_procedure_value += incoming_procedure
             annulled_material_value += incoming_material
             annulled_value += incoming_total
