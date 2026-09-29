@@ -19,6 +19,7 @@ from google.oauth2 import service_account
 from nicegui_app.data.particular_sheets_client import (
     SHEET_NAMES,
     check_sheets_connection,
+    read_sheet_all,
     read_sheet_range,
 )
 from nicegui_app.services.particular_service import ParticularAccess, ParticularAccessDenied
@@ -233,63 +234,47 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
     sheet_stats: dict[str, dict[str, Any]] = {}
 
     for sheet_name in SHEET_NAMES:
-        first_page = read_sheet_range(sheet_name, 1, 500)
-        if not first_page:
+        all_rows = read_sheet_all(sheet_name)
+        if not all_rows:
             raise RuntimeError(f'Grade {sheet_name} sem cabeçalho.')
 
-        columns = _resolve_sheet_columns(sheet_name, first_page[0])
+        columns = _resolve_sheet_columns(sheet_name, all_rows[0])
         valid = 0
         invalid_date = 0
-        rows_without_budget = 0
         to_do_rows = 0
         unidentified_budget_rows = 0
-        pages = 0
-        row_number = 2
 
-        data_rows = first_page[1:]
-        while True:
-            pages += 1
-            for row in data_rows:
-                raw_budget = _cell(row, columns.get('budget_number'))
-                _, budget_reference_status, _ = _budget_reference(raw_budget)
-                if budget_reference_status == 'UNIDENTIFIED':
-                    if any(str(cell or '').strip() for cell in row):
-                        rows_without_budget += 1
-                        unidentified_budget_rows += 1
-                    row_number += 1
-                    continue
-                if budget_reference_status == 'TO_DO':
-                    to_do_rows += 1
+        for row_number, row in enumerate(all_rows[1:], start=2):
+            raw_budget = _cell(row, columns.get('budget_number'))
+            _, budget_reference_status, _ = _budget_reference(raw_budget)
 
-                occurrence = _build_occurrence_payload(
-                    sheet_name=sheet_name,
-                    row_number=row_number,
-                    row=row,
-                    columns=columns,
-                )
-                if occurrence is not None:
-                    if occurrence['procedure_date'] is None:
-                        invalid_date += 1
-                    occurrences.append(occurrence)
-                    valid += 1
-                row_number += 1
+            if budget_reference_status == 'UNIDENTIFIED':
+                if any(str(cell or '').strip() for cell in row):
+                    unidentified_budget_rows += 1
+                continue
 
-            if len(data_rows) < 499:
-                break
+            if budget_reference_status == 'TO_DO':
+                to_do_rows += 1
 
-            first_row = row_number
-            last_row = first_row + 499
-            data_rows = read_sheet_range(sheet_name, first_row, last_row)
-            if not data_rows:
-                break
+            occurrence = _build_occurrence_payload(
+                sheet_name=sheet_name,
+                row_number=row_number,
+                row=row,
+                columns=columns,
+            )
+            if occurrence is not None:
+                if occurrence['procedure_date'] is None:
+                    invalid_date += 1
+                occurrences.append(occurrence)
+                valid += 1
 
         sheet_stats[sheet_name] = {
             'valid_occurrences': valid,
             'invalid_or_missing_date': invalid_date,
-            'nonempty_rows_without_budget': rows_without_budget,
+            'nonempty_rows_without_budget': unidentified_budget_rows,
             'to_do_rows': to_do_rows,
             'unidentified_budget_rows': unidentified_budget_rows,
-            'pages_read': pages,
+            'requests_used': 1,
             'resolved_columns': sorted(columns),
         }
 
@@ -311,7 +296,6 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         ),
         'occurrences': occurrences,
     }
-
 
 
 def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
