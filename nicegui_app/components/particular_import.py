@@ -150,6 +150,49 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     "realmente diferenciam as linhas; nenhuma ocorrência será descartada."
                                 ).classes("text-caption text-grey-7")
 
+                                exact_sizes = preview.get("identity_collision_exact_size_counts") or {}
+                                exact_distances = preview.get("identity_collision_exact_distance_counts") or {}
+                                if exact_sizes:
+                                    size_text = " · ".join(
+                                        f"{count} grupo(s) com {size} linhas"
+                                        for size, count in exact_sizes.items()
+                                    )
+                                    ui.label(f"Repetições exatas: {size_text}").classes(
+                                        "text-body2 text-weight-medium"
+                                    )
+                                if exact_distances:
+                                    distance_text = " · ".join(
+                                        f"distância {distance}: {count} grupo(s)"
+                                        for distance, count in list(exact_distances.items())[:12]
+                                    )
+                                    ui.label(
+                                        f"Menor distância entre linhas idênticas: {distance_text}"
+                                    ).classes("text-caption text-grey-7")
+
+                                exact_details = preview.get("identity_collision_exact_details") or []
+                                if exact_details:
+                                    with ui.expansion(
+                                        f"Inspecionar repetições integralmente idênticas · {len(exact_details)} amostra(s)",
+                                        icon="content_copy",
+                                    ).classes("w-full border rounded"):
+                                        for row in exact_details:
+                                            budget_label = (
+                                                str(row.get("budget_number"))
+                                                if row.get("budget_number") is not None
+                                                else row.get("budget_reference_raw") or "—"
+                                            )
+                                            lines = ", ".join(
+                                                str(number) for number in row.get("row_numbers") or []
+                                            )
+                                            ui.label(
+                                                f'{row.get("source_sheet")} · {budget_label} · '
+                                                f'aviso {row.get("notice_number") or "—"} · '
+                                                f'{_date_br(row.get("procedure_date"))} · '
+                                                f'{row.get("patient_name") or "—"} · '
+                                                f'{row.get("occurrences")}x · linhas {lines} · '
+                                                f'distância mínima {row.get("min_row_distance", 0)}'
+                                            ).classes("text-caption")
+
                                 for index, group in enumerate(
                                     preview.get("identity_collision_details", [])[:20],
                                     start=1,
