@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from functools import lru_cache
 from typing import Any
 from urllib.parse import quote
@@ -50,20 +51,32 @@ def _authorization_header() -> dict[str, str]:
 
 
 def _get(path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
-    try:
-        with httpx.Client(timeout=httpx.Timeout(25.0, connect=5.0)) as client:
-            response = client.get(
-                f"{API_ROOT}/{_spreadsheet_id()}/{path}",
-                params=params,
-                headers=_authorization_header(),
-            )
-            response.raise_for_status()
-            payload = response.json()
-    except (httpx.HTTPError, ValueError) as exc:
-        raise RuntimeError("Não foi possível consultar a planilha Particular.") from exc
-    if not isinstance(payload, dict):
-        raise RuntimeError("Resposta inválida do Google Sheets.")
-    return payload
+    last_error: Exception | None = None
+    with httpx.Client(timeout=httpx.Timeout(40.0, connect=5.0)) as client:
+        for attempt in range(4):
+            try:
+                response = client.get(
+                    f"{API_ROOT}/{_spreadsheet_id()}/{path}",
+                    params=params,
+                    headers=_authorization_header(),
+                )
+                if response.status_code in (429, 500, 502, 503, 504):
+                    last_error = RuntimeError(f"Google Sheets HTTP {response.status_code}")
+                    if attempt < 3:
+                        time.sleep(2 ** attempt + 1)
+                        continue
+                response.raise_for_status()
+                payload = response.json()
+                if not isinstance(payload, dict):
+                    raise RuntimeError("Resposta inválida do Google Sheets.")
+                return payload
+            except (httpx.HTTPError, ValueError, RuntimeError) as exc:
+                last_error = exc
+                if attempt < 3:
+                    time.sleep(2 ** attempt + 1)
+                    continue
+                break
+    raise RuntimeError("Não foi possível consultar a planilha Particular.") from last_error
 
 
 @lru_cache(maxsize=1)
