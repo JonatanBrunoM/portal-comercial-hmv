@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import threading
 import time
+import unicodedata
 from collections import Counter
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 import httpx
@@ -21,6 +26,49 @@ from nicegui_app.services.particular_service import ParticularAccess, Particular
 _API_ROOT = 'https://sheets.googleapis.com/v4/spreadsheets'
 _DEFAULT_ID = '1j7KKsA84_vOpIrHWQ0X0_WGXBsAAr6ItPjSJ6b4c8-0'
 _BUDGET_COLUMNS = {'GRADE CIRÚRGICA': 'G', 'Negativas': 'E', 'GRADE PONTAL': 'F'}
+
+_SHEET_FIELD_ALIASES = {
+    'GRADE CIRÚRGICA': {
+        'procedure_date': ('DATA',),
+        'notice_number': ('N AVISO', 'N° AVISO', 'Nº AVISO'),
+        'patient_name': ('NOME DO PACIENTE',),
+        'doctor_name': ('MEDICO', 'MÉDICO'),
+        'differential': ('DIFERENCIAL',),
+        'budget_number': ('ORCAMENTO', 'ORÇAMENTO'),
+        'operational_value': ('VALOR A VISTA', 'VALOR À VISTA'),
+        'contact_status': ('CONTATO COM O PACIENTE',),
+        'patient_confirmation': ('CONFIRMACAO DO PACIENTE', 'CONFIRMAÇÃO DO PACIENTE'),
+        'notes_original': ('OBSERVACAO', 'OBSERVAÇÃO'),
+    },
+    'Negativas': {
+        'procedure_date': ('DATA DO PROCEDIMENTO',),
+        'notice_number': ('N AVISO', 'N° AVISO', 'Nº AVISO'),
+        'patient_name': ('NOME DO PACIENTE',),
+        'budget_number': ('ORCAMENTO', 'ORÇAMENTO'),
+        'negative_type_value': ('TIPO/VALOR',),
+        'contact_status': ('CONTATO PACIENTE',),
+        'patient_confirmation': ('CONFIRMACAO CONTATO PACIENTE',),
+        'notes_original': ('OBSERVACAO', 'OBSERVAÇÃO'),
+    },
+    'GRADE PONTAL': {
+        'procedure_date': ('DATA DO PROCEDIMENTO',),
+        'notice_number': ('N AVISO', 'N° AVISO', 'Nº AVISO'),
+        'patient_name': ('NOME DO PACIENTE',),
+        'doctor_name': ('NOME DO MEDICO', 'NOME DO MÉDICO'),
+        'budget_number': ('ORCAMENTO', 'ORÇAMENTO'),
+        'operational_value': ('VALOR',),
+        'contact_status': ('CONTATO PACIENTE',),
+        'patient_confirmation': ('CONFIRMACAO CONTATO PACIENTE', 'CONFIRMAÇÃO CONTATO PACIENTE'),
+        'evolution_status': ('REGISTRO EM EVOLUCAO', 'REGISTRO EM EVOLUÇÃO'),
+        'notes_original': ('CONFIRMACAO PACIENTE', 'CONFIRMAÇÃO PACIENTE'),
+    },
+}
+_REQUIRED_SHEET_FIELDS = {
+    'GRADE CIRÚRGICA': {'procedure_date', 'notice_number', 'budget_number'},
+    'Negativas': {'procedure_date', 'notice_number', 'budget_number'},
+    'GRADE PONTAL': {'procedure_date', 'notice_number', 'budget_number'},
+}
+_LOCATION_BY_SHEET = {'GRADE CIRÚRGICA': 'SEDE', 'GRADE PONTAL': 'PONTAL', 'Negativas': None}
 _CACHE_SECONDS = 300
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] = {'id': None, 'until': 0.0, 'value': None}
@@ -48,6 +96,115 @@ def _normalize_budget(value: Any) -> str | None:
     if text.endswith('.0') and text[:-2].isdigit():
         text = text[:-2]
     return text if text.isdigit() else None
+
+
+def _normalize_header(value: Any) -> str:
+    text = unicodedata.normalize('NFKD', str(value or '').strip().upper())
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r'[^A-Z0-9/]+', ' ', text.replace('\n', ' '))
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def _normalize_text(value: Any) -> str | None:
+    text = str(value or '').strip()
+    return text or None
+
+
+def _normalize_integer_text(value: Any) -> str | None:
+    text = str(value or '').strip()
+    if not text:
+        return None
+    if text.endswith('.0'):
+        text = text[:-2]
+    digits = re.sub(r'\D', '', text)
+    return digits or None
+
+
+def _normalize_date(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    text = str(value).strip()
+    if not text:
+        return None
+    for fmt in ('%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(text[:10], fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _normalize_money(value: Any) -> str | None:
+    text = str(value or '').strip()
+    if not text:
+        return None
+    cleaned = re.sub(r'[^\d,.\-]', '', text)
+    if ',' in cleaned:
+        cleaned = cleaned.replace('.', '').replace(',', '.')
+    try:
+        return str(Decimal(cleaned).quantize(Decimal('0.01')))
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _resolve_sheet_columns(sheet_name: str, header_row: list[Any]) -> dict[str, int]:
+    aliases = _SHEET_FIELD_ALIASES[sheet_name]
+    normalized_headers = {
+        _normalize_header(value): index
+        for index, value in enumerate(header_row)
+        if _normalize_header(value)
+    }
+    resolved: dict[str, int] = {}
+    for field, field_aliases in aliases.items():
+        for alias in field_aliases:
+            if _normalize_header(alias) in normalized_headers:
+                resolved[field] = normalized_headers[_normalize_header(alias)]
+                break
+    missing = _REQUIRED_SHEET_FIELDS[sheet_name] - resolved.keys()
+    if missing:
+        raise RuntimeError(
+            f'Estrutura inesperada em {sheet_name}. '
+            f'Campos obrigatórios ausentes: {", ".join(sorted(missing))}.'
+        )
+    return resolved
+
+
+def _cell(row: list[Any], index: int | None) -> Any:
+    return None if index is None or index >= len(row) else row[index]
+
+
+def _build_occurrence_payload(
+    *, sheet_name: str, row_number: int, row: list[Any], columns: dict[str, int]
+) -> dict[str, Any] | None:
+    budget_number = _normalize_budget(_cell(row, columns.get('budget_number')))
+    if budget_number is None:
+        return None
+    payload = {
+        'source_sheet': sheet_name,
+        'source_row_number': row_number,
+        'budget_number': int(budget_number),
+        'notice_number': _normalize_integer_text(_cell(row, columns.get('notice_number'))),
+        'procedure_date': _normalize_date(_cell(row, columns.get('procedure_date'))),
+        'location': _LOCATION_BY_SHEET[sheet_name],
+        'operational_value': _normalize_money(_cell(row, columns.get('operational_value'))),
+        'patient_name': _normalize_text(_cell(row, columns.get('patient_name'))),
+        'doctor_name': _normalize_text(_cell(row, columns.get('doctor_name'))),
+        'differential': _normalize_text(_cell(row, columns.get('differential'))),
+        'negative_type_value': _normalize_text(_cell(row, columns.get('negative_type_value'))),
+        'contact_status': _normalize_text(_cell(row, columns.get('contact_status'))),
+        'patient_confirmation': _normalize_text(_cell(row, columns.get('patient_confirmation'))),
+        'evolution_status': _normalize_text(_cell(row, columns.get('evolution_status'))),
+        'notes_original': _normalize_text(_cell(row, columns.get('notes_original'))),
+    }
+    hash_payload = {key: value for key, value in payload.items() if key != 'source_row_number'}
+    payload['source_row_hash'] = hashlib.sha256(
+        json.dumps(hash_payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    ).hexdigest()
+    return payload
 
 
 def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
