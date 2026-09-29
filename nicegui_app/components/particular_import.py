@@ -134,6 +134,30 @@ def render_particular_import(access: ParticularAccess) -> None:
                                         'com referência de orçamento não identificada'
                                     ).classes("text-caption text-grey-7")
 
+                        collision_groups = int(preview.get("identity_collision_groups") or 0)
+                        if collision_groups:
+                            with ui.card().classes("w-full p-4 gap-2 bg-orange-1"):
+                                ui.label(
+                                    f"Identidades operacionais duplicadas · {collision_groups} grupo(s)"
+                                ).classes("text-warning text-weight-bold")
+                                ui.label(
+                                    f'{preview.get("identity_collision_occurrences", 0)} ocorrência(s) '
+                                    "compartilham a mesma identidade semântica. A sincronização continua "
+                                    "bloqueada até estes casos serem entendidos."
+                                ).classes("text-body2")
+                                for row in preview.get("identity_collision_sample", [])[:30]:
+                                    budget_label = (
+                                        str(row.get("budget_number"))
+                                        if row.get("budget_number") is not None
+                                        else row.get("budget_reference_raw") or "—"
+                                    )
+                                    ui.label(
+                                        f'{row.get("source_sheet")} · {budget_label} · '
+                                        f'aviso {row.get("notice_number") or "—"} · '
+                                        f'{_date_br(row.get("procedure_date"))} · '
+                                        f'{row.get("patient_name") or "—"} · linha {row.get("source_row_number")}'
+                                    ).classes("text-caption")
+
                         occurrences = preview.get("occurrences", [])
                         attention = [
                             row for row in occurrences
