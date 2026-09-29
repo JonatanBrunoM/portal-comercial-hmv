@@ -207,6 +207,84 @@ def _build_occurrence_payload(
     return payload
 
 
+
+def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, Any]:
+    """Lê e normaliza as três grades sem persistir dados no Supabase."""
+    _require_read(access)
+
+    occurrences: list[dict[str, Any]] = []
+    sheet_stats: dict[str, dict[str, Any]] = {}
+
+    for sheet_name in SHEET_NAMES:
+        first_page = read_sheet_range(sheet_name, 1, 500)
+        if not first_page:
+            raise RuntimeError(f'Grade {sheet_name} sem cabeçalho.')
+
+        columns = _resolve_sheet_columns(sheet_name, first_page[0])
+        valid = 0
+        invalid_date = 0
+        rows_without_budget = 0
+        pages = 0
+        row_number = 2
+
+        data_rows = first_page[1:]
+        while True:
+            pages += 1
+            for row in data_rows:
+                raw_budget = _cell(row, columns.get('budget_number'))
+                budget = _normalize_budget(raw_budget)
+                if budget is None:
+                    if any(str(cell or '').strip() for cell in row):
+                        rows_without_budget += 1
+                    row_number += 1
+                    continue
+
+                occurrence = _build_occurrence_payload(
+                    sheet_name=sheet_name,
+                    row_number=row_number,
+                    row=row,
+                    columns=columns,
+                )
+                if occurrence is not None:
+                    if occurrence['procedure_date'] is None:
+                        invalid_date += 1
+                    occurrences.append(occurrence)
+                    valid += 1
+                row_number += 1
+
+            if len(data_rows) < 499:
+                break
+
+            first_row = row_number
+            last_row = first_row + 499
+            data_rows = read_sheet_range(sheet_name, first_row, last_row)
+            if not data_rows:
+                break
+
+        sheet_stats[sheet_name] = {
+            'valid_occurrences': valid,
+            'invalid_or_missing_date': invalid_date,
+            'nonempty_rows_without_budget': rows_without_budget,
+            'pages_read': pages,
+            'resolved_columns': sorted(columns),
+        }
+
+    repeated = Counter(
+        (row['source_sheet'], row['budget_number'])
+        for row in occurrences
+    )
+    repeated_budgets = sum(count > 1 for count in repeated.values())
+
+    return {
+        'persisted': False,
+        'total_occurrences': len(occurrences),
+        'sheet_stats': sheet_stats,
+        'repeated_budget_sheet_pairs': repeated_budgets,
+        'occurrences': occurrences,
+    }
+
+
+
 def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
     raw = os.environ.get('PARTICULAR_SHEETS_SERVICE_ACCOUNT_JSON', '')
     if not raw:
