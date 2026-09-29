@@ -16,6 +16,7 @@ from nicegui_app.repositories.particular_repository import (
     import_items_preflight,
     annulment_preflight,
     decide_annulment,
+    commit_xml_import,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -336,6 +337,142 @@ def decide_particular_annulment(
         decision=normalized_decision,
         reason=normalized_reason,
     )
+
+def commit_particular_xml_import(
+    *,
+    access: ParticularAccess,
+    validated_report: dict[str, Any],
+    preflight: dict[str, Any],
+) -> dict[str, Any]:
+    """Grava um HMV2670 validado por uma única transação no Supabase."""
+
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para importar dados no módulo Particular."
+        )
+    if validated_report.get("source_format") != "XML":
+        raise ValueError("A gravação real está habilitada somente para o HMV2670 original em XML.")
+    if not validated_report.get("valid_for_import"):
+        raise ValueError("O arquivo não passou pela pré-validação.")
+    if not preflight.get("safe_to_import"):
+        raise ValueError("A gravação está bloqueada por conflitos com a base atual.")
+    if int(preflight.get("annulment_pending_count") or 0) > 0:
+        raise ValueError("Existem possíveis anulações pendentes de decisão operacional.")
+
+    records = validated_report.get("budget_records")
+    if not isinstance(records, list) or not records:
+        raise ValueError("Nenhum orçamento válido foi encontrado no arquivo.")
+
+    from datetime import datetime
+    from decimal import Decimal, InvalidOperation
+    import unicodedata
+
+    def normalized_text(value: Any) -> str | None:
+        raw = " ".join(str(value or "").strip().split())
+        if not raw:
+            return None
+        decomposed = unicodedata.normalize("NFKD", raw.upper())
+        return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+    def iso_date(value: Any) -> str:
+        raw = str(value or "").strip()
+        for fmt in ("%d/%m/%y", "%d/%m/%Y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(raw[:10], fmt).date().isoformat()
+            except ValueError:
+                continue
+        raise ValueError(f"Data inválida na preparação da gravação: {value!r}")
+
+    def numeric_source(value: Any) -> str | None:
+        # Para persistência, vazio continua NULL. Zero só é gravado quando o
+        # próprio HMV2670 efetivamente informa zero.
+        if value is None or str(value).strip() == "":
+            return None
+        raw = str(value).strip()
+        if "," in raw:
+            raw = raw.replace(".", "").replace(",", ".")
+        try:
+            return str(Decimal(raw))
+        except InvalidOperation as exc:
+            raise ValueError(f"Valor numérico inválido na preparação da gravação: {value!r}") from exc
+
+    payload: list[dict[str, Any]] = []
+    for record in records:
+        budget_number = int(str(record.get("SEQ_ORCAMENTO") or "").strip())
+        doctor_name = str(record.get("NOME_MEDICO") or "").strip() or None
+        patient_name = str(record.get("NOME_PACIENTE") or "").strip() or None
+        requester = str(record.get("SOLICITANTE") or "").strip() or None
+        doctor_marker = normalized_text(doctor_name) or ""
+
+        items_payload: list[dict[str, Any]] = []
+        for fallback_position, item in enumerate(record.get("ITEMS") or [], start=1):
+            source_sequence = str(item.get("source_sequence_original") or "").strip()
+            item_code = str(item.get("item_code") or "").strip()
+            description = str(item.get("description") or "").strip()
+            if not source_sequence or not item_code or not description:
+                raise ValueError(
+                    f"Orçamento {budget_number} possui item sem identidade completa."
+                )
+
+            items_payload.append({
+                "source_sequence_original": int(source_sequence),
+                "source_position": int(item.get("source_position") or fallback_position),
+                "item_code": item_code,
+                "description_original": description,
+                "description_normalized": normalized_text(description),
+                "quantity": numeric_source(item.get("quantity")),
+                "unit_value": numeric_source(item.get("unit_value")),
+                "total_value": numeric_source(item.get("total_value")),
+                "unit": str(item.get("unit") or "").strip() or None,
+            })
+
+        payload.append({
+            "budget_number": budget_number,
+            "budget_date": iso_date(record.get("DATA")),
+            "doctor_name": doctor_name,
+            "original_requester": requester,
+            "patient_name": patient_name,
+            "patient_name_normalized": normalized_text(patient_name),
+            "is_liminar": False,
+            "is_international": False,
+            "is_transcription": "CONSULTORIO" in doctor_marker,
+            "procedure_value": numeric_source(record.get("VALOR")),
+            "material_value": numeric_source(record.get("VALOR_MATERIAL_ESPECIAL")),
+            "total_value": numeric_source(record.get("VALOR_TOTAL")),
+            "items": items_payload,
+        })
+
+    metadata = {
+        "portal_import_version": "HMV2670_ATOMIC_V1",
+        "competence": validated_report.get("competence"),
+        "start_date": validated_report.get("start_date"),
+        "end_date": validated_report.get("end_date"),
+        "coverage_type": validated_report.get("coverage_type"),
+        "source_label": validated_report.get("source_label"),
+        "preflight_new_count": int(preflight.get("new_count") or 0),
+        "preflight_identical_count": int(preflight.get("identical_count") or 0),
+        "preflight_changed_count": int(preflight.get("changed_count") or 0),
+        "preflight_conflict_count": int(preflight.get("conflict_count") or 0),
+        "annulled_confirmed_count": int(preflight.get("annulled_count") or 0),
+        "raw_total_value": preflight.get("raw_total_value"),
+        "effective_total_value": preflight.get("effective_total_value"),
+    }
+
+    result = commit_xml_import(
+        actor_profile_id=access.profile_id,
+        source_filename=str(validated_report.get("filename") or "HMV2670.xml"),
+        file_sha256=str(validated_report.get("sha256") or ""),
+        records=payload,
+        metadata=metadata,
+    )
+
+    if str(result.get("status") or "").upper() == "FAILED":
+        raise RuntimeError(
+            str(result.get("error") or "A transação de importação foi revertida pelo banco.")
+        )
+
+    return result
+
 
 def preflight_particular_import(
     *,
