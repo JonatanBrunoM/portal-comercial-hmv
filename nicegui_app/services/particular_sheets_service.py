@@ -514,7 +514,7 @@ def commit_particular_occurrences_preview(
     access: ParticularAccess,
     preview: dict[str, Any],
 ) -> dict[str, Any]:
-    """Persiste a fotografia analisada usando ocorrências consolidadas + evidências-fonte."""
+    """Persiste a fotografia validada pelo protocolo V3 em lotes controlados."""
     if not access.can_write:
         raise ParticularAccessDenied(
             'Seu perfil não possui permissão para sincronizar as grades do Particular.'
@@ -529,17 +529,19 @@ def commit_particular_occurrences_preview(
     if not isinstance(consolidated, list) or not consolidated:
         raise ValueError('O diagnóstico não contém ocorrências consolidadas.')
 
-    if len(evidences) != int(preview.get('source_evidence_rows') or 0):
+    expected_source_rows = int(preview.get('source_evidence_rows') or 0)
+    expected_occurrences = int(preview.get('consolidated_occurrences_count') or 0)
+    if len(evidences) != expected_source_rows:
         raise ValueError(
             'A quantidade de evidências mudou após o diagnóstico; execute-o novamente.'
         )
-    if len(consolidated) != int(preview.get('consolidated_occurrences_count') or 0):
+    if len(consolidated) != expected_occurrences:
         raise ValueError(
             'A quantidade de ocorrências consolidadas mudou após o diagnóstico.'
         )
 
     scoped_keys = [
-        (str(row.get('source_sheet') or ''), str(row.get('source_row_key') or ''))
+        (str(row.get('source_sheet') or '').strip(), str(row.get('source_row_key') or '').strip())
         for row in consolidated
     ]
     if any(not sheet or not key for sheet, key in scoped_keys):
@@ -549,33 +551,126 @@ def commit_particular_occurrences_preview(
             'A consolidação contém identidades operacionais duplicadas; sincronização bloqueada.'
         )
 
+    evidences_by_key: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for evidence in evidences:
+        key = (
+            str(evidence.get('source_sheet') or '').strip(),
+            str(evidence.get('source_row_key') or '').strip(),
+        )
+        if not key[0] or not key[1]:
+            raise ValueError('Há evidência-fonte sem identidade operacional.')
+        evidences_by_key.setdefault(key, []).append(evidence)
+
+    consolidated_key_set = set(scoped_keys)
+    orphan_evidence_keys = set(evidences_by_key) - consolidated_key_set
+    if orphan_evidence_keys:
+        raise ValueError(
+            'Há evidência sem ocorrência consolidada correspondente; sincronização bloqueada.'
+        )
+
+    grouped: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    grouped_evidence_total = 0
+    for occurrence in consolidated:
+        key = (
+            str(occurrence.get('source_sheet') or '').strip(),
+            str(occurrence.get('source_row_key') or '').strip(),
+        )
+        group_evidences = evidences_by_key.get(key) or []
+        if not group_evidences:
+            raise ValueError(
+                'Há ocorrência consolidada sem evidência-fonte correspondente.'
+            )
+        grouped.append((occurrence, group_evidences))
+        grouped_evidence_total += len(group_evidences)
+
+    if grouped_evidence_total != expected_source_rows:
+        raise ValueError(
+            'A soma das evidências agrupadas diverge do diagnóstico; sincronização bloqueada.'
+        )
+
+    # O grupo semântico nunca é dividido entre lotes: a ocorrência consolidada
+    # e todas as suas linhas-fonte seguem juntas para a mesma RPC.
+    batch_occurrence_limit = 250
+    batches: list[dict[str, list[dict[str, Any]]]] = []
+    current_occurrences: list[dict[str, Any]] = []
+    current_evidences: list[dict[str, Any]] = []
+
+    for occurrence, group_evidences in grouped:
+        if current_occurrences and len(current_occurrences) >= batch_occurrence_limit:
+            batches.append({
+                'occurrences': current_occurrences,
+                'evidences': current_evidences,
+            })
+            current_occurrences = []
+            current_evidences = []
+
+        current_occurrences.append(occurrence)
+        current_evidences.extend(group_evidences)
+
+    if current_occurrences:
+        batches.append({
+            'occurrences': current_occurrences,
+            'evidences': current_evidences,
+        })
+
+    if not batches:
+        raise ValueError('Nenhum lote V3 foi produzido para sincronização.')
+
     spreadsheet_id = os.getenv('PARTICULAR_SHEETS_SPREADSHEET_ID', _DEFAULT_ID).strip()
     if not spreadsheet_id:
         raise RuntimeError('ID da planilha Particular não configurado.')
 
-    from nicegui_app.repositories.particular_repository import commit_sheet_sync_v2
+    from nicegui_app.repositories.particular_repository import (
+        commit_sheet_sync_batch_v3,
+        finalize_sheet_sync_v3,
+        open_sheet_sync_v3,
+    )
 
-    return commit_sheet_sync_v2(
+    metadata = {
+        'portal_sync_version': 'PARTICULAR_GRADES_V3',
+        'source': 'GRADE_CIRURGICA_NEGATIVAS_GRADE_PONTAL',
+        'source_rows': expected_source_rows,
+        'consolidated_occurrences': expected_occurrences,
+        'consolidated_conflict_occurrences': int(
+            preview.get('consolidated_conflict_occurrences') or 0
+        ),
+        'to_do_evidence_rows': int(preview.get('to_do_occurrences') or 0),
+        'identity_collision_groups': int(
+            preview.get('identity_collision_groups') or 0
+        ),
+        'sheet_stats': preview.get('sheet_stats') or {},
+        'batch_occurrence_limit': batch_occurrence_limit,
+    }
+
+    opened = open_sheet_sync_v3(
         spreadsheet_id=spreadsheet_id,
-        occurrences=consolidated,
-        evidences=evidences,
+        expected_source_rows=expected_source_rows,
+        expected_occurrences=expected_occurrences,
+        expected_batches=len(batches),
         sync_mode='MANUAL',
         triggered_by=access.profile_id,
-        metadata={
-            'portal_sync_version': 'PARTICULAR_GRADES_V2',
-            'source': 'GRADE_CIRURGICA_NEGATIVAS_GRADE_PONTAL',
-            'source_rows': len(evidences),
-            'consolidated_occurrences': len(consolidated),
-            'consolidated_conflict_occurrences': int(
-                preview.get('consolidated_conflict_occurrences') or 0
-            ),
-            'to_do_evidence_rows': int(preview.get('to_do_occurrences') or 0),
-            'identity_collision_groups': int(
-                preview.get('identity_collision_groups') or 0
-            ),
-            'sheet_stats': preview.get('sheet_stats') or {},
-        },
+        metadata=metadata,
     )
+    sync_id = str(opened.get('sync_id') or '').strip()
+
+    last_batch_result: dict[str, Any] | None = None
+    for batch_number, batch in enumerate(batches, start=1):
+        last_batch_result = commit_sheet_sync_batch_v3(
+            sync_id=sync_id,
+            batch_number=batch_number,
+            occurrences=batch['occurrences'],
+            evidences=batch['evidences'],
+        )
+
+    finalized = finalize_sheet_sync_v3(sync_id=sync_id)
+    return {
+        **finalized,
+        'sync_id': sync_id,
+        'expected_batches': len(batches),
+        'source_rows': expected_source_rows,
+        'consolidated_occurrences': expected_occurrences,
+        'last_batch': last_batch_result,
+    }
 
 
 def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
