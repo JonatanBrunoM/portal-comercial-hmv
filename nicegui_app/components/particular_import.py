@@ -107,7 +107,8 @@ def render_particular_import(access: ParticularAccess) -> None:
                         )
                         with ui.row().classes("w-full gap-3 flex-wrap"):
                             for label, value, icon in (
-                                ("Ocorrências normalizadas", preview["total_occurrences"], "event_available"),
+                                ("Linhas-fonte preservadas", preview.get("source_evidence_rows", preview["total_occurrences"]), "dataset"),
+                                ("Ocorrências operacionais consolidadas", preview.get("consolidated_occurrences_count", 0), "event_available"),
                                 ("Pendentes de confecção · FAZER", preview.get("to_do_occurrences", 0), "pending_actions"),
                                 ("Orçamentos repetidos na mesma grade", preview["repeated_budget_sheet_pairs"], "history"),
                             ):
@@ -280,6 +281,12 @@ def render_particular_import(access: ParticularAccess) -> None:
                         ui.label(
                             "Diagnóstico concluído. Até este ponto nenhuma ocorrência foi persistida."
                         ).classes("text-caption text-grey-7")
+                        ui.label(
+                            f'{preview.get("source_evidence_rows", preview["total_occurrences"])} linha(s)-fonte → '
+                            f'{preview.get("consolidated_occurrences_count", 0)} ocorrência(s) operacional(is) '
+                            f'consolidada(s) · {preview.get("consolidated_conflict_occurrences", 0)} '
+                            "com evidências divergentes preservadas para análise."
+                        ).classes("text-body2 text-weight-medium")
 
                         if access.can_write:
                             ui.separator()
@@ -372,9 +379,11 @@ def render_particular_import(access: ParticularAccess) -> None:
                                     icon="cloud_sync",
                                     on_click=grade_sync_dialog.open,
                                 ).props("color=primary")
+                                grade_sync_button.disable()
                                 ui.label(
+                                    "Sincronização temporariamente bloqueada até validarmos a nova consolidação V2. "
                                     "A posição física da linha não é usada como identidade da ocorrência."
-                                ).classes("text-caption text-grey-7")
+                                ).classes("text-caption text-warning text-weight-medium")
                     grade_preview_button.enable()
 
                 grade_preview_button.on("click", analyze_grades)
