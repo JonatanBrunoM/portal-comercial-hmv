@@ -107,6 +107,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                         with ui.row().classes("w-full gap-3 flex-wrap"):
                             for label, value, icon in (
                                 ("Ocorrências normalizadas", preview["total_occurrences"], "event_available"),
+                                ("Pendentes de confecção · FAZER", preview.get("to_do_occurrences", 0), "pending_actions"),
                                 ("Orçamentos repetidos na mesma grade", preview["repeated_budget_sheet_pairs"], "history"),
                             ):
                                 with ui.card().classes("flex-1 min-w-[220px] p-3 gap-1"):
@@ -124,8 +125,12 @@ def render_particular_import(access: ParticularAccess) -> None:
                                         f'{sheet.get("valid_occurrences", 0)} ocorrência(s) válida(s)'
                                     ).classes("text-body2")
                                     ui.label(
-                                        f'{sheet.get("invalid_or_missing_date", 0)} com data ausente/inválida · '
-                                        f'{sheet.get("nonempty_rows_without_budget", 0)} linha(s) preenchida(s) sem orçamento'
+                                        f'{sheet.get("to_do_rows", 0)} FAZER · '
+                                        f'{sheet.get("invalid_or_missing_date", 0)} com data ausente/inválida'
+                                    ).classes("text-caption text-grey-7")
+                                    ui.label(
+                                        f'{sheet.get("unidentified_budget_rows", 0)} linha(s) preenchida(s) '
+                                        'com referência de orçamento não identificada'
                                     ).classes("text-caption text-grey-7")
 
                         occurrences = preview.get("occurrences", [])
@@ -133,6 +138,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                             row for row in occurrences
                             if row.get("procedure_date") is None
                             or row.get("budget_number") == 84992
+                            or row.get("budget_reference_status") == "TO_DO"
                         ]
                         if attention:
                             with ui.expansion(
@@ -141,7 +147,12 @@ def render_particular_import(access: ParticularAccess) -> None:
                             ).classes("w-full border rounded"):
                                 rows = [
                                     {
-                                        "budget": row.get("budget_number"),
+                                        "budget": (
+                                            str(row.get("budget_number"))
+                                            if row.get("budget_number") is not None
+                                            else row.get("budget_reference_raw") or "—"
+                                        ),
+                                        "reference_status": row.get("budget_reference_status") or "—",
                                         "sheet": row.get("source_sheet"),
                                         "date": _date_br(row.get("procedure_date")),
                                         "notice": row.get("notice_number") or "—",
@@ -154,7 +165,8 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 ]
                                 ui.table(
                                     columns=[
-                                        {"name": "budget", "label": "Orçamento", "field": "budget"},
+                                        {"name": "budget", "label": "Orçamento / referência", "field": "budget"},
+                                        {"name": "reference_status", "label": "Situação referência", "field": "reference_status"},
                                         {"name": "sheet", "label": "Grade", "field": "sheet"},
                                         {"name": "date", "label": "Data", "field": "date"},
                                         {"name": "notice", "label": "Aviso", "field": "notice"},
