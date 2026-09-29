@@ -1082,6 +1082,121 @@ def list_operational_budgets(
 
     return result
 
+
+def open_sheet_sync_v3(
+    *,
+    spreadsheet_id: str,
+    expected_source_rows: int,
+    expected_occurrences: int,
+    expected_batches: int,
+    sync_mode: str = "MANUAL",
+    triggered_by: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Abre uma sincronização V3 controlada e declara os totais esperados."""
+    normalized_spreadsheet_id = str(spreadsheet_id or "").strip()
+    normalized_mode = str(sync_mode or "MANUAL").strip().upper()
+
+    if not normalized_spreadsheet_id:
+        raise ValueError("spreadsheet_id é obrigatório.")
+    if normalized_mode not in {"MANUAL", "ON_OPEN", "SCHEDULED"}:
+        raise ValueError("sync_mode inválido.")
+    if int(expected_source_rows) <= 0:
+        raise ValueError("expected_source_rows deve ser maior que zero.")
+    if int(expected_occurrences) <= 0:
+        raise ValueError("expected_occurrences deve ser maior que zero.")
+    if int(expected_batches) <= 0:
+        raise ValueError("expected_batches deve ser maior que zero.")
+    if triggered_by is not None:
+        triggered_by = _require_uuid(triggered_by, field="triggered_by")
+
+    result = rest_rpc(
+        "particular_open_sheet_sync_v3",
+        {
+            "p_spreadsheet_id": normalized_spreadsheet_id,
+            "p_sync_mode": normalized_mode,
+            "p_triggered_by": triggered_by,
+            "p_expected_source_rows": int(expected_source_rows),
+            "p_expected_occurrences": int(expected_occurrences),
+            "p_expected_batches": int(expected_batches),
+            "p_metadata": metadata or {},
+        },
+        timeout=30.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("particular_open_sheet_sync_v3 retornou formato inesperado.")
+        result = result[0]
+    if not isinstance(result, dict) or not str(result.get("sync_id") or "").strip():
+        raise RuntimeError("particular_open_sheet_sync_v3 retornou resposta inválida.")
+    return result
+
+
+def commit_sheet_sync_batch_v3(
+    *,
+    sync_id: str,
+    batch_number: int,
+    occurrences: list[dict[str, Any]],
+    evidences: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Grava um lote V3 mantendo ocorrência consolidada e suas evidências juntas."""
+    sync_id = _require_uuid(sync_id, field="sync_id")
+
+    if int(batch_number) <= 0:
+        raise ValueError("batch_number deve ser maior que zero.")
+    if not occurrences:
+        raise ValueError("O lote V3 não contém ocorrências.")
+    if not evidences:
+        raise ValueError("O lote V3 não contém evidências.")
+
+    result = rest_rpc(
+        "particular_commit_sheet_sync_batch_v3",
+        {
+            "p_sync_id": sync_id,
+            "p_batch_number": int(batch_number),
+            "p_occurrences": occurrences,
+            "p_evidences": evidences,
+        },
+        timeout=120.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError(
+                "particular_commit_sheet_sync_batch_v3 retornou formato inesperado."
+            )
+        result = result[0]
+    if not isinstance(result, dict) or result.get("ok") is not True:
+        raise RuntimeError(
+            "particular_commit_sheet_sync_batch_v3 retornou resposta inválida."
+        )
+    return result
+
+
+def finalize_sheet_sync_v3(*, sync_id: str) -> dict[str, Any]:
+    """Finaliza o protocolo V3 somente após todos os lotes terem sido confirmados."""
+    sync_id = _require_uuid(sync_id, field="sync_id")
+
+    result = rest_rpc(
+        "particular_finalize_sheet_sync_v3",
+        {"p_sync_id": sync_id},
+        timeout=120.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError(
+                "particular_finalize_sheet_sync_v3 retornou formato inesperado."
+            )
+        result = result[0]
+    if not isinstance(result, dict):
+        raise RuntimeError("particular_finalize_sheet_sync_v3 retornou resposta inválida.")
+    if str(result.get("status") or "").strip().upper() != "COMPLETED":
+        raise RuntimeError("A sincronização V3 não foi finalizada como COMPLETED.")
+    return result
+
+
 def commit_sheet_sync_v2(
     *,
     spreadsheet_id: str,
