@@ -7,6 +7,7 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
+from nicegui_app.services.particular_sheets_service import cross_particular_budgets_with_sheets
 from nicegui_app.services.particular_service import (
     ParticularAccess,
     decide_particular_annulment,
@@ -62,8 +63,21 @@ def render_particular_import(access: ParticularAccess) -> None:
                         ui.label("Analisando estrutura e integridade do relatório...").classes("text-body2 text-grey-7")
                     result = await run.io_bound(inspect_hmv2670, content, filename)
                     preflight = None
+                    grade_cross = None
                     if result.get("valid_for_import"):
-                        preflight = await run.io_bound(preflight_particular_import, access=access, validated_report=result)
+                        preflight = await run.io_bound(
+                            preflight_particular_import,
+                            access=access,
+                            validated_report=result,
+                        )
+                        grade_cross = await run.io_bound(
+                            cross_particular_budgets_with_sheets,
+                            access,
+                            [
+                                record.get("SEQ_ORCAMENTO")
+                                for record in result.get("budget_records", [])
+                            ],
+                        )
                 except Exception as exc:
                     result_area.clear()
                     with result_area:
@@ -111,6 +125,87 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 with ui.card().classes("flex-1 min-w-[220px] p-4 gap-1"):
                                     ui.label(label).classes("text-caption text-grey-7")
                                     ui.label(value).classes("text-h5 text-weight-bold")
+
+                    if grade_cross is not None:
+                        with ui.card().classes("w-full p-4 gap-3"):
+                            ui.label("Cruzamento HMV2670 × grades").classes("text-subtitle1 text-weight-bold")
+                            ui.label(
+                                "Chave de relacionamento: nº do orçamento. Repetições na mesma grade são "
+                                "tratadas como histórico do mesmo caso e não duplicam o orçamento."
+                            ).classes("text-body2 text-grey-7")
+
+                            with ui.row().classes("w-full gap-3 flex-wrap"):
+                                for label, value, icon in (
+                                    ("Orçamentos no XML", grade_cross["total_xml"], "receipt_long"),
+                                    ("Encontrados nas grades", grade_cross["found_any_grade"], "link"),
+                                    ("Sem grade", grade_cross["without_grade"], "link_off"),
+                                    ("Em múltiplas grades", grade_cross["multiple_grades"], "account_tree"),
+                                ):
+                                    with ui.card().classes("flex-1 min-w-[180px] p-3 gap-1"):
+                                        ui.icon(icon, size="22px").classes("text-primary")
+                                        ui.label(label).classes("text-caption text-grey-7")
+                                        ui.label(str(value)).classes("text-h6 text-weight-bold")
+
+                            with ui.row().classes("w-full gap-3 flex-wrap"):
+                                for name in ("GRADE CIRÚRGICA", "Negativas", "GRADE PONTAL"):
+                                    with ui.column().classes("flex-1 min-w-[180px] gap-0"):
+                                        ui.label(name).classes("text-caption text-grey-7")
+                                        ui.label(
+                                            f'{grade_cross["by_sheet"].get(name, 0)} orçamento(s) do XML'
+                                        ).classes("text-subtitle1 text-weight-bold")
+
+                            ui.label(
+                                f'{grade_cross["repeated_history"]} orçamento(s) possuem repetição dentro de '
+                                "uma grade, preservada como sinal de histórico/reagendamento."
+                            ).classes("text-caption text-grey-7")
+
+                            contexts = grade_cross.get("context_counts", {})
+                            if contexts:
+                                context_text = " · ".join(
+                                    f"{name}: {qty}"
+                                    for name, qty in sorted(contexts.items())
+                                )
+                                ui.label(context_text).classes("text-body2")
+
+                            exceptional = [
+                                row for row in grade_cross.get("cases", [])
+                                if row.get("context") in {
+                                    "SEM GRADE",
+                                    "NEGATIVA TOTAL",
+                                    "TRANSFERÊNCIA SEDE ↔ PONTAL",
+                                    "REVISAR PONTAL + NEGATIVAS",
+                                    "REVISAR FLUXO MÚLTIPLO",
+                                }
+                                or row.get("has_repeated_history")
+                            ]
+                            if exceptional:
+                                with ui.expansion(
+                                    f"Detalhar cruzamento · {len(exceptional)} caso(s) de atenção/histórico",
+                                    icon="manage_search",
+                                ).classes("w-full border rounded"):
+                                    rows = []
+                                    for row in exceptional:
+                                        grades = row.get("grades") or []
+                                        occurrences = row.get("grade_occurrences") or {}
+                                        grade_text = ", ".join(
+                                            f"{name} ({occurrences.get(name, 1)}x)"
+                                            for name in grades
+                                        ) or "—"
+                                        rows.append({
+                                            "budget": row["budget_number"],
+                                            "context": row["context"],
+                                            "grades": grade_text,
+                                        })
+                                    ui.table(
+                                        columns=[
+                                            {"name": "budget", "label": "Orçamento", "field": "budget"},
+                                            {"name": "context", "label": "Contexto", "field": "context"},
+                                            {"name": "grades", "label": "Grades / ocorrências", "field": "grades"},
+                                        ],
+                                        rows=rows,
+                                        row_key="budget",
+                                        pagination={"rowsPerPage": 10},
+                                    ).classes("w-full").props("dense flat bordered wrap-cells")
 
                     if result.get("annulment_candidate_count"):
                         with ui.card().classes("w-full p-4 gap-3"):
