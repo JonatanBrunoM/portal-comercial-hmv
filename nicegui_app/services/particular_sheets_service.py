@@ -302,6 +302,17 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
     )
     repeated_budgets = sum(count > 1 for count in repeated.values())
 
+    identity_groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in occurrences:
+        identity_groups.setdefault(
+            (str(row.get('source_sheet') or ''), str(row.get('source_row_key') or '')),
+            [],
+        ).append(row)
+    identity_collisions = [
+        rows for rows in identity_groups.values()
+        if len(rows) > 1
+    ]
+
     return {
         'persisted': False,
         'total_occurrences': len(occurrences),
@@ -311,6 +322,24 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
             row.get('budget_reference_status') == 'TO_DO'
             for row in occurrences
         ),
+        'identity_collision_groups': len(identity_collisions),
+        'identity_collision_occurrences': sum(len(rows) for rows in identity_collisions),
+        'identity_collision_sample': [
+            {
+                'source_sheet': row.get('source_sheet'),
+                'source_row_number': row.get('source_row_number'),
+                'budget_number': row.get('budget_number'),
+                'budget_reference_status': row.get('budget_reference_status'),
+                'budget_reference_raw': row.get('budget_reference_raw'),
+                'notice_number': row.get('notice_number'),
+                'procedure_date': row.get('procedure_date'),
+                'patient_name': row.get('patient_name'),
+                'operational_value': row.get('operational_value'),
+                'source_row_hash': row.get('source_row_hash'),
+            }
+            for rows in identity_collisions[:20]
+            for row in rows[:10]
+        ],
         'occurrences': occurrences,
     }
 
