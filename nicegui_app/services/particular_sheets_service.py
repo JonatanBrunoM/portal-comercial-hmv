@@ -312,6 +312,54 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         rows for rows in identity_groups.values()
         if len(rows) > 1
     ]
+    collision_compare_fields = (
+        'operational_value',
+        'doctor_name',
+        'differential',
+        'negative_type_value',
+        'contact_status',
+        'patient_confirmation',
+        'evolution_status',
+        'notes_original',
+        'source_row_hash',
+    )
+    collision_details = []
+    for rows in identity_collisions[:50]:
+        varying_fields = [
+            field for field in collision_compare_fields
+            if len({str(row.get(field) or '') for row in rows}) > 1
+        ]
+        collision_details.append({
+            'varying_fields': varying_fields,
+            'exact_content_duplicate': len({
+                str(row.get('source_row_hash') or '') for row in rows
+            }) == 1,
+            'rows': [
+                {
+                    key: row.get(key)
+                    for key in (
+                        'source_sheet',
+                        'source_row_number',
+                        'budget_number',
+                        'budget_reference_status',
+                        'budget_reference_raw',
+                        'notice_number',
+                        'procedure_date',
+                        'patient_name',
+                        'operational_value',
+                        'doctor_name',
+                        'differential',
+                        'negative_type_value',
+                        'contact_status',
+                        'patient_confirmation',
+                        'evolution_status',
+                        'notes_original',
+                        'source_row_hash',
+                    )
+                }
+                for row in rows
+            ],
+        })
 
     return {
         'persisted': False,
@@ -324,22 +372,15 @@ def get_particular_occurrences_preview(access: ParticularAccess) -> dict[str, An
         ),
         'identity_collision_groups': len(identity_collisions),
         'identity_collision_occurrences': sum(len(rows) for rows in identity_collisions),
-        'identity_collision_sample': [
-            {
-                'source_sheet': row.get('source_sheet'),
-                'source_row_number': row.get('source_row_number'),
-                'budget_number': row.get('budget_number'),
-                'budget_reference_status': row.get('budget_reference_status'),
-                'budget_reference_raw': row.get('budget_reference_raw'),
-                'notice_number': row.get('notice_number'),
-                'procedure_date': row.get('procedure_date'),
-                'patient_name': row.get('patient_name'),
-                'operational_value': row.get('operational_value'),
-                'source_row_hash': row.get('source_row_hash'),
-            }
-            for rows in identity_collisions[:20]
-            for row in rows[:10]
-        ],
+        'identity_collision_exact_groups': sum(
+            len({str(row.get('source_row_hash') or '') for row in rows}) == 1
+            for rows in identity_collisions
+        ),
+        'identity_collision_different_groups': sum(
+            len({str(row.get('source_row_hash') or '') for row in rows}) > 1
+            for rows in identity_collisions
+        ),
+        'identity_collision_details': collision_details,
         'occurrences': occurrences,
     }
 
