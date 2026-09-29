@@ -187,6 +187,26 @@ def _analyse_records(
         material_value += material
         total_value += total
 
+        # A persistência usa (budget_id, item_code) como identidade funcional.
+        # Se o mesmo código vier repetido no mesmo orçamento, gravar sem revisão
+        # poderia sobrescrever uma linha e invalidar o fechamento de itens.
+        item_codes = [
+            str(item.get("item_code") or "").strip()
+            for item in (record.get("ITEMS") or [])
+            if str(item.get("item_code") or "").strip()
+        ]
+        duplicate_item_codes = sorted({
+            code for code in item_codes if item_codes.count(code) > 1
+        })
+        if duplicate_item_codes:
+            issues.append(ValidationIssue(
+                "CRITICAL",
+                "DUPLICATE_ITEM_CODE_IN_BUDGET",
+                f"Orçamento {budget_number} possui código(s) de item repetido(s): "
+                + ", ".join(duplicate_item_codes)
+                + ". A carga foi bloqueada para evitar sobrescrita silenciosa.",
+            ))
+
         signals = _annulment_signals(
             record,
             procedure=procedure,
@@ -315,6 +335,7 @@ def _inspect_xml(content: bytes, filename: str, digest: str) -> dict[str, Any]:
         items: list[dict[str, Any]] = []
         for position, item in enumerate(item_nodes, start=1):
             items.append({
+                "source_sequence_original": item.findtext("SEQ_ORCAMENTO_ITEM"),
                 "source_position": position,
                 "item_code": item.findtext("CD_PRO_FAT"),
                 "description": item.findtext("DESCRICAO_PRO_FAT"),
