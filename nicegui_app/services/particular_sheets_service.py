@@ -191,6 +191,22 @@ def _cell(row: list[Any], index: int | None) -> Any:
     return None if index is None or index >= len(row) else row[index]
 
 
+def _occurrence_source_row_key(payload: dict[str, Any]) -> str:
+    """Identidade semântica estável; nunca depende do número físico da linha."""
+    identity = {
+        'source_sheet': payload.get('source_sheet'),
+        'budget_reference_status': payload.get('budget_reference_status'),
+        'budget_number': payload.get('budget_number'),
+        'budget_reference_raw': payload.get('budget_reference_raw'),
+        'notice_number': payload.get('notice_number'),
+        'procedure_date': payload.get('procedure_date'),
+        'patient_name': _normalize_header(payload.get('patient_name')) or None,
+    }
+    return hashlib.sha256(
+        json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    ).hexdigest()
+
+
 def _build_occurrence_payload(
     *, sheet_name: str, row_number: int, row: list[Any], columns: dict[str, int]
 ) -> dict[str, Any] | None:
@@ -218,7 +234,8 @@ def _build_occurrence_payload(
         'evolution_status': _normalize_text(_cell(row, columns.get('evolution_status'))),
         'notes_original': _normalize_text(_cell(row, columns.get('notes_original'))),
     }
-    hash_payload = {key: value for key, value in payload.items() if key != 'source_row_number'}
+    payload['source_row_key'] = _occurrence_source_row_key(payload)
+    hash_payload = {key: value for key, value in payload.items() if key not in {'source_row_number', 'source_row_key'}}
     payload['source_row_hash'] = hashlib.sha256(
         json.dumps(hash_payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
     ).hexdigest()
