@@ -187,6 +187,51 @@ def _analyse_records(
         material_value += material
         total_value += total
 
+        # Valida os itens com as mesmas premissas exigidas pela camada de
+        # persistência. Assim o arquivo não é "aprovado" para falhar só depois,
+        # no meio da gravação real.
+        for item_position, item in enumerate(record.get("ITEMS") or [], start=1):
+            source_sequence = str(item.get("source_sequence_original") or "").strip()
+            item_code = str(item.get("item_code") or "").strip()
+            description = str(item.get("description") or "").strip()
+
+            try:
+                source_sequence_valid = bool(source_sequence) and int(source_sequence) > 0
+            except ValueError:
+                source_sequence_valid = False
+
+            if not source_sequence_valid:
+                issues.append(ValidationIssue(
+                    "CRITICAL",
+                    "INVALID_ITEM_SOURCE_SEQUENCE",
+                    f"Orçamento {budget_number}, item {item_position}: SEQ_ORCAMENTO_ITEM ausente ou inválido.",
+                ))
+            if not item_code:
+                issues.append(ValidationIssue(
+                    "CRITICAL",
+                    "MISSING_ITEM_CODE",
+                    f"Orçamento {budget_number}, item {item_position}: CD_PRO_FAT não informado.",
+                ))
+            if not description:
+                issues.append(ValidationIssue(
+                    "CRITICAL",
+                    "MISSING_ITEM_DESCRIPTION",
+                    f"Orçamento {budget_number}, item {item_position}: descrição do item não informada.",
+                ))
+
+            for field, label in (
+                ("quantity", "quantidade"),
+                ("unit_value", "valor unitário"),
+                ("total_value", "valor total"),
+            ):
+                parsed_item_value = _decimal(item.get(field))
+                if parsed_item_value is None or parsed_item_value < 0:
+                    issues.append(ValidationIssue(
+                        "CRITICAL",
+                        "INVALID_ITEM_VALUE",
+                        f"Orçamento {budget_number}, item {item_position}: {label} inválido.",
+                    ))
+
         # A persistência usa (budget_id, item_code) como identidade funcional.
         # Se o mesmo código vier repetido no mesmo orçamento, gravar sem revisão
         # poderia sobrescrever uma linha e invalidar o fechamento de itens.
