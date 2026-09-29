@@ -514,7 +514,7 @@ def commit_particular_occurrences_preview(
     access: ParticularAccess,
     preview: dict[str, Any],
 ) -> dict[str, Any]:
-    """Persiste exatamente a fotografia já analisada das três grades."""
+    """Persiste a fotografia analisada usando ocorrências consolidadas + evidências-fonte."""
     if not access.can_write:
         raise ParticularAccessDenied(
             'Seu perfil não possui permissão para sincronizar as grades do Particular.'
@@ -522,47 +522,61 @@ def commit_particular_occurrences_preview(
     if not isinstance(preview, dict) or preview.get('persisted') is not False:
         raise ValueError('Execute um novo diagnóstico das grades antes da sincronização.')
 
-    occurrences = preview.get('occurrences')
-    if not isinstance(occurrences, list) or not occurrences:
-        raise ValueError('O diagnóstico não contém ocorrências para sincronização.')
-    if len(occurrences) != int(preview.get('total_occurrences') or 0):
-        raise ValueError('A fotografia analisada está inconsistente; execute o diagnóstico novamente.')
+    evidences = preview.get('occurrences')
+    consolidated = preview.get('consolidated_occurrences')
+    if not isinstance(evidences, list) or not evidences:
+        raise ValueError('O diagnóstico não contém evidências-fonte para sincronização.')
+    if not isinstance(consolidated, list) or not consolidated:
+        raise ValueError('O diagnóstico não contém ocorrências consolidadas.')
+
+    if len(evidences) != int(preview.get('source_evidence_rows') or 0):
+        raise ValueError(
+            'A quantidade de evidências mudou após o diagnóstico; execute-o novamente.'
+        )
+    if len(consolidated) != int(preview.get('consolidated_occurrences_count') or 0):
+        raise ValueError(
+            'A quantidade de ocorrências consolidadas mudou após o diagnóstico.'
+        )
 
     scoped_keys = [
         (str(row.get('source_sheet') or ''), str(row.get('source_row_key') or ''))
-        for row in occurrences
+        for row in consolidated
     ]
     if any(not sheet or not key for sheet, key in scoped_keys):
-        raise ValueError('Há ocorrência sem identidade operacional; sincronização bloqueada.')
+        raise ValueError('Há ocorrência consolidada sem identidade operacional.')
     if len(scoped_keys) != len(set(scoped_keys)):
         raise ValueError(
-            'Foram encontradas identidades operacionais duplicadas. '
-            'Nenhum dado foi gravado; revise o diagnóstico.'
+            'A consolidação contém identidades operacionais duplicadas; sincronização bloqueada.'
         )
 
     spreadsheet_id = os.getenv('PARTICULAR_SHEETS_SPREADSHEET_ID', _DEFAULT_ID).strip()
     if not spreadsheet_id:
         raise RuntimeError('ID da planilha Particular não configurado.')
 
-    from nicegui_app.repositories.particular_repository import commit_sheet_sync
+    from nicegui_app.repositories.particular_repository import commit_sheet_sync_v2
 
-    result = commit_sheet_sync(
+    return commit_sheet_sync_v2(
         spreadsheet_id=spreadsheet_id,
-        occurrences=occurrences,
+        occurrences=consolidated,
+        evidences=evidences,
         sync_mode='MANUAL',
         triggered_by=access.profile_id,
         metadata={
-            'portal_sync_version': 'PARTICULAR_GRADES_V1',
+            'portal_sync_version': 'PARTICULAR_GRADES_V2',
             'source': 'GRADE_CIRURGICA_NEGATIVAS_GRADE_PONTAL',
-            'total_occurrences': len(occurrences),
-            'to_do_occurrences': int(preview.get('to_do_occurrences') or 0),
-            'repeated_budget_sheet_pairs': int(
-                preview.get('repeated_budget_sheet_pairs') or 0
+            'source_rows': len(evidences),
+            'consolidated_occurrences': len(consolidated),
+            'consolidated_conflict_occurrences': int(
+                preview.get('consolidated_conflict_occurrences') or 0
+            ),
+            'to_do_evidence_rows': int(preview.get('to_do_occurrences') or 0),
+            'identity_collision_groups': int(
+                preview.get('identity_collision_groups') or 0
             ),
             'sheet_stats': preview.get('sheet_stats') or {},
         },
     )
-    return result
+
 
 def _fetch_aggregate(spreadsheet_id: str) -> dict[str, Any]:
     raw = os.environ.get('PARTICULAR_SHEETS_SERVICE_ACCOUNT_JSON', '')
