@@ -1082,6 +1082,76 @@ def list_operational_budgets(
 
     return result
 
+def commit_sheet_sync_v2(
+    *,
+    spreadsheet_id: str,
+    occurrences: list[dict[str, Any]],
+    evidences: list[dict[str, Any]],
+    sync_mode: str = "MANUAL",
+    triggered_by: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persiste atomicamente ocorrências consolidadas e suas evidências-fonte."""
+    normalized_spreadsheet_id = str(spreadsheet_id or "").strip()
+    normalized_mode = str(sync_mode or "MANUAL").strip().upper()
+    if not normalized_spreadsheet_id:
+        raise ValueError("spreadsheet_id é obrigatório.")
+    if normalized_mode not in {"MANUAL", "ON_OPEN", "SCHEDULED"}:
+        raise ValueError("sync_mode inválido.")
+    if not occurrences:
+        raise ValueError("Nenhuma ocorrência consolidada foi informada.")
+    if not evidences:
+        raise ValueError("Nenhuma evidência-fonte foi informada.")
+    if triggered_by is not None:
+        triggered_by = _require_uuid(triggered_by, field="triggered_by")
+
+    scoped_keys = [
+        f'{row.get("source_sheet")}|{str(row.get("source_row_key") or "").strip()}'
+        for row in occurrences
+    ]
+    if any(key.endswith("|") for key in scoped_keys):
+        raise ValueError("Há ocorrência consolidada sem source_row_key.")
+    if len(scoped_keys) != len(set(scoped_keys)):
+        raise ValueError(
+            "O payload consolidado ainda contém identidades duplicadas; sincronização bloqueada."
+        )
+
+    evidence_positions = [
+        (
+            str(row.get("source_sheet") or "").strip(),
+            row.get("source_row_number"),
+        )
+        for row in evidences
+    ]
+    if any(not sheet or row_number in (None, "") for sheet, row_number in evidence_positions):
+        raise ValueError("Há evidência sem grade ou número da linha-fonte.")
+    if len(evidence_positions) != len(set(evidence_positions)):
+        raise ValueError(
+            "Há duas evidências ocupando a mesma linha da mesma grade; sincronização bloqueada."
+        )
+
+    result = rest_rpc(
+        "particular_commit_sheet_sync_v2",
+        {
+            "p_spreadsheet_id": normalized_spreadsheet_id,
+            "p_occurrences": occurrences,
+            "p_evidences": evidences,
+            "p_sync_mode": normalized_mode,
+            "p_triggered_by": triggered_by,
+            "p_metadata": metadata or {},
+        },
+        timeout=300.0,
+    )
+
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("particular_commit_sheet_sync_v2 retornou formato inesperado.")
+        result = result[0]
+    if not isinstance(result, dict) or not str(result.get("sync_id") or "").strip():
+        raise RuntimeError("particular_commit_sheet_sync_v2 retornou resposta inválida.")
+    return result
+
+
 def commit_sheet_sync(
     *,
     spreadsheet_id: str,
