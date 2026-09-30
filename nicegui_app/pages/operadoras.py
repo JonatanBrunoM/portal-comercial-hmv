@@ -423,6 +423,55 @@ def _rule_card(
             ).classes("portal-operator-rule-more")
 
 
+def _operational_card(
+    icon: str,
+    title: str,
+    row: dict[str, Any],
+    fields: list[tuple[str, tuple[str, ...]]],
+) -> None:
+    with ui.element("article").classes("portal-operator-rule-card"):
+        with ui.row().classes("portal-operator-rule-head"):
+            with ui.element("div").classes("portal-operator-rule-icon"):
+                ui.icon(icon)
+            with ui.column().classes("portal-operator-rule-head-copy"):
+                ui.label(title).classes("portal-operator-rule-title")
+                code = _text(row, "codigo")
+                if code:
+                    ui.label(code).classes("portal-operator-rule-count")
+
+        with ui.element("div").classes("portal-operator-rule-fields"):
+            for label, keys in fields:
+                value = _text(row, *keys)
+                if value:
+                    with ui.element("div").classes("portal-operator-rule-field"):
+                        ui.label(label).classes("portal-operator-rule-label")
+                        ui.label(value).classes("portal-operator-rule-value")
+
+
+def _authorization_title(row: dict[str, Any]) -> str:
+    code = _text(row, "codigo").upper()
+    if "UDI" in code:
+        return "UDI / Exames"
+    if "ALTA" in code:
+        return "Alta da internação"
+    if "INTERNACAO" in code:
+        return "Internação"
+    if "CONSULTA" in code or "EMERG" in code:
+        return "Consulta na Emergência"
+    return "Autorização"
+
+
+def _coverage_title(row: dict[str, Any]) -> str:
+    code = _text(row, "codigo").upper()
+    if "NEUROPEDIATRIA" in code:
+        return "Alerta — Neuropediatria"
+    if "UDI" in code:
+        return "UDI / Exames"
+    if _text(row, "plano_id"):
+        return f"Plano {_text(row, 'codigo').split('-')[1] if '-' in _text(row, 'codigo') else ''}".strip()
+    return "Cobertura / restrição"
+
+
 def _resource_item(
     icon: str,
     title: str,
@@ -563,21 +612,30 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
         )
 
         with ui.element("section").classes("portal-operator-quick-grid"):
-            portal_url = _safe_external_url(_text(first_portal, "url"))
+            portal_url = _safe_external_url(_text(first_portal, "url")) or external_url
+            portal_title = _text(first_portal, "nome") or (
+                "Portal do Prestador" if portal_url else "Nenhum portal em destaque"
+            )
+            portal_value = (
+                _text(first_portal, "instrucao_acesso")
+                or _text(first_portal, "dica_geral_acesso")
+                or (
+                    "Acesso principal cadastrado para esta operadora."
+                    if portal_url
+                    else "Consulte os acessos cadastrados para esta operadora."
+                )
+            )
+            portal_helper = (
+                ("Exige autenticação" if first_portal.get("exige_login") is True else "Acesso cadastrado")
+                if first_portal
+                else ("Acesso disponível" if portal_url else "Nenhum portal ativo cadastrado.")
+            )
             _quick_panel(
                 icon="vpn_key",
                 eyebrow="PORTAL PRINCIPAL",
-                title=_text(first_portal, "nome") or "Nenhum portal em destaque",
-                value=(
-                    _text(first_portal, "instrucao_acesso")
-                    or _text(first_portal, "dica_geral_acesso")
-                    or "Consulte os acessos cadastrados para esta operadora."
-                ),
-                helper=(
-                    ("Exige autenticação" if first_portal.get("exige_login") is True else "Acesso sem login informado")
-                    if first_portal
-                    else "Nenhum portal ativo cadastrado."
-                ),
+                title=portal_title,
+                value=portal_value,
+                helper=portal_helper,
                 action_label="Abrir portal" if portal_url else "",
                 action=(lambda url=portal_url: ui.navigate.to(url, new_tab=True))
                 if portal_url
@@ -645,48 +703,67 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     tone="success",
                 )
 
-        # 2. Rules as questions, not database tables.
+        # 2. Operational journey: every relevant rule stays visible.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "COMO ATENDER",
-                "Regras que orientam a jornada",
-                "As primeiras informações de elegibilidade, autorização e cobertura já ficam visíveis.",
+                "Jornada operacional",
+                "Consulta, internação, alta, exames e restrições aparecem separadamente para consulta rápida.",
             )
 
-            with ui.element("div").classes("portal-operator-rule-grid"):
-                _rule_card(
-                    "verified",
-                    "Elegibilidade",
-                    detail.elegibilidade,
-                    [
-                        ("Orientação", ("orientacao",)),
-                        ("Observação", ("observacoes",)),
-                    ],
-                    "Nenhuma orientação de elegibilidade cadastrada.",
+            if detail.elegibilidade:
+                with ui.element("div").classes("portal-operator-rule-grid"):
+                    for row in detail.elegibilidade:
+                        _operational_card(
+                            "verified",
+                            "Elegibilidade",
+                            row,
+                            [
+                                ("Orientação", ("orientacao",)),
+                                ("Observação", ("observacoes",)),
+                            ],
+                        )
+
+            if detail.autorizacoes:
+                ui.label("AUTORIZAÇÕES E FLUXOS").classes("portal-operator-reference-kicker")
+                with ui.element("div").classes("portal-operator-rule-grid"):
+                    for row in detail.autorizacoes:
+                        _operational_card(
+                            "fact_check",
+                            _authorization_title(row),
+                            row,
+                            [
+                                ("Precisa autorização", ("necessita_autorizacao",)),
+                                ("Quando", ("momento_autorizacao",)),
+                                ("Quem solicita", ("quem_solicita",)),
+                                ("Canal", ("meio_solicitacao",)),
+                                ("Prazo", ("prazo",)),
+                                ("Orientação", ("orientacao",)),
+                                ("Observações", ("observacoes",)),
+                            ],
+                        )
+            else:
+                ui.label("Nenhuma regra de autorização cadastrada.").classes(
+                    "portal-operator-rule-empty"
                 )
-                _rule_card(
-                    "fact_check",
-                    "Autorização",
-                    detail.autorizacoes,
-                    [
-                        ("Quando", ("momento_autorizacao",)),
-                        ("Quem solicita", ("quem_solicita",)),
-                        ("Canal", ("meio_solicitacao",)),
-                        ("Prazo", ("prazo",)),
-                    ],
-                    "Nenhuma regra de autorização cadastrada.",
+
+            if detail.coberturas:
+                ui.label("COBERTURAS, PLANOS E RESTRIÇÕES").classes(
+                    "portal-operator-reference-kicker"
                 )
-                _rule_card(
-                    "health_and_safety",
-                    "Cobertura",
-                    detail.coberturas,
-                    [
-                        ("Acomodação", ("acomodacao",)),
-                        ("Acompanhante", ("acompanhante",)),
-                        ("Restrições", ("restricoes_cobertura",)),
-                    ],
-                    "Nenhuma informação de cobertura cadastrada.",
-                )
+                with ui.element("div").classes("portal-operator-rule-grid"):
+                    for row in detail.coberturas:
+                        _operational_card(
+                            "health_and_safety",
+                            _coverage_title(row),
+                            row,
+                            [
+                                ("Acomodação", ("acomodacao",)),
+                                ("Acompanhante", ("acompanhante",)),
+                                ("Restrições", ("restricoes_cobertura",)),
+                                ("Orientações", ("observacoes",)),
+                            ],
+                        )
 
         # 3. Plans and documents visible in the same page.
         with ui.element("section").classes("portal-operator-section-block"):
@@ -721,14 +798,14 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             "portal-operator-reference-empty"
                         )
 
-                with ui.element("div").classes("portal-operator-reference-column"):
-                    with ui.row().classes("portal-operator-reference-head"):
-                        ui.label("DOCUMENTOS").classes("portal-operator-reference-kicker")
-                        ui.label(str(len(detail.documentos)).zfill(2)).classes(
-                            "portal-operator-reference-count"
-                        )
+                if detail.documentos:
+                    with ui.element("div").classes("portal-operator-reference-column"):
+                        with ui.row().classes("portal-operator-reference-head"):
+                            ui.label("DOCUMENTOS").classes("portal-operator-reference-kicker")
+                            ui.label(str(len(detail.documentos)).zfill(2)).classes(
+                                "portal-operator-reference-count"
+                            )
 
-                    if detail.documentos:
                         for row in detail.documentos[:4]:
                             file_url = _safe_external_url(_text(row, "arquivo_url"))
                             meta = " · ".join(
@@ -753,10 +830,6 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                                 if file_url
                                 else None,
                             )
-                    else:
-                        ui.label("Nenhum documento cadastrado.").classes(
-                            "portal-operator-reference-empty"
-                        )
 
         # 4. Secondary information via native Quasar expansion panels.
         with ui.element("section").classes("portal-operator-section-block"):
