@@ -969,109 +969,76 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             else None,
                         )
 
-        # 4. Secondary information via native Quasar expansion panels.
-        with ui.element("section").classes("portal-operator-section-block"):
+        # 4. Compact support hub: complementary areas stay out of the main journey.
+        with ui.element("section").classes(
+            "portal-operator-section-block portal-operator-support-section"
+        ):
             _section_heading(
                 "OUTRAS INFORMAÇÕES",
-                "Consulte quando precisar aprofundar",
-                "Contatos adicionais, dicas, comunicados, contingências e consultoria ficam disponíveis sem sair da operadora.",
+                "Central de apoio",
+                "Acesse conteúdos complementares quando precisar aprofundar.",
             )
 
-            with ui.element("div").classes("portal-operator-expansion-list"):
-                with ui.expansion(
-                    "Contatos adicionais",
-                    icon="contacts",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    if detail.contatos:
-                        with ui.element("div").classes("portal-operator-expansion-content"):
-                            for row in detail.contatos:
-                                _resource_item(
-                                    "phone",
-                                    (
-                                        _text(row, "finalidade")
-                                        or _text(row, "nome_setor")
-                                        or "Contato"
-                                    ),
-                                    _text(row, "contato"),
-                                    " · ".join(
-                                        item
-                                        for item in (
-                                            _text(row, "responsavel"),
-                                            _text(row, "horario_atendimento"),
-                                        )
-                                        if item
-                                    ),
-                                )
-                    else:
-                        ui.label("Nenhum contato adicional cadastrado.")
+            support_items = (
+                (
+                    "contacts",
+                    "Contatos",
+                    "Canais e pessoas",
+                    len(detail.contatos),
+                    "/contatos",
+                ),
+                (
+                    "lightbulb",
+                    "Orientações",
+                    "Dicas operacionais",
+                    len(detail.dicas),
+                    None,
+                ),
+                (
+                    "campaign",
+                    "Comunicados",
+                    "Alertas e avisos",
+                    len(detail.comunicados) + len(detail.contingencias),
+                    "/comunicados",
+                ),
+                (
+                    "support_agent",
+                    "Consultoria",
+                    "Apoio especializado",
+                    len(detail.carteiras),
+                    "/consultores",
+                ),
+            )
 
-                with ui.expansion(
-                    "Dicas e orientações",
-                    icon="lightbulb",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    if detail.dicas:
-                        with ui.element("div").classes("portal-operator-expansion-content"):
-                            for row in detail.dicas:
-                                _resource_item(
-                                    "lightbulb",
-                                    _text(row, "titulo") or "Dica operacional",
-                                    _text(row, "dica", "orientacao", "descricao"),
-                                    _text(row, "categoria"),
+            with ui.element("div").classes("portal-operator-support-grid"):
+                for icon, title, helper, count, target in support_items:
+                    card = ui.element("article").classes(
+                        "portal-operator-support-card"
+                        + (" is-link cursor-pointer" if target else " is-muted")
+                    )
+                    if target:
+                        card.on(
+                            "click",
+                            lambda _event, path=target: ui.navigate.to(path),
+                        )
+                    with card:
+                        with ui.row().classes("portal-operator-support-head"):
+                            with ui.element("div").classes("portal-operator-support-icon"):
+                                ui.icon(icon)
+                            if count:
+                                ui.label(str(count).zfill(2)).classes(
+                                    "portal-operator-support-count"
                                 )
-                    else:
-                        ui.label("Nenhuma dica operacional cadastrada.")
-
-                with ui.expansion(
-                    "Comunicados e contingências",
-                    icon="campaign",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    with ui.element("div").classes("portal-operator-expansion-content"):
-                        for row in detail.comunicados:
-                            _resource_item(
-                                "campaign",
-                                _text(row, "titulo") or "Comunicado",
-                                _text(row, "resumo", "conteudo"),
-                                _text(row, "prioridade"),
-                            )
-                        for row in detail.contingencias:
-                            _resource_item(
-                                "warning_amber",
-                                _text(row, "titulo") or "Contingência",
-                                (
-                                    _text(row, "orientacao_alternativa")
-                                    or _text(row, "descricao")
-                                ),
-                                _text(row, "prioridade"),
-                            )
-                        if not detail.comunicados and not detail.contingencias:
-                            ui.label("Nenhum comunicado ou contingência vigente.")
-
-                with ui.expansion(
-                    "Consultoria e carteiras",
-                    icon="support_agent",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    if detail.carteiras:
-                        with ui.element("div").classes("portal-operator-expansion-content"):
-                            for row in detail.carteiras:
-                                _resource_item(
-                                    "support_agent",
-                                    _text(row, "consultor_nome") or "Consultor",
-                                    _text(row, "papel", "consultor_cargo"),
-                                    " · ".join(
-                                        item
-                                        for item in (
-                                            _text(row, "consultor_email"),
-                                            _text(row, "consultor_telefone"),
-                                        )
-                                        if item
-                                    ),
-                                )
-                    else:
-                        ui.label("Nenhuma carteira vinculada.")
+                        ui.label(title).classes("portal-operator-support-title")
+                        ui.label(helper).classes("portal-operator-support-helper")
+                        if target:
+                            with ui.row().classes("portal-operator-support-action"):
+                                ui.label("Acessar área")
+                                ui.icon("arrow_forward")
+                        else:
+                            ui.label(
+                                "Disponível nesta operadora" if count else "Sem registros"
+                            ).classes("portal-operator-support-status")
 
 
 def _search_operator(operator_name: str) -> None:
