@@ -1876,3 +1876,89 @@
         margin-right: 18px;
     }
 }
+
+
+/* Etapa 20.3I · Modal compacto e adaptável ao conteúdo */
+.portal-operator-modal-card {
+    width: min(720px, calc(100vw - 40px));
+    max-width: 720px !important;
+}
+
+.portal-operator-modal-header {
+    padding: 19px 22px 15px;
+}
+
+.portal-operator-modal-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 14px 22px 12px;
+}
+
+.portal-operator-modal-field {
+    min-height: 64px;
+    padding: 12px 13px;
+    border-right: 1px solid #e8eef2;
+    border-bottom: 0;
+}
+
+.portal-operator-modal-field:nth-child(odd) {
+    border-right: 1px solid #e8eef2;
+}
+
+.portal-operator-modal-field:last-child {
+    border-right: 0;
+}
+
+.portal-operator-modal-section {
+    width: auto;
+    margin: 0 22px 10px;
+    padding: 13px 15px 14px 17px;
+}
+
+.portal-operator-modal-section:last-child {
+    margin-bottom: 20px;
+}
+
+.portal-operator-modal-section .portal-operator-modal-copy {
+    max-width: none;
+}
+
+/* Em conteúdos curtos, orientação/observação usam toda a largura disponível:
+   evita pequenos cards soltos cercados por espaço vazio. */
+.portal-operator-modal-card > .portal-operator-modal-section {
+    align-self: stretch;
+}
+
+@media (max-width: 760px) {
+    .portal-operator-modal-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portal-operator-modal-field {
+        border-bottom: 1px solid #e8eef2;
+    }
+
+    .portal-operator-modal-field:nth-child(2n) {
+        border-right: 0;
+    }
+
+    .portal-operator-modal-field:nth-last-child(-n+2) {
+        border-bottom: 0;
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-operator-modal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-operator-modal-field,
+    .portal-operator-modal-field:nth-child(odd),
+    .portal-operator-modal-field:nth-last-child(-n+2) {
+        border-right: 0;
+        border-bottom: 1px solid #e8eef2;
+    }
+
+    .portal-operator-modal-field:last-child {
+        border-bottom: 0;
+    }
+}
