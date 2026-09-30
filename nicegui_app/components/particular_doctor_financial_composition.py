@@ -17,10 +17,7 @@ def _decimal(value: object) -> Decimal:
 def render_doctor_financial_composition(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     with ui.column().classes("w-full gap-3"):
         ui.label("Procedimentos e materiais por médico").classes("text-h6 text-weight-bold")
-        ui.label(
-            "Composição dos orçamentos liberados por médico, separando procedimentos e materiais. "
-            "Os valores são de orçamento e não representam faturamento realizado nem honorários médicos."
-        ).classes("text-body2 text-grey-7")
+        ui.label("Procedimentos × materiais nos orçamentos liberados").classes("text-caption text-grey-7")
         status = ui.column().classes("w-full gap-2")
         area = ui.column().classes("w-full gap-3")
         cache: dict[str, list[dict]] = {}
@@ -65,10 +62,7 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
                         ).classes("text-negative text-weight-bold")
                         return
 
-                    ui.label(
-                        f"Conciliação: {budgets} orçamentos · {format_brl(total)} liberados · "
-                        f"{format_brl(procedures)} em procedimentos · {format_brl(materials)} em materiais."
-                    ).classes("text-caption text-grey-7")
+                    ui.label(f"{budgets} orçamentos · {format_brl(total)} liberados").classes("text-caption text-grey-7")
 
                     top = rows[:10]
                     ui.label("Top 10 médicos por valor liberado").classes("text-h6 text-weight-bold")
@@ -96,7 +90,7 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
                                 "data": [float(_decimal(row.get("valor_materiais")) / Decimal("1000000")) for row in top],
                             },
                         ],
-                    }).classes("w-full h-[440px]")
+                    }).classes("w-full h-[360px]")
 
                     columns = [
                         {"name": "medico", "label": "Médico", "field": "medico", "align": "left", "sortable": True},
@@ -118,11 +112,6 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
                         for row in rows
                     ]
                     ui.table(columns=columns, rows=table_rows, row_key="medico", pagination=10).classes("w-full")
-                    ui.label(
-                        "Ranking baseado no valor dos orçamentos liberados. A composição indica como o valor orçado "
-                        "está distribuído entre procedimentos e materiais; não mede produção realizada, receita faturada "
-                        "ou remuneração do médico."
-                    ).classes("text-caption text-grey-7")
             except Exception:
                 if request == version:
                     status.clear()
@@ -135,8 +124,8 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
 
         month_select.on_value_change(lambda event: load(event.value))
         ui.button(
-            "Atualizar composição por médico",
+            "Atualizar composição",
             icon="refresh",
             on_click=lambda: load(month_select.value, True),
-        ).props("outline no-caps")
+        ).props("flat dense no-caps")
         ui.timer(0.3, lambda: load(month_select.value), once=True)
