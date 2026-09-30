@@ -446,28 +446,48 @@ def render_particular(user: dict) -> None:
     reviewed_count = len(rows) - pending_count
 
     with portal_layout(user=user, active="particular"):
-        with ui.column().classes("w-full gap-5"):
-            with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
-                with ui.column().classes("gap-1"):
-                    ui.label("GESTÃO COMERCIAL  /  PARTICULAR").classes(
-                        "text-caption text-weight-bold text-primary"
-                    )
-                    ui.label("Particular").classes("text-h4 text-weight-bold")
-                    ui.label(
-                        "Inteligência operacional e financeira da carteira, com rastreabilidade das evidências e revisões."
-                    ).classes("text-body1 text-grey-7")
-                ui.badge(
-                    "Gestor" if access.module_role == "MANAGER" else "Operador",
-                    color="primary",
-                ).props("outline")
+        with ui.column().classes("w-full gap-3"):
+            with ui.card().classes("w-full p-0 overflow-hidden shadow-sm"):
+                with ui.row().classes("w-full items-center justify-between gap-4 px-5 py-4 flex-wrap"):
+                    with ui.column().classes("gap-0"):
+                        ui.label("GESTÃO COMERCIAL  /  PARTICULAR").classes(
+                            "text-caption text-weight-bold text-primary"
+                        )
+                        with ui.row().classes("items-center gap-3"):
+                            ui.label("Particular").classes("text-h4 text-weight-bold")
+                            ui.badge(
+                                "Gestor" if access.module_role == "MANAGER" else "Operador",
+                                color="primary",
+                            ).props("outline")
+                        ui.label(
+                            "Inteligência operacional e financeira da carteira."
+                        ).classes("text-body2 text-grey-7")
 
-            with ui.tabs().props("dense inline-label align=left no-caps").classes(
-                "w-full border-b border-grey-3"
-            ) as tabs:
-                overview_tab = ui.tab("Visão geral", icon="dashboard")
-                operation_tab = ui.tab("Orçamentos", icon="receipt_long")
-                review_tab = ui.tab("Duplicidades", icon="compare_arrows")
-                import_tab = ui.tab("Importação", icon="upload_file")
+                    with ui.row().classes("items-center gap-2"):
+                        ui.button(
+                            "Orçamentos",
+                            icon="receipt_long",
+                            on_click=lambda: tabs.set_value(operation_tab),
+                        ).props("flat no-caps")
+                        if pending_count:
+                            ui.button(
+                                f"{pending_count} duplicidades",
+                                icon="fact_check",
+                                on_click=lambda: tabs.set_value(review_tab),
+                            ).props("flat no-caps")
+                        ui.button(
+                            "Importar",
+                            icon="upload_file",
+                            on_click=lambda: tabs.set_value(import_tab),
+                        ).props("outline no-caps")
+
+                with ui.tabs().props("dense inline-label align=left no-caps").classes(
+                    "w-full px-3 border-t border-grey-3"
+                ) as tabs:
+                    overview_tab = ui.tab("Visão geral", icon="dashboard")
+                    operation_tab = ui.tab("Orçamentos", icon="receipt_long")
+                    review_tab = ui.tab("Duplicidades", icon="compare_arrows")
+                    import_tab = ui.tab("Importação", icon="upload_file")
 
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
