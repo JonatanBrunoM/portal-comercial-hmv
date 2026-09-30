@@ -96,8 +96,8 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
 
                     with ui.row().classes('w-full items-end justify-between gap-3 flex-wrap'):
                         with ui.column().classes('gap-0'):
-                            ui.label('Carteira por médico').classes('text-subtitle1 text-weight-bold')
-                            ui.label('Distribuição dos orçamentos identificados por médico.').classes(
+                            ui.label('Visão por médico').classes('text-subtitle1 text-weight-bold')
+                            ui.label('Resumo da carteira vinculada a cada médico.').classes(
                                 'text-caption text-grey-7'
                             )
                         ui.button(
@@ -127,8 +127,8 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
 
                         with ui.card().classes('w-full p-4 gap-2 shadow-sm'):
                             with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
-                                ui.label('Maiores carteiras médicas').classes('text-subtitle1 text-weight-bold')
-                                ui.label('Top 10 por valor bruto').classes('text-caption text-grey-7')
+                                ui.label('Top médicos por valor orçado').classes('text-subtitle1 text-weight-bold')
+                                ui.label('10 maiores valores brutos').classes('text-caption text-grey-7')
 
                             ui.echart({
                                 'tooltip': {'trigger': 'axis', 'axisPointer': {'type': 'shadow'}},
@@ -190,9 +190,9 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                         ui.separator().classes('my-1')
                         with ui.row().classes('w-full items-end justify-between gap-3 flex-wrap'):
                             with ui.column().classes('gap-0'):
-                                ui.label('Pesquisar médicos').classes('text-subtitle1 text-weight-bold')
+                                ui.label('Consultar carteira médica').classes('text-subtitle1 text-weight-bold')
                                 ui.label(
-                                    'Filtre a carteira e abra o detalhamento somente quando necessário.'
+                                    'Pesquise por médico e refine por situação ou faixa de valor.'
                                 ).classes('text-caption text-grey-7')
 
                         filter_row = ui.row().classes('w-full items-end gap-3 flex-wrap')
