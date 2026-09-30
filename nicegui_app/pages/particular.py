@@ -25,8 +25,8 @@ from nicegui_app.services.particular_sheets_service import (
 from nicegui_app.components.particular_operational_budgets import (
     render_particular_operational_budgets,
 )
-from nicegui_app.components.particular_monthly_dashboard import (
-    render_particular_monthly_dashboard,
+from nicegui_app.components.particular_home_dashboard import (
+    render_particular_home_dashboard,
 )
 from nicegui_app.components.particular_import import render_particular_import
 
@@ -454,7 +454,7 @@ def render_particular(user: dict) -> None:
                     )
                     ui.label("Particular").classes("text-h4 text-weight-bold")
                     ui.label(
-                        "Análise financeira dos orçamentos, com conferências e apontamentos de apoio."
+                        "Inteligência operacional e financeira da carteira, com rastreabilidade das evidências e revisões."
                     ).classes("text-body1 text-grey-7")
                 ui.badge(
                     "Gestor" if access.module_role == "MANAGER" else "Operador",
@@ -470,7 +470,7 @@ def render_particular(user: dict) -> None:
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full"):
                 with ui.tab_panel(overview_tab):
                     with ui.column().classes("w-full gap-5"):
-                        render_particular_monthly_dashboard(access)
+                        render_particular_home_dashboard(access)
                         ui.label("Conferências e apontamentos").classes(
                             "text-h6 text-weight-bold mt-2"
                         )
