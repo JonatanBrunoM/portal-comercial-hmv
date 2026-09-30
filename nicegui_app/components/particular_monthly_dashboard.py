@@ -32,30 +32,52 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
             ui.label(
                 "Escolha uma leitura analítica. Os valores são de orçamento e não representam faturamento realizado."
             ).classes("text-body2 text-grey-7")
-        months = ui.select(options={}, label="Competência").classes("min-w-[200px]")
+        months = ui.select(options={}, label="Competência").props("dense outlined").classes("w-[200px]")
     months.set_visibility(False)
 
-    with ui.tabs().props("dense inline-label align=left no-caps").classes("w-full") as analysis_tabs:
-        financial_tab = ui.tab("Financeiro", icon="account_balance")
-        doctors_tab = ui.tab("Médicos", icon="medical_services")
-        items_tab = ui.tab("Itens", icon="inventory_2")
-        evolution_tab = ui.tab("Evolução", icon="timeline")
+    analysis_selector = ui.toggle(
+        {
+            "financial": "Financeiro",
+            "doctors": "Médicos",
+            "items": "Itens",
+            "evolution": "Evolução",
+        },
+        value="financial",
+    ).props("no-caps unelevated spread").classes("w-full max-w-[620px]")
 
-    content = ui.column().classes("w-full gap-4")
-    with ui.tab_panels(analysis_tabs, value=financial_tab).classes("w-full bg-transparent p-0"):
-        with ui.tab_panel(financial_tab).classes("px-0 py-3"):
-            render_financial_composition(access, months, rows_by_month)
+    financial_panel = ui.column().classes("w-full gap-4 pt-2")
+    with financial_panel:
+        content = ui.column().classes("w-full gap-4")
+        render_financial_composition(access, months, rows_by_month)
 
-        with ui.tab_panel(doctors_tab).classes("px-0 py-3"):
-            render_doctor_dashboard(access, months, rows_by_month)
-            ui.separator().classes("my-3")
-            render_doctor_financial_composition(access, months, rows_by_month)
+    doctors_panel = ui.column().classes("w-full gap-4 pt-2")
+    with doctors_panel:
+        render_doctor_dashboard(access, months, rows_by_month)
+        ui.separator().classes("my-2")
+        render_doctor_financial_composition(access, months, rows_by_month)
 
-        with ui.tab_panel(items_tab).classes("px-0 py-3"):
-            render_item_dashboard(access, months, rows_by_month)
+    items_panel = ui.column().classes("w-full gap-4 pt-2")
+    with items_panel:
+        render_item_dashboard(access, months, rows_by_month)
 
-        with ui.tab_panel(evolution_tab).classes("px-0 py-3"):
-            weekly_content = ui.column().classes("w-full gap-3")
+    evolution_panel = ui.column().classes("w-full gap-4 pt-2")
+    with evolution_panel:
+        weekly_content = ui.column().classes("w-full gap-3")
+
+    panels = {
+        "financial": financial_panel,
+        "doctors": doctors_panel,
+        "items": items_panel,
+        "evolution": evolution_panel,
+    }
+
+    def show_analysis(value: str | None) -> None:
+        selected = value if value in panels else "financial"
+        for key, panel in panels.items():
+            panel.set_visibility(key == selected)
+
+    analysis_selector.on_value_change(lambda event: show_analysis(event.value))
+    show_analysis("financial")
 
     selection_version = 0
 
