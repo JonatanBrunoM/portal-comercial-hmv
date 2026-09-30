@@ -477,10 +477,10 @@ def render_particular(user: dict) -> None:
 
                 render_hero_art(variant="particular", icon="insights")
 
-            with ui.element("nav").classes("portal-particular-workspace-nav"):
-                with ui.tabs().props(
-                    "dense no-caps indicator-color=transparent active-color=primary"
-                ).classes("portal-particular-tabs") as tabs:
+                with ui.element("nav").classes("portal-particular-workspace-nav"):
+                    with ui.tabs().props(
+                        "dense no-caps indicator-color=transparent active-color=primary"
+                    ).classes("portal-particular-tabs") as tabs:
                     overview_tab = ui.tab("Visão geral", icon="space_dashboard")
                     operation_tab = ui.tab("Carteira", icon="receipt_long")
                     review_tab = ui.tab(
