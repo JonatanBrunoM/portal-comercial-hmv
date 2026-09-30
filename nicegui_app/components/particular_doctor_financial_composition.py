@@ -16,8 +16,8 @@ def _decimal(value: object) -> Decimal:
 
 def render_doctor_financial_composition(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     with ui.column().classes("w-full gap-3"):
-        ui.label("Procedimentos e materiais por médico").classes("text-h6 text-weight-bold")
-        ui.label("Procedimentos × materiais nos orçamentos liberados").classes("text-caption text-grey-7")
+        ui.label("Composição do valor liberado por médico").classes("text-h6 text-weight-bold")
+        ui.label("Compare quanto do valor liberado corresponde a procedimentos e materiais.").classes("text-caption text-grey-7")
         status = ui.column().classes("w-full gap-2")
         area = ui.column().classes("w-full gap-3")
         cache: dict[str, list[dict]] = {}
@@ -65,7 +65,7 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
                     ui.label(f"{budgets} orçamentos · {format_brl(total)} liberados").classes("text-caption text-grey-7")
 
                     top = rows[:10]
-                    ui.label("Top 10 médicos por valor liberado").classes("text-h6 text-weight-bold")
+                    ui.label("Top médicos por valor liberado").classes("text-h6 text-weight-bold")
                     ui.echart({
                         "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
                         "legend": {"top": 0},
