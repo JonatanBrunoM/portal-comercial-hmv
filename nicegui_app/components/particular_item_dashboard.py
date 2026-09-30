@@ -18,10 +18,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
     """Renderiza composição por código ligada ao seletor mensal principal."""
     with ui.column().classes("w-full gap-3"):
         ui.label("Composição por itens").classes("text-h6 text-weight-bold")
-        ui.label(
-            "Detalhamento dos itens dos orçamentos liberados. Os valores representam somente "
-            "os itens disponíveis na base e não o valor integral dos orçamentos."
-        ).classes("text-body2 text-grey-7")
+        ui.label("Itens disponíveis nos orçamentos liberados").classes("text-caption text-grey-7")
         status = ui.column().classes("w-full gap-2")
         area = ui.column().classes("w-full gap-3")
         cache: dict[str, list[dict]] = {}
@@ -66,7 +63,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                             ("Registros de itens", f"{item_records:,}".replace(",", "."), "Itens ativos agregados"),
                             ("Concentração Top 10", f"{top_concentration:.2f}%".replace(".", ","), f"{format_brl(top_value)} dos itens detalhados"),
                         ):
-                            with ui.card().classes("flex-1 min-w-[210px] p-4 gap-1"):
+                            with ui.card().classes("flex-1 min-w-[190px] p-3 gap-0 shadow-sm"):
                                 ui.label(label).classes("text-caption text-grey-7")
                                 ui.label(value).classes("text-h5 text-weight-bold")
                                 ui.label(note).classes("text-caption text-grey-7")
@@ -87,11 +84,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                             "type": "bar",
                             "data": [float(_decimal(row.get("valor_itens")) / Decimal("1000")) for row in top],
                         }],
-                    }).classes("w-full h-96")
-                    ui.label(
-                        "Ranking calculado somente sobre os itens detalhados dos orçamentos liberados; "
-                        "o eixo horizontal está em milhares de reais."
-                    ).classes("text-caption text-grey-7")
+                    }).classes("w-full h-80")
 
                     ui.label("Itens presentes em mais orçamentos").classes("text-h6 text-weight-bold")
                     ui.echart({
@@ -100,8 +93,7 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                         "xAxis": {"type": "value", "name": "Orçamentos", "minInterval": 1},
                         "yAxis": {"type": "category", "inverse": True, "data": [str(row.get("codigo") or "SEM_CODIGO") for row in recurring_rows]},
                         "series": [{"name": "Orçamentos", "type": "bar", "data": [int(row.get("orcamentos") or 0) for row in recurring_rows]}],
-                    }).classes("w-full h-96")
-                    ui.label("Recorrência = quantidade de orçamentos liberados em que cada código/descrição aparece; não corresponde à quantidade física do item.").classes("text-caption text-grey-7")
+                    }).classes("w-full h-80")
 
                     columns = [
                         {"name": "codigo", "label": "Código", "field": "codigo", "align": "left", "sortable": True},
@@ -124,10 +116,6 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
                         for row in rows
                     ]
                     ui.table(columns=columns, rows=data, row_key="row_key", pagination=10).classes("w-full")
-                    ui.label(
-                        "Cobertura financeira = soma dos itens detalhados ÷ valor dos orçamentos liberados. "
-                        "Não interpretar esta composição como faturamento realizado ou receita por procedimento."
-                    ).classes("text-caption text-grey-7")
             except Exception:
                 if request == version:
                     status.clear()
@@ -139,8 +127,8 @@ def render_item_dashboard(access: ParticularAccess, month_select: ui.select, mon
 
         month_select.on_value_change(lambda event: load(event.value))
         ui.button(
-            "Atualizar composição por itens",
+            "Atualizar itens",
             icon="refresh",
             on_click=lambda: load(month_select.value, True),
-        ).props("outline no-caps")
+        ).props("flat dense no-caps")
         ui.timer(0.3, lambda: load(month_select.value), once=True)
