@@ -15,7 +15,8 @@ def _decimal(value: object) -> Decimal:
 
 
 def render_doctor_financial_composition(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
-    with ui.expansion("Composição financeira por médico", icon="medical_services").classes("w-full border rounded-lg"):
+    with ui.column().classes("w-full gap-3"):
+        ui.label("Procedimentos e materiais por médico").classes("text-h6 text-weight-bold")
         ui.label(
             "Composição dos orçamentos liberados por médico, separando procedimentos e materiais. "
             "Os valores são de orçamento e não representam faturamento realizado nem honorários médicos."
