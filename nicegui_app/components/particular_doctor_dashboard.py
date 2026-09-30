@@ -7,6 +7,7 @@ import unicodedata
 from nicegui import run, ui
 
 from nicegui_app.services.particular_doctor_dashboard import list_doctor_monthly
+from nicegui_app.services.particular_doctor_financial_composition import list_doctor_financial_composition
 from nicegui_app.services.particular_monthly_dashboard import format_brl
 from nicegui_app.services.particular_service import ParticularAccess
 
@@ -43,6 +44,7 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
         table_area = ui.column().classes('w-full gap-3')
         version = 0
         cache: dict[str, list[dict]] = {}
+        composition_cache: dict[str, list[dict]] = {}
 
         async def load(month: str | None, force: bool = False) -> None:
             nonlocal version
@@ -59,7 +61,10 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
             try:
                 if force or month not in cache:
                     cache[month] = await run.io_bound(list_doctor_monthly, access, month)
+                if force or month not in composition_cache:
+                    composition_cache[month] = await run.io_bound(list_doctor_financial_composition, access, month)
                 rows = cache[month]
+                composition_rows = composition_cache[month]
 
                 if request != version or month_select.value != month:
                     return
@@ -119,36 +124,68 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                                 ui.label(note).classes('text-caption text-grey-7')
 
                     if doctors:
-                        top = sorted(
-                            doctors,
-                            key=lambda row: _money(row.get('valor_bruto_importado')),
-                            reverse=True,
-                        )[:10]
+                        composition_by_doctor = {
+                            _normalize(row.get('medico')): row for row in composition_rows
+                            if not _is_transcription(str(row.get('medico') or ''))
+                        }
+                        chart_area = ui.column().classes('w-full')
+
+                        def render_doctor_chart(mode: str) -> None:
+                            chart_area.clear()
+                            if mode == 'ORCADO':
+                                ranked = sorted(doctors, key=lambda row: _money(row.get('valor_bruto_importado')), reverse=True)[:10]
+                                series = [{
+                                    'name': 'Valor orçado', 'type': 'bar', 'barMaxWidth': 24,
+                                    'data': [float(_money(row.get('valor_bruto_importado')) / Decimal('1000')) for row in ranked],
+                                }]
+                                subtitle = '10 maiores valores orçados'
+                            else:
+                                ranked = sorted(
+                                    composition_rows,
+                                    key=lambda row: _money(row.get('valor_total_liberado')),
+                                    reverse=True,
+                                )[:10]
+                                if mode == 'LIBERADO':
+                                    series = [{
+                                        'name': 'Valor liberado', 'type': 'bar', 'barMaxWidth': 24,
+                                        'data': [float(_money(row.get('valor_total_liberado')) / Decimal('1000')) for row in ranked],
+                                    }]
+                                    subtitle = '10 maiores valores liberados'
+                                else:
+                                    series = [
+                                        {
+                                            'name': 'Procedimentos', 'type': 'bar', 'stack': 'total', 'barMaxWidth': 24,
+                                            'data': [float(_money(row.get('valor_procedimentos')) / Decimal('1000')) for row in ranked],
+                                        },
+                                        {
+                                            'name': 'Materiais', 'type': 'bar', 'stack': 'total', 'barMaxWidth': 24,
+                                            'data': [float(_money(row.get('valor_materiais')) / Decimal('1000')) for row in ranked],
+                                        },
+                                    ]
+                                    subtitle = 'Composição dos 10 maiores valores liberados'
+                            with chart_area:
+                                ui.label(subtitle).classes('text-caption text-grey-7')
+                                ui.echart({
+                                    'tooltip': {'trigger': 'axis', 'axisPointer': {'type': 'shadow'}},
+                                    'legend': {'show': mode == 'COMPOSICAO', 'top': 0},
+                                    'grid': {'left': 220, 'right': 35, 'bottom': 30, 'top': 38 if mode == 'COMPOSICAO' else 20},
+                                    'xAxis': {'type': 'value', 'name': 'R$ mil', 'axisLabel': {'formatter': '{value}'}},
+                                    'yAxis': {
+                                        'type': 'category', 'inverse': True,
+                                        'data': [str(row.get('medico') or 'Médico não informado') for row in ranked],
+                                    },
+                                    'series': series,
+                                }).classes('w-full h-[340px]')
 
                         with ui.card().classes('w-full p-4 gap-2 shadow-sm'):
                             with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
-                                ui.label('Top médicos por valor orçado').classes('text-subtitle1 text-weight-bold')
-                                ui.label('10 maiores valores brutos').classes('text-caption text-grey-7')
-
-                            ui.echart({
-                                'tooltip': {'trigger': 'axis', 'axisPointer': {'type': 'shadow'}},
-                                'grid': {'left': 220, 'right': 35, 'bottom': 30, 'top': 20},
-                                'xAxis': {'type': 'value', 'name': 'R$ mil', 'axisLabel': {'formatter': '{value}'}},
-                                'yAxis': {
-                                    'type': 'category',
-                                    'inverse': True,
-                                    'data': [str(row.get('medico') or 'Médico não informado') for row in top],
-                                },
-                                'series': [{
-                                    'name': 'Valor bruto',
-                                    'type': 'bar',
-                                    'barMaxWidth': 24,
-                                    'data': [
-                                        float(_money(row.get('valor_bruto_importado')) / Decimal('1000'))
-                                        for row in top
-                                    ],
-                                }],
-                            }).classes('w-full h-[360px]')
+                                ui.label('Carteira por médico').classes('text-subtitle1 text-weight-bold')
+                                chart_mode = ui.toggle(
+                                    {'ORCADO': 'Orçado', 'LIBERADO': 'Liberado', 'COMPOSICAO': 'Composição'},
+                                    value='ORCADO',
+                                ).props('no-caps dense unelevated')
+                            chart_mode.on_value_change(lambda event: render_doctor_chart(event.value or 'ORCADO'))
+                            render_doctor_chart('ORCADO')
 
                     if transcription:
                         total = sum((_money(r.get('valor_bruto_importado')) for r in transcription), Decimal(0))
