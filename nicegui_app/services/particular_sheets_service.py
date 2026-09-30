@@ -616,6 +616,23 @@ def commit_particular_occurrences_preview(
     if not batches:
         raise ValueError('Nenhum lote V3 foi produzido para sincronização.')
 
+    fingerprint_payload = [
+        {
+            'source_sheet': str(row.get('source_sheet') or ''),
+            'source_row_key': str(row.get('source_row_key') or ''),
+            'source_row_hash': str(row.get('source_row_hash') or ''),
+        }
+        for row in evidences
+    ]
+    preview_sha256 = hashlib.sha256(
+        json.dumps(
+            fingerprint_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(',', ':'),
+        ).encode('utf-8')
+    ).hexdigest()
+
     spreadsheet_id = os.getenv('PARTICULAR_SHEETS_SPREADSHEET_ID', _DEFAULT_ID).strip()
     if not spreadsheet_id:
         raise RuntimeError('ID da planilha Particular não configurado.')
@@ -623,6 +640,8 @@ def commit_particular_occurrences_preview(
     from nicegui_app.repositories.particular_repository import (
         commit_sheet_sync_batch_v3,
         finalize_sheet_sync_v3,
+        find_resumable_sheet_sync_v3,
+        list_completed_sheet_sync_batches_v3,
         open_sheet_sync_v3,
     )
 
@@ -640,21 +659,47 @@ def commit_particular_occurrences_preview(
         ),
         'sheet_stats': preview.get('sheet_stats') or {},
         'batch_occurrence_limit': batch_occurrence_limit,
+        'preview_sha256': preview_sha256,
     }
 
-    opened = open_sheet_sync_v3(
+    resumable = find_resumable_sheet_sync_v3(
         spreadsheet_id=spreadsheet_id,
-        expected_source_rows=expected_source_rows,
-        expected_occurrences=expected_occurrences,
-        expected_batches=len(batches),
-        sync_mode='MANUAL',
-        triggered_by=access.profile_id,
-        metadata=metadata,
+        preview_sha256=preview_sha256,
     )
-    sync_id = str(opened.get('sync_id') or '').strip()
+    resumed = resumable is not None
+
+    if resumable:
+        sync_id = str(resumable.get('id') or '').strip()
+        completed_batches = list_completed_sheet_sync_batches_v3(sync_id=sync_id)
+    else:
+        opened = open_sheet_sync_v3(
+            spreadsheet_id=spreadsheet_id,
+            expected_source_rows=expected_source_rows,
+            expected_occurrences=expected_occurrences,
+            expected_batches=len(batches),
+            sync_mode='MANUAL',
+            triggered_by=access.profile_id,
+            metadata=metadata,
+        )
+        sync_id = str(opened.get('sync_id') or '').strip()
+        completed_batches = set()
+
+    if not sync_id:
+        raise RuntimeError('A sincronização V3 não possui identificador válido.')
+
+    unexpected_batches = {
+        number for number in completed_batches
+        if number < 1 or number > len(batches)
+    }
+    if unexpected_batches:
+        raise RuntimeError(
+            'A sincronização aberta contém lote fora do plano atual; revisão manual obrigatória.'
+        )
 
     last_batch_result: dict[str, Any] | None = None
     for batch_number, batch in enumerate(batches, start=1):
+        if batch_number in completed_batches:
+            continue
         last_batch_result = commit_sheet_sync_batch_v3(
             sync_id=sync_id,
             batch_number=batch_number,
@@ -670,6 +715,9 @@ def commit_particular_occurrences_preview(
         'source_rows': expected_source_rows,
         'consolidated_occurrences': expected_occurrences,
         'last_batch': last_batch_result,
+        'resumed': resumed,
+        'previously_completed_batches': len(completed_batches),
+        'preview_sha256': preview_sha256,
     }
 
 
