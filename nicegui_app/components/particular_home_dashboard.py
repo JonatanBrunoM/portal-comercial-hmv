@@ -48,15 +48,15 @@ def _metric_card(
     emphasis: bool = False,
 ) -> None:
     classes = (
-        "flex-1 min-w-[210px] p-5 gap-2 border border-blue-100 shadow-sm"
+        "flex-1 min-w-[210px] p-4 gap-1 border border-blue-100 shadow-sm"
         if emphasis
-        else "flex-1 min-w-[210px] p-5 gap-2 shadow-sm"
+        else "flex-1 min-w-[210px] p-4 gap-1 shadow-sm"
     )
     with ui.card().classes(classes):
         with ui.row().classes("w-full items-center justify-between"):
             ui.label(title).classes("text-caption text-grey-7 text-weight-medium")
-            ui.icon(icon, size="24px").classes("text-primary")
-        ui.label(value).classes("text-h4 text-weight-bold")
+            ui.icon(icon, size="21px").classes("text-primary")
+        ui.label(value).classes("text-h5 text-weight-bold")
         ui.label(subtitle).classes("text-caption text-grey-7")
 
 
@@ -124,10 +124,13 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                             ui.label(
                                 "Primeira competência operacional observada para a carteira criada no período."
                             ).classes("text-body2 text-grey-7")
-                        ui.badge(
-                            f'{_int(row.get("budgets_with_operational_date"))} com data identificada',
-                            color="primary",
-                        ).props("outline")
+                        with ui.column().classes("items-end gap-0"):
+                            ui.label(
+                                f'{_int(row.get("budgets_with_operational_date"))} com data identificada'
+                            ).classes("text-subtitle2 text-weight-bold text-primary")
+                            ui.label(
+                                f'{_pct(row.get("pct_budgets_with_operational_date"))} da carteira'
+                            ).classes("text-caption text-grey-7")
 
                     if competence_rows:
                         chart_rows = [
@@ -200,9 +203,13 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                         "da carteira ORIGINAL."
                     ).classes("text-caption text-grey-7")
 
-            with ui.card().classes("w-full p-5 gap-3 shadow-sm"):
-                ui.label("Leitura operacional da carteira").classes("text-h6 text-weight-bold")
-                with ui.row().classes("w-full gap-3 flex-wrap"):
+            with ui.column().classes("w-full gap-2"):
+                with ui.column().classes("gap-0"):
+                    ui.label("Leitura operacional da carteira").classes("text-h6 text-weight-bold")
+                    ui.label(
+                        "Distribuição das evidências por unidade e relação entre competências."
+                    ).classes("text-body2 text-grey-7")
+                with ui.row().classes("w-full gap-2 flex-wrap"):
                     for label, value, detail in (
                         ("SEDE", row.get("budgets_sede"), "localização observada"),
                         ("Pontal", row.get("budgets_pontal"), "localização observada"),
@@ -210,15 +217,17 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                         ("Mesma competência", row.get("budgets_same_competence"), _compact_brl(row.get("value_same_competence"))),
                         ("Competência futura", row.get("budgets_future_competence"), _compact_brl(row.get("value_future_competence"))),
                     ):
-                        with ui.card().classes("flex-1 min-w-[170px] p-3 gap-0 bg-grey-1"):
+                        with ui.card().classes("flex-1 min-w-[170px] p-3 gap-0 border border-grey-3 shadow-none"):
                             ui.label(label).classes("text-caption text-grey-7")
                             ui.label(str(_int(value))).classes("text-h6 text-weight-bold")
                             ui.label(str(detail)).classes("text-caption text-grey-7")
 
-                ui.label(
-                    "Evidência operacional indica presença nas fontes persistidas. "
-                    "Não equivale, por si só, a realização, faturamento, cancelamento ou conversão."
-                ).classes("text-caption text-grey-7")
+                with ui.row().classes("w-full items-start gap-2 mt-1"):
+                    ui.icon("info", size="16px").classes("text-grey-6 mt-0.5")
+                    ui.label(
+                        "Evidência operacional indica presença nas fontes persistidas. "
+                        "Não equivale, por si só, a realização, faturamento, cancelamento ou conversão."
+                    ).classes("text-caption text-grey-7")
 
     async def load_competence(month: str) -> None:
         executive.clear()
@@ -288,23 +297,21 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
         finally:
             refresh_button.enable()
 
-    refresh_button = ui.button(
-        "Atualizar visão",
-        icon="refresh",
-        on_click=refresh,
-    ).props("outline no-caps")
-
-    ui.separator().classes("my-2")
+    with ui.row().classes("w-full justify-end"):
+        refresh_button = ui.button(
+            "Atualizar visão",
+            icon="refresh",
+            on_click=refresh,
+        ).props("flat no-caps")
 
     with ui.expansion(
-        "Composições por médico, itens e análise financeira",
+        "Análises da carteira",
         icon="analytics",
         value=True,
     ).classes("w-full border rounded-lg"):
         with ui.column().classes("w-full p-2 gap-4"):
             ui.label(
-                "As composições detalhadas continuam disponíveis e usam a mesma base financeira "
-                "validada do painel anterior."
+                "Médicos, composição financeira, itens e evolução dos orçamentos em uma área analítica única."
             ).classes("text-body2 text-grey-7")
             render_particular_monthly_dashboard(access)
 
