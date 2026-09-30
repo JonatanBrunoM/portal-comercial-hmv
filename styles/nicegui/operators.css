@@ -1513,3 +1513,63 @@
         animation: none;
     }
 }
+
+
+/* Etapa 20.3F · Transição de navegação e microajustes */
+.portal-operator-workspace-stage {
+    width: 100%;
+    will-change: opacity, transform, filter;
+}
+
+.portal-operator-workspace-stage.is-leaving {
+    pointer-events: none;
+    animation: portalWorkspaceOut .18s cubic-bezier(.4,0,1,1) both;
+}
+
+.portal-operator-workspace-stage.is-entering {
+    animation: portalWorkspaceEnter .34s cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes portalWorkspaceOut {
+    from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+    to { opacity: 0; transform: translateX(-14px) scale(.992); filter: blur(1px); }
+}
+
+@keyframes portalWorkspaceEnter {
+    from { opacity: 0; transform: translateX(18px) scale(.992); filter: blur(1px); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+
+/* O card de plano não possui ícone inicial: título e ações têm grade própria. */
+.portal-operator-plan-card .portal-operator-reference-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.portal-operator-plan-card .portal-operator-reference-head > .portal-operator-resource-title {
+    min-width: 0;
+    overflow: visible;
+    white-space: normal;
+}
+
+.portal-operator-plan-card .portal-operator-reference-head > .row {
+    justify-self: end;
+    flex-wrap: nowrap;
+}
+
+.portal-operator-alert-kicker {
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 7px;
+    padding-left: 2px;
+}
+
+.portal-operator-section-block .portal-operator-quick-panel.is-warning {
+    min-height: 132px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-operator-workspace-stage.is-leaving,
+    .portal-operator-workspace-stage.is-entering {
+        animation: none;
+    }
+}
