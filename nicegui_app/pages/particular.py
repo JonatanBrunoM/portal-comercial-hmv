@@ -464,22 +464,11 @@ def render_particular(user: dict) -> None:
                         ).classes("text-body2 text-grey-7")
 
                     with ui.row().classes("items-center gap-2"):
-                        ui.button(
-                            "Orçamentos",
-                            icon="receipt_long",
-                            on_click=lambda: tabs.set_value(operation_tab),
-                        ).props("flat no-caps")
-                        if pending_count:
-                            ui.button(
-                                f"{pending_count} duplicidades",
-                                icon="fact_check",
-                                on_click=lambda: tabs.set_value(review_tab),
-                            ).props("flat no-caps")
-                        ui.button(
-                            "Importar",
-                            icon="upload_file",
-                            on_click=lambda: tabs.set_value(import_tab),
-                        ).props("outline no-caps")
+                        ui.label(
+                            f"{pending_count} duplicidade(s) pendente(s)"
+                            if pending_count
+                            else "Sem duplicidades pendentes"
+                        ).classes("text-caption text-grey-7")
 
                 with ui.tabs().props("dense inline-label align=left no-caps").classes(
                     "w-full px-3 border-t border-grey-3"
