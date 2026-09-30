@@ -600,11 +600,11 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     )
                     return
 
-                with ui.element("div").classes("portal-operator-reference-layout"):
+                with ui.element("div").classes("portal-operator-reference-layout portal-operator-workspace-grid"):
                     for row in detail.autorizacoes:
                         title = _authorization_title(row)
                         with ui.element("article").classes(
-                            "portal-operator-reference-column cursor-pointer"
+                            "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
                         ).on(
                             "click",
                             lambda _event, selected_row=row: (
@@ -634,18 +634,16 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             code = _text(row, "codigo").upper()
             is_udi = "UDI" in code
 
-            with ui.element("article").classes("portal-operator-rule-card"):
-                with ui.row().classes(
-                    "portal-operator-rule-head items-center justify-between"
-                ):
-                    with ui.row().classes("items-center gap-3"):
+            with ui.element("article").classes("portal-operator-rule-card portal-operator-workspace-detail"):
+                with ui.row().classes("portal-operator-detail-header"):
+                    with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
                             on_click=lambda: (
                                 journey_state.__setitem__("selected", None),
                                 render_journey_workspace.refresh(),
                             ),
-                        ).props("flat round dense").classes("portal-operator-cockpit-back")
+                        ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
                             ui.icon("radiology" if is_udi else "fact_check")
                         with ui.column().classes("portal-operator-rule-head-copy"):
@@ -657,7 +655,7 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             )
 
                 with ui.element("div").classes(
-                    "portal-operator-rule-fields grid grid-cols-1 md:grid-cols-2 gap-x-8"
+                    "portal-operator-rule-fields portal-operator-detail-fields"
                 ):
                     for label, keys in [
                         ("Precisa autorização", ("necessita_autorizacao",)),
@@ -696,12 +694,12 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             selected = plan_state["selected"]
 
             if selected is None:
-                with ui.element("div").classes("portal-operator-reference-layout"):
+                with ui.element("div").classes("portal-operator-reference-layout portal-operator-workspace-grid"):
                     for plan in detail.planos[:4]:
                         coverage = _coverage_for_plan(plan, detail.coberturas)
                         accommodation = _text(coverage, "acomodacao")
                         with ui.element("article").classes(
-                            "portal-operator-reference-column cursor-pointer"
+                            "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
                         ).on(
                             "click",
                             lambda _event, selected_plan=plan: (
@@ -733,11 +731,9 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             plan = selected
             coverage = _coverage_for_plan(plan, detail.coberturas)
 
-            with ui.element("article").classes("portal-operator-rule-card"):
-                with ui.row().classes(
-                    "portal-operator-rule-head items-center justify-between"
-                ):
-                    with ui.row().classes("items-center gap-3"):
+            with ui.element("article").classes("portal-operator-rule-card portal-operator-workspace-detail"):
+                with ui.row().classes("portal-operator-detail-header"):
+                    with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
                             on_click=lambda: (
@@ -759,7 +755,7 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
                 if coverage:
                     with ui.element("div").classes(
-                        "portal-operator-rule-fields grid grid-cols-1 md:grid-cols-2 gap-x-8"
+                        "portal-operator-rule-fields portal-operator-detail-fields"
                     ):
                         _detail_field("Acomodação", _text(coverage, "acomodacao"))
                         _detail_field("Acompanhante", _text(coverage, "acompanhante"))
