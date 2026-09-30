@@ -358,6 +358,12 @@ def render_particular_import(access: ParticularAccess) -> None:
                                                 "ocorrência(s) consolidada(s) · "
                                                 f'{sync_result.get("expected_batches", 0)} lote(s) V3 concluído(s).'
                                             ).classes("text-body2")
+                                            if sync_result.get("resumed"):
+                                                ui.label(
+                                                    f'Retomada segura aplicada: '
+                                                    f'{sync_result.get("previously_completed_batches", 0)} lote(s) '
+                                                    "já confirmado(s) foram preservados e não foram reenviados."
+                                                ).classes("text-body2 text-primary text-weight-medium")
                                         ui.notify(
                                             "Sincronização das grades concluída.",
                                             color="positive",
