@@ -596,22 +596,37 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             value: dict[str, Any] | None,
             refresh,
         ) -> None:
-            await ui.run_javascript(
-                f"""const el=document.querySelector('{selector}');
-                if(el){{el.classList.remove('is-entering');el.classList.add('is-leaving');}}"""
-            )
-            await asyncio.sleep(0.18)
+            # Never let a cosmetic animation block navigation. The state change
+            # is the source of truth; JavaScript only decorates the transition.
+            try:
+                await ui.run_javascript(
+                    f"""const el=document.querySelector('{selector}');
+                    if(el){{el.classList.remove('is-entering');el.classList.add('is-leaving');}}""",
+                    timeout=0.5,
+                )
+            except Exception:
+                pass
+
+            await asyncio.sleep(0.16)
             state["selected"] = value
             refresh()
-            await asyncio.sleep(0.02)
-            await ui.run_javascript(
-                f"""const el=document.querySelector('{selector}');
-                if(el){{
-                    el.classList.remove('is-leaving');
-                    el.classList.add('is-entering');
-                    setTimeout(()=>el.classList.remove('is-entering'),360);
-                }}"""
-            )
+
+            async def _animate_entry() -> None:
+                await asyncio.sleep(0.03)
+                try:
+                    await ui.run_javascript(
+                        f"""const el=document.querySelector('{selector}');
+                        if(el){{
+                            el.classList.remove('is-leaving');
+                            el.classList.add('is-entering');
+                            setTimeout(()=>el.classList.remove('is-entering'),360);
+                        }}""",
+                        timeout=0.5,
+                    )
+                except Exception:
+                    pass
+
+            asyncio.create_task(_animate_entry())
 
         @ui.refreshable
         def render_journey_workspace() -> None:
@@ -772,7 +787,7 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                                 None,
                                 render_plan_workspace.refresh,
                             ),
-                        ).props("flat round dense").classes("portal-operator-cockpit-back")
+                        ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
                             ui.icon("badge")
                         with ui.column().classes("portal-operator-rule-head-copy"):
