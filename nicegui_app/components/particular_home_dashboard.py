@@ -86,35 +86,35 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
             with ui.card().classes("w-full p-0 gap-0 overflow-hidden shadow-sm"):
                 with ui.row().classes("w-full gap-0 flex-wrap"):
                     _metric_card(
-                    "Orçamentos",
-                    f'{_int(row.get("budgets_total")):,}'.replace(",", "."),
-                    f"Carteira criada em {month_label(month)}",
-                    "receipt_long",
-                )
-                _metric_card(
-                    "Valor ORIGINAL",
-                    _compact_brl(row.get("original_value_total")),
-                    (
-                        f'Procedimentos {_compact_brl(row.get("procedure_value_total"))} · '
-                        f'Materiais {_compact_brl(row.get("material_value_total"))}'
-                    ),
-                    "payments",
-                    emphasis=True,
-                )
-                _metric_card(
-                    "Com data operacional",
-                    f'{_int(row.get("budgets_with_operational_date"))} · '
-                    f'{_pct(row.get("pct_budgets_with_operational_date"))}',
-                    f'{_compact_brl(row.get("value_with_operational_date"))} do valor ORIGINAL',
-                    "event_available",
-                )
-                _metric_card(
-                    "Sem data operacional",
-                    f'{_int(row.get("budgets_without_operational_date"))} · '
-                    f'{_pct(row.get("pct_budgets_without_operational_date"))}',
-                    f'{_compact_brl(row.get("value_without_operational_date"))} do valor ORIGINAL',
-                    "event_busy",
-                )
+                        "Orçamentos",
+                        f'{_int(row.get("budgets_total")):,}'.replace(",", "."),
+                        f"Carteira criada em {month_label(month)}",
+                        "receipt_long",
+                    )
+                    _metric_card(
+                        "Valor ORIGINAL",
+                        _compact_brl(row.get("original_value_total")),
+                        (
+                            f'Procedimentos {_compact_brl(row.get("procedure_value_total"))} · '
+                            f'Materiais {_compact_brl(row.get("material_value_total"))}'
+                        ),
+                        "payments",
+                        emphasis=True,
+                    )
+                    _metric_card(
+                        "Com data operacional",
+                        f'{_int(row.get("budgets_with_operational_date"))} · '
+                        f'{_pct(row.get("pct_budgets_with_operational_date"))}',
+                        f'{_compact_brl(row.get("value_with_operational_date"))} do valor ORIGINAL',
+                        "event_available",
+                    )
+                    _metric_card(
+                        "Sem data operacional",
+                        f'{_int(row.get("budgets_without_operational_date"))} · '
+                        f'{_pct(row.get("pct_budgets_without_operational_date"))}',
+                        f'{_compact_brl(row.get("value_without_operational_date"))} do valor ORIGINAL',
+                        "event_busy",
+                    )
 
             with ui.row().classes("w-full gap-4 items-start flex-wrap"):
                 with ui.card().classes("flex-[2] min-w-[520px] p-5 gap-3 shadow-sm"):
