@@ -99,10 +99,10 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                     released_value = sum((_money(r.get('valor_liberado_duplicidade')) for r in doctors), Decimal(0))
                     pending_budgets = sum(int(r.get('orcamentos_aguardando_analise') or 0) for r in doctors)
 
-                    with ui.row().classes('w-full items-end justify-between gap-3 flex-wrap'):
+                    with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
                         with ui.column().classes('gap-0'):
-                            ui.label('Visão por médico').classes('text-subtitle1 text-weight-bold')
-                            ui.label('Resumo da carteira vinculada a cada médico.').classes(
+                            ui.label('Visão médica').classes('text-subtitle1 text-weight-bold')
+                            ui.label('Leitura rápida da carteira vinculada aos médicos.').classes(
                                 'text-caption text-grey-7'
                             )
                         ui.button(
@@ -111,81 +111,210 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                             on_click=lambda: load(month_select.value, True),
                         ).props('flat dense no-caps').classes('text-primary')
 
-                    with ui.row().classes('w-full gap-3 flex-wrap'):
-                        for label, value, note in (
-                            ('Médicos identificados', str(total_doctors), f'{total_budgets} orçamento(s)'),
-                            ('Valor bruto', format_brl(gross_value), 'Carteira médica identificada'),
-                            ('Valor liberado', format_brl(released_value), 'Após decisões de duplicidade'),
-                            ('Em análise', str(pending_budgets), 'Orçamento(s) retido(s)'),
-                        ):
-                            with ui.card().classes('flex-1 min-w-[190px] p-4 gap-1 shadow-sm'):
-                                ui.label(label).classes('text-caption text-grey-7')
-                                ui.label(value).classes('text-h5 text-weight-bold')
-                                ui.label(note).classes('text-caption text-grey-7')
+                    released_pct = (
+                        (released_value / gross_value * Decimal('100'))
+                        if gross_value > 0 else Decimal(0)
+                    )
+
+                    # Faixa executiva única: menos cartões e leitura mais rápida.
+                    with ui.card().classes('w-full p-0 gap-0 shadow-sm overflow-hidden'):
+                        with ui.row().classes('w-full items-stretch gap-0 flex-wrap'):
+                            metrics = (
+                                ('Médicos', str(total_doctors), f'{total_budgets} orçamentos', 'medical_services'),
+                                ('Valor orçado', format_brl(gross_value), 'Carteira médica identificada', 'payments'),
+                                ('Valor liberado', format_brl(released_value), f'{released_pct:.1f}% do valor orçado', 'verified'),
+                                ('Em análise', str(pending_budgets), 'orçamentos retidos', 'pending_actions'),
+                            )
+                            for index, (label, value, note, icon) in enumerate(metrics):
+                                classes = 'flex-1 min-w-[190px] p-4 gap-1'
+                                if index:
+                                    classes += ' border-l border-grey-3'
+                                with ui.column().classes(classes):
+                                    with ui.row().classes('w-full items-center justify-between gap-2'):
+                                        ui.label(label).classes('text-caption text-grey-7')
+                                        ui.icon(icon, size='18px').classes(
+                                            'text-warning' if label == 'Em análise' and pending_budgets else 'text-primary'
+                                        )
+                                    ui.label(value).classes('text-h5 text-weight-bold')
+                                    ui.label(note).classes('text-caption text-grey-7')
 
                     if doctors:
                         composition_by_doctor = {
                             _normalize(row.get('medico')): row for row in composition_rows
                             if not _is_transcription(str(row.get('medico') or ''))
                         }
-                        chart_area = ui.column().classes('w-full')
 
-                        def render_doctor_chart(mode: str) -> None:
-                            chart_area.clear()
+                        analysis_area = ui.column().classes('w-full gap-2')
+
+                        def render_doctor_analysis(mode: str) -> None:
+                            analysis_area.clear()
+
                             if mode == 'ORCADO':
-                                ranked = sorted(doctors, key=lambda row: _money(row.get('valor_bruto_importado')), reverse=True)[:10]
+                                ranked = sorted(
+                                    doctors,
+                                    key=lambda row: _money(row.get('valor_bruto_importado')),
+                                    reverse=True,
+                                )[:5]
+                                value_of = lambda row: _money(row.get('valor_bruto_importado'))
                                 series = [{
-                                    'name': 'Valor orçado', 'type': 'bar', 'barMaxWidth': 24,
-                                    'data': [float(_money(row.get('valor_bruto_importado')) / Decimal('1000')) for row in ranked],
+                                    'name': 'Valor orçado',
+                                    'type': 'bar',
+                                    'barMaxWidth': 22,
+                                    'data': [float(value_of(row) / Decimal('1000')) for row in ranked],
                                 }]
-                                subtitle = '10 maiores valores orçados'
+                                portfolio_total = gross_value
                             else:
                                 ranked = sorted(
-                                    composition_rows,
+                                    [
+                                        row for row in composition_rows
+                                        if not _is_transcription(str(row.get('medico') or ''))
+                                    ],
                                     key=lambda row: _money(row.get('valor_total_liberado')),
                                     reverse=True,
-                                )[:10]
+                                )[:5]
+                                value_of = lambda row: _money(row.get('valor_total_liberado'))
+                                portfolio_total = released_value
                                 if mode == 'LIBERADO':
                                     series = [{
-                                        'name': 'Valor liberado', 'type': 'bar', 'barMaxWidth': 24,
-                                        'data': [float(_money(row.get('valor_total_liberado')) / Decimal('1000')) for row in ranked],
+                                        'name': 'Valor liberado',
+                                        'type': 'bar',
+                                        'barMaxWidth': 22,
+                                        'data': [float(value_of(row) / Decimal('1000')) for row in ranked],
                                     }]
-                                    subtitle = '10 maiores valores liberados'
                                 else:
                                     series = [
                                         {
-                                            'name': 'Procedimentos', 'type': 'bar', 'stack': 'total', 'barMaxWidth': 24,
-                                            'data': [float(_money(row.get('valor_procedimentos')) / Decimal('1000')) for row in ranked],
+                                            'name': 'Procedimentos',
+                                            'type': 'bar',
+                                            'stack': 'total',
+                                            'barMaxWidth': 22,
+                                            'data': [
+                                                float(_money(row.get('valor_procedimentos')) / Decimal('1000'))
+                                                for row in ranked
+                                            ],
                                         },
                                         {
-                                            'name': 'Materiais', 'type': 'bar', 'stack': 'total', 'barMaxWidth': 24,
-                                            'data': [float(_money(row.get('valor_materiais')) / Decimal('1000')) for row in ranked],
+                                            'name': 'Materiais',
+                                            'type': 'bar',
+                                            'stack': 'total',
+                                            'barMaxWidth': 22,
+                                            'data': [
+                                                float(_money(row.get('valor_materiais')) / Decimal('1000'))
+                                                for row in ranked
+                                            ],
                                         },
                                     ]
-                                    subtitle = 'Composição dos 10 maiores valores liberados'
-                            with chart_area:
-                                ui.label(subtitle).classes('text-caption text-grey-7')
-                                ui.echart({
-                                    'tooltip': {'trigger': 'axis', 'axisPointer': {'type': 'shadow'}},
-                                    'legend': {'show': mode == 'COMPOSICAO', 'top': 0},
-                                    'grid': {'left': 220, 'right': 35, 'bottom': 30, 'top': 38 if mode == 'COMPOSICAO' else 20},
-                                    'xAxis': {'type': 'value', 'name': 'R$ mil', 'axisLabel': {'formatter': '{value}'}},
-                                    'yAxis': {
-                                        'type': 'category', 'inverse': True,
-                                        'data': [str(row.get('medico') or 'Médico não informado') for row in ranked],
-                                    },
-                                    'series': series,
-                                }).classes('w-full h-[340px]')
 
-                        with ui.card().classes('w-full p-4 gap-2 shadow-sm'):
-                            with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
-                                ui.label('Carteira por médico').classes('text-subtitle1 text-weight-bold')
-                                chart_mode = ui.toggle(
-                                    {'ORCADO': 'Orçado', 'LIBERADO': 'Liberado', 'COMPOSICAO': 'Composição'},
-                                    value='ORCADO',
-                                ).props('no-caps dense unelevated')
-                            chart_mode.on_value_change(lambda event: render_doctor_chart(event.value or 'ORCADO'))
-                            render_doctor_chart('ORCADO')
+                            top_value = value_of(ranked[0]) if ranked else Decimal(0)
+                            top_share = (
+                                top_value / portfolio_total * Decimal('100')
+                                if portfolio_total > 0 else Decimal(0)
+                            )
+
+                            retained_doctor = max(
+                                doctors,
+                                key=lambda row: _money(row.get('valor_aguardando_analise')),
+                                default=None,
+                            )
+                            retained_value = (
+                                _money(retained_doctor.get('valor_aguardando_analise'))
+                                if retained_doctor else Decimal(0)
+                            )
+
+                            material_rows = [
+                                row for row in composition_rows
+                                if not _is_transcription(str(row.get('medico') or ''))
+                            ]
+                            material_doctor = max(
+                                material_rows,
+                                key=lambda row: _money(row.get('valor_materiais')),
+                                default=None,
+                            )
+                            material_value = (
+                                _money(material_doctor.get('valor_materiais'))
+                                if material_doctor else Decimal(0)
+                            )
+
+                            with analysis_area:
+                                with ui.row().classes('w-full gap-3 items-stretch flex-wrap'):
+                                    with ui.card().classes('flex-[2] min-w-[560px] p-4 gap-2 shadow-sm'):
+                                        with ui.row().classes('w-full items-center justify-between'):
+                                            ui.label('Principais carteiras').classes('text-subtitle1 text-weight-bold')
+                                            ui.label('Top 5').classes('text-caption text-grey-6')
+                                        ui.echart({
+                                            'tooltip': {
+                                                'trigger': 'axis',
+                                                'axisPointer': {'type': 'shadow'},
+                                                'valueFormatter': 'function (value) { return "R$ " + Number(value).toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " mil"; }',
+                                            },
+                                            'legend': {'show': mode == 'COMPOSICAO', 'top': 0},
+                                            'grid': {
+                                                'left': 205,
+                                                'right': 25,
+                                                'bottom': 20,
+                                                'top': 35 if mode == 'COMPOSICAO' else 10,
+                                            },
+                                            'xAxis': {
+                                                'type': 'value',
+                                                'name': 'R$ mil',
+                                                'axisLabel': {'formatter': '{value}'},
+                                            },
+                                            'yAxis': {
+                                                'type': 'category',
+                                                'inverse': True,
+                                                'data': [
+                                                    str(row.get('medico') or 'Médico não informado')
+                                                    for row in ranked
+                                                ],
+                                            },
+                                            'series': series,
+                                        }).classes('w-full h-[245px]')
+
+                                    with ui.card().classes('flex-1 min-w-[280px] p-4 gap-3 shadow-sm'):
+                                        ui.label('Destaques').classes('text-subtitle1 text-weight-bold')
+
+                                        if ranked:
+                                            with ui.column().classes('gap-0'):
+                                                ui.label('Maior carteira nesta leitura').classes('text-caption text-grey-7')
+                                                ui.label(str(ranked[0].get('medico') or 'Médico não informado')).classes(
+                                                    'text-body2 text-weight-bold'
+                                                )
+                                                ui.label(
+                                                    f'{format_brl(top_value)} · {top_share:.1f}% da carteira'
+                                                ).classes('text-caption text-primary')
+
+                                        if retained_doctor and retained_value > 0:
+                                            ui.separator()
+                                            with ui.column().classes('gap-0'):
+                                                ui.label('Maior valor em análise').classes('text-caption text-grey-7')
+                                                ui.label(
+                                                    str(retained_doctor.get('medico') or 'Médico não informado')
+                                                ).classes('text-body2 text-weight-bold')
+                                                ui.label(format_brl(retained_value)).classes(
+                                                    'text-caption text-warning'
+                                                )
+
+                                        if material_doctor and material_value > 0:
+                                            ui.separator()
+                                            with ui.column().classes('gap-0'):
+                                                ui.label('Maior valor em materiais').classes('text-caption text-grey-7')
+                                                ui.label(
+                                                    str(material_doctor.get('medico') or 'Médico não informado')
+                                                ).classes('text-body2 text-weight-bold')
+                                                ui.label(format_brl(material_value)).classes(
+                                                    'text-caption text-primary'
+                                                )
+
+                        with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
+                            ui.label('Análise da carteira').classes('text-subtitle1 text-weight-bold')
+                            chart_mode = ui.toggle(
+                                {'ORCADO': 'Orçado', 'LIBERADO': 'Liberado', 'COMPOSICAO': 'Composição'},
+                                value='ORCADO',
+                            ).props('no-caps dense unelevated')
+                        chart_mode.on_value_change(
+                            lambda event: render_doctor_analysis(event.value or 'ORCADO')
+                        )
+                        render_doctor_analysis('ORCADO')
 
                     if transcription:
                         total = sum((_money(r.get('valor_bruto_importado')) for r in transcription), Decimal(0))
@@ -197,161 +326,169 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                         incomplete = sum(int(r.get('orcamentos_decisao_incompleta') or 0) for r in transcription)
                         inconsistent = sum(int(r.get('orcamentos_liberados') or 0) for r in transcription)
 
-                        with ui.card().classes('w-full p-4 gap-2 shadow-none border border-grey-3'):
-                            with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
-                                with ui.row().classes('items-center gap-2'):
-                                    ui.icon('description', size='20px').classes('text-primary')
-                                    ui.label('Registros de consultório').classes('text-subtitle2 text-weight-bold')
+                        with ui.expansion(
+                            f'Registros de consultório · {identified} orçamento(s) · {format_brl(total)}',
+                            icon='description',
+                        ).classes('w-full border border-grey-3 rounded-lg').props('dense'):
+                            with ui.column().classes('w-full px-4 pb-4 gap-1'):
                                 ui.label(
-                                    f'{identified} orçamento(s) · {format_brl(total)} bruto'
-                                ).classes('text-caption text-grey-7')
-                            ui.label(
-                                f'{classified} transcrição(ões) · {format_brl(classified_value)}'
-                            ).classes('text-body2')
-                            notes = []
-                            if pending:
-                                notes.append(f'{pending} pendente(s)')
-                            if excluded:
-                                notes.append(f'{excluded} excluído(s)')
-                            if incomplete:
-                                notes.append(f'{incomplete} decisão(ões) incompleta(s)')
-                            if notes:
-                                ui.label(' · '.join(notes)).classes('text-caption text-grey-7')
-                            if inconsistent:
-                                ui.label(
-                                    f'{inconsistent} registro(s) de CONSULTORIO ainda aparecem '
-                                    'como liberados na visão financeira.'
-                                ).classes('text-caption text-warning')
+                                    f'{classified} transcrição(ões) · {format_brl(classified_value)}'
+                                ).classes('text-body2')
+                                notes = []
+                                if pending:
+                                    notes.append(f'{pending} pendente(s)')
+                                if excluded:
+                                    notes.append(f'{excluded} excluído(s)')
+                                if incomplete:
+                                    notes.append(f'{incomplete} decisão(ões) incompleta(s)')
+                                if notes:
+                                    ui.label(' · '.join(notes)).classes('text-caption text-grey-7')
+                                if inconsistent:
+                                    ui.label(
+                                        f'{inconsistent} registro(s) de CONSULTORIO ainda aparecem '
+                                        'como liberados na visão financeira.'
+                                    ).classes('text-caption text-warning')
 
                     if doctors:
-                        ui.separator().classes('my-1')
-                        with ui.row().classes('w-full items-end justify-between gap-3 flex-wrap'):
-                            with ui.column().classes('gap-0'):
-                                ui.label('Consultar carteira médica').classes('text-subtitle1 text-weight-bold')
+                        with ui.expansion(
+                            f'Consultar todos os médicos · {len(doctors)} identificados',
+                            icon='manage_search',
+                        ).classes('w-full border border-grey-3 rounded-lg').props('dense'):
+                            with ui.column().classes('w-full px-3 pb-4 gap-3'):
                                 ui.label(
-                                    'Pesquise por médico e refine por situação ou faixa de valor.'
+                                    'Pesquise por médico e refine somente quando precisar do detalhamento.'
                                 ).classes('text-caption text-grey-7')
 
-                        filter_row = ui.row().classes('w-full items-end gap-3 flex-wrap')
-                        results_area = ui.column().classes('w-full gap-2')
+                                filter_row = ui.row().classes('w-full items-end gap-3 flex-wrap')
+                                results_area = ui.column().classes('w-full gap-2')
 
-                        with filter_row:
-                            search = ui.input(
-                                'Médico',
-                                placeholder='Digite nome ou parte do nome...',
-                            ).props('outlined dense clearable').classes('flex-1 min-w-[280px]')
-                            situation = ui.select(
-                                {
-                                    'TODOS': 'Todos',
-                                    'LIBERADO': 'Com valor liberado',
-                                    'RETIDO': 'Com valor retido',
-                                    'EXCLUIDO': 'Com valor excluído',
-                                },
-                                value='TODOS',
-                                label='Situação',
-                            ).props('outlined dense options-dense').classes('w-[210px]')
-                            minimum = ui.select(
-                                {
-                                    '0': 'Qualquer valor',
-                                    '10000': 'Acima de R$ 10 mil',
-                                    '50000': 'Acima de R$ 50 mil',
-                                    '100000': 'Acima de R$ 100 mil',
-                                    '250000': 'Acima de R$ 250 mil',
-                                },
-                                value='0',
-                                label='Valor bruto',
-                            ).props('outlined dense options-dense').classes('w-[210px]')
-                            clear_button = ui.button('Limpar', icon='filter_alt_off').props(
-                                'flat dense no-caps'
-                            ).classes('text-grey-7')
+                                with filter_row:
+                                    search = ui.input(
+                                        'Médico',
+                                        placeholder='Digite nome ou parte do nome...',
+                                    ).props('outlined dense clearable').classes('flex-1 min-w-[280px]')
+                                    situation = ui.select(
+                                        {
+                                            'TODOS': 'Todos',
+                                            'LIBERADO': 'Com valor liberado',
+                                            'RETIDO': 'Com valor retido',
+                                            'EXCLUIDO': 'Com valor excluído',
+                                        },
+                                        value='TODOS',
+                                        label='Situação',
+                                    ).props('outlined dense options-dense').classes('w-[210px]')
+                                    minimum = ui.select(
+                                        {
+                                            '0': 'Qualquer valor',
+                                            '10000': 'Acima de R$ 10 mil',
+                                            '50000': 'Acima de R$ 50 mil',
+                                            '100000': 'Acima de R$ 100 mil',
+                                            '250000': 'Acima de R$ 250 mil',
+                                        },
+                                        value='0',
+                                        label='Valor orçado',
+                                    ).props('outlined dense options-dense').classes('w-[210px]')
+                                    clear_button = ui.button('Limpar', icon='filter_alt_off').props(
+                                        'flat dense no-caps'
+                                    ).classes('text-grey-7')
 
-                        def render_results() -> None:
-                            results_area.clear()
-                            term = _normalize(search.value)
-                            selected_situation = str(situation.value or 'TODOS')
-                            minimum_value = _money(minimum.value or 0)
+                                def render_results() -> None:
+                                    results_area.clear()
+                                    term = _normalize(search.value)
+                                    selected_situation = str(situation.value or 'TODOS')
+                                    minimum_value = _money(minimum.value or 0)
 
-                            filtered = []
-                            for row in doctors:
-                                name = str(row.get('medico') or 'Médico não informado')
-                                if term and term not in _normalize(name):
-                                    continue
-                                if selected_situation == 'LIBERADO' and _money(row.get('valor_liberado_duplicidade')) <= 0:
-                                    continue
-                                if selected_situation == 'RETIDO' and _money(row.get('valor_aguardando_analise')) <= 0:
-                                    continue
-                                if selected_situation == 'EXCLUIDO' and _money(row.get('valor_excluido_duplicidade')) <= 0:
-                                    continue
-                                if _money(row.get('valor_bruto_importado')) < minimum_value:
-                                    continue
-                                filtered.append(row)
+                                    filtered = []
+                                    for row in doctors:
+                                        name = str(row.get('medico') or 'Médico não informado')
+                                        if term and term not in _normalize(name):
+                                            continue
+                                        if (
+                                            selected_situation == 'LIBERADO'
+                                            and _money(row.get('valor_liberado_duplicidade')) <= 0
+                                        ):
+                                            continue
+                                        if (
+                                            selected_situation == 'RETIDO'
+                                            and _money(row.get('valor_aguardando_analise')) <= 0
+                                        ):
+                                            continue
+                                        if (
+                                            selected_situation == 'EXCLUIDO'
+                                            and _money(row.get('valor_excluido_duplicidade')) <= 0
+                                        ):
+                                            continue
+                                        if _money(row.get('valor_bruto_importado')) < minimum_value:
+                                            continue
+                                        filtered.append(row)
 
-                            filtered.sort(
-                                key=lambda row: _money(row.get('valor_bruto_importado')),
-                                reverse=True,
-                            )
+                                    filtered.sort(
+                                        key=lambda row: _money(row.get('valor_bruto_importado')),
+                                        reverse=True,
+                                    )
 
-                            with results_area:
-                                with ui.row().classes('w-full items-center justify-between gap-3 flex-wrap'):
-                                    ui.label(
-                                        f'{len(filtered)} de {len(doctors)} médico(s)'
-                                    ).classes('text-caption text-grey-7')
-                                    if filtered:
-                                        filtered_value = sum(
-                                            (_money(r.get('valor_bruto_importado')) for r in filtered),
-                                            Decimal(0),
-                                        )
-                                        ui.label(
-                                            f'{format_brl(filtered_value)} em valor bruto'
-                                        ).classes('text-caption text-grey-7')
+                                    with results_area:
+                                        with ui.row().classes(
+                                            'w-full items-center justify-between gap-3 flex-wrap'
+                                        ):
+                                            ui.label(
+                                                f'{len(filtered)} de {len(doctors)} médico(s)'
+                                            ).classes('text-caption text-grey-7')
+                                            if filtered:
+                                                filtered_value = sum(
+                                                    (
+                                                        _money(r.get('valor_bruto_importado'))
+                                                        for r in filtered
+                                                    ),
+                                                    Decimal(0),
+                                                )
+                                                ui.label(
+                                                    f'{format_brl(filtered_value)} em valor orçado'
+                                                ).classes('text-caption text-grey-7')
 
-                                if not filtered:
-                                    with ui.card().classes(
-                                        'w-full p-5 items-center shadow-none border border-grey-3'
-                                    ):
-                                        ui.icon('search_off', size='28px').classes('text-grey-5')
-                                        ui.label('Nenhum médico encontrado com estes filtros.').classes(
-                                            'text-body2 text-grey-7'
-                                        )
-                                    return
+                                        if not filtered:
+                                            ui.label(
+                                                'Nenhum médico encontrado com estes filtros.'
+                                            ).classes('text-body2 text-grey-7')
+                                            return
 
-                                columns = [
-                                    {'name': 'medico', 'label': 'Médico', 'field': 'medico', 'align': 'left', 'sortable': True},
-                                    {'name': 'orcamentos', 'label': 'Orçamentos', 'field': 'orcamentos', 'sortable': True},
-                                    {'name': 'bruto', 'label': 'Bruto importado', 'field': 'bruto', 'sortable': True},
-                                    {'name': 'liberado', 'label': 'Liberado', 'field': 'liberado', 'sortable': True},
-                                    {'name': 'retido', 'label': 'Retido', 'field': 'retido', 'sortable': True},
-                                    {'name': 'excluido', 'label': 'Excluído', 'field': 'excluido', 'sortable': True},
-                                ]
-                                data = [
-                                    {
-                                        'medico': str(r.get('medico') or 'Médico não informado'),
-                                        'orcamentos': int(r.get('orcamentos_importados') or 0),
-                                        'bruto': format_brl(r.get('valor_bruto_importado')),
-                                        'liberado': format_brl(r.get('valor_liberado_duplicidade')),
-                                        'retido': format_brl(r.get('valor_aguardando_analise')),
-                                        'excluido': format_brl(r.get('valor_excluido_duplicidade')),
-                                    }
-                                    for r in filtered
-                                ]
-                                ui.table(
-                                    columns=columns,
-                                    rows=data,
-                                    row_key='medico',
-                                    pagination={'rowsPerPage': 10},
-                                ).props('flat bordered dense').classes('w-full')
+                                        columns = [
+                                            {'name': 'medico', 'label': 'Médico', 'field': 'medico', 'align': 'left', 'sortable': True},
+                                            {'name': 'orcamentos', 'label': 'Orçamentos', 'field': 'orcamentos', 'sortable': True},
+                                            {'name': 'bruto', 'label': 'Valor orçado', 'field': 'bruto', 'sortable': True},
+                                            {'name': 'liberado', 'label': 'Liberado', 'field': 'liberado', 'sortable': True},
+                                            {'name': 'retido', 'label': 'Em análise', 'field': 'retido', 'sortable': True},
+                                            {'name': 'excluido', 'label': 'Excluído', 'field': 'excluido', 'sortable': True},
+                                        ]
+                                        data = [
+                                            {
+                                                'medico': str(r.get('medico') or 'Médico não informado'),
+                                                'orcamentos': int(r.get('orcamentos_importados') or 0),
+                                                'bruto': format_brl(r.get('valor_bruto_importado')),
+                                                'liberado': format_brl(r.get('valor_liberado_duplicidade')),
+                                                'retido': format_brl(r.get('valor_aguardando_analise')),
+                                                'excluido': format_brl(r.get('valor_excluido_duplicidade')),
+                                            }
+                                            for r in filtered
+                                        ]
+                                        ui.table(
+                                            columns=columns,
+                                            rows=data,
+                                            row_key='medico',
+                                            pagination={'rowsPerPage': 10},
+                                        ).props('flat bordered dense').classes('w-full')
 
-                        def clear_filters() -> None:
-                            search.value = ''
-                            situation.value = 'TODOS'
-                            minimum.value = '0'
-                            render_results()
+                                def clear_filters() -> None:
+                                    search.value = ''
+                                    situation.value = 'TODOS'
+                                    minimum.value = '0'
+                                    render_results()
 
-                        search.on_value_change(lambda _: render_results())
-                        situation.on_value_change(lambda _: render_results())
-                        minimum.on_value_change(lambda _: render_results())
-                        clear_button.on_click(clear_filters)
-                        render_results()
+                                search.on_value_change(lambda _: render_results())
+                                situation.on_value_change(lambda _: render_results())
+                                minimum.on_value_change(lambda _: render_results())
+                                clear_button.on_click(clear_filters)
+                                render_results()
 
             except Exception:
                 if request == version:
