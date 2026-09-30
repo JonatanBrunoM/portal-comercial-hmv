@@ -27,12 +27,8 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     weekly_cache: dict[str, list[dict]] = {}
 
     with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-        with ui.column().classes("gap-0"):
-            ui.label("Explorar carteira").classes("text-h6 text-weight-bold")
-            ui.label(
-                "Escolha uma leitura analítica. Os valores são de orçamento e não representam faturamento realizado."
-            ).classes("text-body2 text-grey-7")
-        months = ui.select(options={}, label="Competência").props("dense outlined").classes("w-[200px]")
+        ui.label("Escolha uma leitura").classes("text-subtitle2 text-weight-bold")
+        months = ui.select(options={}, label="Competência").props("dense outlined").classes("w-[190px]")
     months.set_visibility(False)
 
     analysis_selector = ui.toggle(
@@ -87,7 +83,7 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
         if not row:
             return
         with content:
-            with ui.row().classes("w-full gap-3 flex-wrap"):
+            with ui.row().classes("w-full gap-2 flex-wrap"):
                 for label, field, count in (
                     ("Bruto importado", "valor_bruto_importado", "orcamentos_importados"),
                     ("Liberado por duplicidade", "valor_liberado_duplicidade", "orcamentos_liberados"),
@@ -95,35 +91,30 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
                     ("Excluído por duplicidade", "valor_excluido_duplicidade", "orcamentos_excluidos"),
                     ("Anulado confirmado", "valor_anulado", "orcamentos_anulados"),
                 ):
-                    with ui.card().classes("flex-1 min-w-[210px] p-4 gap-1"):
+                    with ui.card().classes("flex-1 min-w-[190px] p-3 gap-0 shadow-sm"):
                         ui.label(label).classes("text-caption text-grey-7")
                         ui.label(format_brl(row.get(field))).classes("text-h5 text-weight-bold")
                         ui.label(f'{int(row.get(count) or 0)} orçamentos').classes("text-caption")
             pending = int(row.get("orcamentos_aguardando_analise") or 0)
             incomplete = int(row.get("orcamentos_decisao_incompleta") or 0)
             if pending or incomplete:
-                with ui.card().classes("w-full p-4 gap-2"):
-                    ui.label("Atenção: fechamento ainda possui pendências").classes("text-subtitle1 text-weight-bold text-warning")
+                with ui.row().classes("w-full items-center gap-2 px-1 py-1"):
+                    ui.icon("warning_amber", size="18px").classes("text-warning")
                     ui.label(
-                        f"{pending} orçamento(s) retido(s) em análises pendentes; "
-                        f"{incomplete} com decisão de duplicidade incompleta. "
-                        "Esses valores não integram o total liberado. "
-                        "Consulte a aba Duplicidades para concluir as revisões."
-                    )
+                        f"{pending} retido(s) para análise · {incomplete} com decisão incompleta"
+                    ).classes("text-body2 text-weight-medium text-warning")
             annulled = int(row.get("orcamentos_anulados") or 0)
+            notes = []
             if annulled:
-                ui.label(
-                    f"{annulled} orçamento(s) anulado(s) confirmado(s) estão preservados para auditoria, "
-                    "mas não integram os totais gerenciais liberados."
-                ).classes("text-body2 text-grey-7")
-            if int(row.get("orcamentos_transcricao") or 0):
-                ui.label("Transcrições são apresentadas separadamente e não integram o total liberado.").classes("text-body2 text-grey-7")
-            if int(row.get("orcamentos_valor_nao_validado") or 0):
-                ui.label("Há orçamentos com valores financeiros não validados.").classes("text-warning")
-            ui.label(
-                "A classificação Particular/Pontal/Negativas e a cobertura da importação ainda "
-                "dependem de validação. A data do orçamento não é a data de realização."
-            ).classes("text-caption text-grey-7")
+                notes.append(f"{annulled} anulado(s) confirmado(s)")
+            transcriptions = int(row.get("orcamentos_transcricao") or 0)
+            if transcriptions:
+                notes.append(f"{transcriptions} transcrição(ões)")
+            unvalidated = int(row.get("orcamentos_valor_nao_validado") or 0)
+            if unvalidated:
+                notes.append(f"{unvalidated} valor(es) não validado(s)")
+            if notes:
+                ui.label(" · ".join(notes)).classes("text-caption text-grey-7")
 
     def render_weekly(month: str, rows: list[dict]) -> None:
         weekly_content.clear()
