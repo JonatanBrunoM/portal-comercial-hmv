@@ -2070,3 +2070,129 @@
         border: 1px solid #e7eef2;
     }
 }
+
+
+/* Etapa 20.3K · Central de apoio compacta */
+.portal-operator-support-section {
+    padding-bottom: 8px;
+}
+
+.portal-operator-support-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.portal-operator-support-card {
+    position: relative;
+    min-height: 126px;
+    padding: 14px 15px 13px;
+    overflow: hidden;
+    border: 1px solid #e4ebef;
+    border-radius: 14px;
+    background: rgba(255,255,255,.86);
+    transition:
+        transform .20s cubic-bezier(.2,.8,.2,1),
+        border-color .20s ease,
+        box-shadow .20s ease,
+        background-color .20s ease;
+}
+
+.portal-operator-support-card.is-link:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0,112,173,.22);
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(24,63,84,.08);
+}
+
+.portal-operator-support-card.is-muted {
+    opacity: .72;
+}
+
+.portal-operator-support-head {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.portal-operator-support-icon {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 10px;
+    background: #edf6fa;
+    color: var(--portal-primary-700);
+}
+
+.portal-operator-support-icon .q-icon {
+    font-size: 16px;
+}
+
+.portal-operator-support-count {
+    min-width: 24px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #f2f7f9;
+    color: var(--portal-primary-700);
+    font-size: 9px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.portal-operator-support-title {
+    margin-top: 11px;
+    color: var(--portal-ink-900);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.portal-operator-support-helper {
+    margin-top: 3px;
+    color: var(--portal-muted-500);
+    font-size: 10.5px;
+    line-height: 1.35;
+}
+
+.portal-operator-support-action,
+.portal-operator-support-status {
+    margin-top: 11px;
+    color: var(--portal-primary-700);
+    font-size: 9.5px;
+    font-weight: 750;
+}
+
+.portal-operator-support-action {
+    align-items: center;
+    gap: 5px;
+}
+
+.portal-operator-support-action .q-icon {
+    font-size: 13px;
+    transition: transform .18s ease;
+}
+
+.portal-operator-support-card.is-link:hover .portal-operator-support-action .q-icon {
+    transform: translateX(3px);
+}
+
+.portal-operator-support-status {
+    color: var(--portal-muted-500);
+}
+
+@media (max-width: 900px) {
+    .portal-operator-support-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .portal-operator-support-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-operator-support-card {
+        min-height: 112px;
+    }
+}
