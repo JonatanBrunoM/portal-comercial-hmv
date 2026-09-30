@@ -15,7 +15,8 @@ def _decimal(value: object) -> Decimal:
 
 
 def render_financial_composition(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
-    with ui.expansion("Composição financeira", icon="account_balance").classes("w-full border rounded-lg"):
+    with ui.column().classes("w-full gap-3"):
+        ui.label("Composição financeira").classes("text-h6 text-weight-bold")
         ui.label(
             "Decomposição dos orçamentos liberados entre procedimentos e materiais. "
             "Os valores são de orçamento e não representam faturamento realizado."
