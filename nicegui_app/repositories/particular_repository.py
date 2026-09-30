@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from nicegui_app.data.supabase_client import rest_rpc
+from nicegui_app.data.supabase_client import rest_rpc, rest_select
 
 from dataclasses import dataclass
 
@@ -1081,6 +1081,86 @@ def list_operational_budgets(
         )
 
     return result
+
+
+
+def find_resumable_sheet_sync_v3(
+    *,
+    spreadsheet_id: str,
+    preview_sha256: str,
+) -> dict[str, Any] | None:
+    """Localiza um V3 PROCESSING somente quando pertence à mesma fotografia."""
+    normalized_spreadsheet_id = str(spreadsheet_id or "").strip()
+    normalized_sha = str(preview_sha256 or "").strip().lower()
+    if not normalized_spreadsheet_id:
+        raise ValueError("spreadsheet_id é obrigatório.")
+    if len(normalized_sha) != 64:
+        raise ValueError("preview_sha256 inválido.")
+
+    rows = rest_select(
+        "particular_sheet_syncs",
+        select="id,spreadsheet_id,status,metadata,created_at",
+        params={
+            "spreadsheet_id": f"eq.{normalized_spreadsheet_id}",
+            "status": "eq.PROCESSING",
+            "order": "created_at.desc",
+            "limit": "10",
+        },
+        timeout=30.0,
+    )
+
+    matches = []
+    for row in rows:
+        metadata = row.get("metadata")
+        if not isinstance(metadata, dict):
+            continue
+        if str(metadata.get("protocol") or "").strip() != "GRADE_SYNC_V3":
+            continue
+        if str(metadata.get("preview_sha256") or "").strip().lower() != normalized_sha:
+            continue
+        matches.append(row)
+
+    if len(matches) > 1:
+        raise RuntimeError(
+            "Há mais de uma sincronização V3 aberta para a mesma fotografia; revisão manual obrigatória."
+        )
+    return matches[0] if matches else None
+
+
+def list_completed_sheet_sync_batches_v3(*, sync_id: str) -> set[int]:
+    """Retorna os lotes já confirmados de uma sincronização V3 aberta."""
+    sync_id = _require_uuid(sync_id, field="sync_id")
+    rows = rest_select(
+        "particular_sheet_sync_batches",
+        select="batch_number,status",
+        params={
+            "sync_id": f"eq.{sync_id}",
+            "order": "batch_number.asc",
+        },
+        timeout=30.0,
+    )
+
+    failed = [
+        int(row["batch_number"])
+        for row in rows
+        if str(row.get("status") or "").strip().upper() == "FAILED"
+    ]
+    processing = [
+        int(row["batch_number"])
+        for row in rows
+        if str(row.get("status") or "").strip().upper() == "PROCESSING"
+    ]
+    if failed or processing:
+        raise RuntimeError(
+            "A sincronização V3 possui lote incompleto/fracassado; revisão manual obrigatória antes da retomada."
+        )
+
+    completed = {
+        int(row["batch_number"])
+        for row in rows
+        if str(row.get("status") or "").strip().upper() == "COMPLETED"
+    }
+    return completed
 
 
 def open_sheet_sync_v3(
