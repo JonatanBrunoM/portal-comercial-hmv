@@ -36,10 +36,25 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     rows_by_month: dict[str, dict] = {}
     weekly_cache: dict[str, list[dict]] = {}
     weekly_content = ui.column().classes("w-full gap-3")
-    render_doctor_dashboard(access, months, rows_by_month)
-    render_financial_composition(access, months, rows_by_month)
-    render_doctor_financial_composition(access, months, rows_by_month)
-    render_item_dashboard(access, months, rows_by_month)
+    with ui.tabs().classes("w-full") as analysis_tabs:
+        financial_tab = ui.tab("Financeiro", icon="account_balance")
+        doctors_tab = ui.tab("Médicos", icon="medical_services")
+        items_tab = ui.tab("Itens", icon="inventory_2")
+        evolution_tab = ui.tab("Evolução", icon="timeline")
+
+    with ui.tab_panels(analysis_tabs, value=financial_tab).classes("w-full bg-transparent p-0"):
+        with ui.tab_panel(financial_tab).classes("px-0 py-3"):
+            render_financial_composition(access, months, rows_by_month)
+        with ui.tab_panel(doctors_tab).classes("px-0 py-3"):
+            render_doctor_dashboard(access, months, rows_by_month)
+            render_doctor_financial_composition(access, months, rows_by_month)
+        with ui.tab_panel(items_tab).classes("px-0 py-3"):
+            render_item_dashboard(access, months, rows_by_month)
+        with ui.tab_panel(evolution_tab).classes("px-0 py-3"):
+            ui.label("Evolução financeira do mês").classes("text-h6 text-weight-bold")
+            ui.label(
+                "Leitura por faixas da data de criação do orçamento; não representa data de realização."
+            ).classes("text-body2 text-grey-7")
     selection_version = 0
 
     def render_month(value: str | None) -> None:
