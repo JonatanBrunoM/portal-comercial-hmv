@@ -70,6 +70,7 @@ _REQUIRED_SHEET_FIELDS = {
     'GRADE PONTAL': {'procedure_date', 'notice_number', 'budget_number'},
 }
 _LOCATION_BY_SHEET = {'GRADE CIRÚRGICA': 'SEDE', 'GRADE PONTAL': 'PONTAL', 'Negativas': None}
+_SOURCE_SHEET_BY_SHEET = {'GRADE CIRÚRGICA': 'GRADE_SEDE', 'Negativas': 'NEGATIVAS', 'GRADE PONTAL': 'GRADE_PONTAL'}
 _CACHE_SECONDS = 300
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] = {'id': None, 'until': 0.0, 'value': None}
@@ -216,7 +217,7 @@ def _build_occurrence_payload(
     if budget_reference_status == 'UNIDENTIFIED':
         return None
     payload = {
-        'source_sheet': sheet_name,
+        'source_sheet': _SOURCE_SHEET_BY_SHEET[sheet_name],
         'source_row_number': row_number,
         'budget_number': int(budget_number) if budget_number is not None else None,
         'budget_reference_status': budget_reference_status,
