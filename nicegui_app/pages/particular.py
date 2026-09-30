@@ -7,6 +7,7 @@ from typing import Any
 from nicegui import ui
 
 from nicegui_app.layout import portal_layout
+from nicegui_app.hero_art import render_hero_art
 from nicegui_app.services.particular_service import (
     ParticularAccessDenied,
     decide_particular_relation,
@@ -447,47 +448,46 @@ def render_particular(user: dict) -> None:
 
     with portal_layout(user=user, active="particular"):
         with ui.column().classes("w-full gap-3"):
-            with ui.card().classes("w-full p-0 overflow-hidden shadow-sm"):
-                with ui.row().classes("w-full items-center justify-between gap-4 px-5 pt-4 pb-3 flex-wrap"):
-                    with ui.row().classes("items-center gap-3"):
-                        with ui.element("div").classes(
-                            "w-10 h-10 rounded-lg bg-blue-1 flex items-center justify-center"
-                        ):
-                            ui.icon("insights", size="24px").classes("text-primary")
-                        with ui.column().classes("gap-0"):
-                            with ui.row().classes("items-center gap-2"):
-                                ui.label("Particular").classes("text-h5 text-weight-bold")
-                                ui.badge(
-                                    "Gestor" if access.module_role == "MANAGER" else "Operador",
-                                    color="primary",
-                                ).props("outline")
-                            ui.label(
-                                "Carteira · operação · inteligência"
-                            ).classes("text-caption text-grey-7")
-
-                    if pending_count:
-                        with ui.row().classes("items-center gap-2"):
-                            ui.icon("fact_check", size="18px").classes("text-warning")
-                            ui.label(
-                                f"{pending_count} revisão(ões) pendente(s)"
-                            ).classes("text-caption text-weight-medium text-grey-8")
-
-                with ui.tabs().props("dense no-caps indicator-color=transparent active-color=primary").classes(
-                    "w-full px-4 pb-2 bg-white"
-                ) as tabs:
-                    overview_tab = ui.tab("Visão geral", icon="space_dashboard").classes(
-                        "rounded-lg px-4"
+            with ui.element("section").classes("portal-particular-hero"):
+                with ui.column().classes("portal-particular-hero-copy"):
+                    ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
+                    ui.label("Da proposta à jornada operacional.").classes(
+                        "portal-particular-hero-title"
                     )
-                    operation_tab = ui.tab("Carteira", icon="receipt_long").classes(
-                        "rounded-lg px-4"
-                    )
+                    ui.label(
+                        "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
+                    ).classes("portal-particular-hero-description")
+
+                with ui.element("div").classes("portal-particular-hero-side"):
+                    for icon, title, subtitle in (
+                        ("account_balance_wallet", "Carteira", "visão consolidada"),
+                        ("timeline", "Operação", "evidências rastreáveis"),
+                        (
+                            "fact_check",
+                            "Revisões",
+                            f"{pending_count} pendente(s)" if pending_count else "sem pendências",
+                        ),
+                    ):
+                        with ui.element("div").classes("portal-particular-hero-point"):
+                            with ui.element("div").classes("portal-particular-hero-point-icon"):
+                                ui.icon(icon)
+                            with ui.column().classes("portal-particular-hero-point-copy"):
+                                ui.label(title).classes("portal-particular-hero-point-title")
+                                ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
+
+                render_hero_art(variant="particular", icon="insights")
+
+            with ui.element("nav").classes("portal-particular-workspace-nav"):
+                with ui.tabs().props(
+                    "dense no-caps indicator-color=transparent active-color=primary"
+                ).classes("portal-particular-tabs") as tabs:
+                    overview_tab = ui.tab("Visão geral", icon="space_dashboard")
+                    operation_tab = ui.tab("Carteira", icon="receipt_long")
                     review_tab = ui.tab(
                         f"Revisões ({pending_count})" if pending_count else "Revisões",
                         icon="fact_check",
-                    ).classes("rounded-lg px-4")
-                    import_tab = ui.tab("Dados", icon="database").classes(
-                        "rounded-lg px-4"
                     )
+                    import_tab = ui.tab("Dados", icon="database")
 
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
