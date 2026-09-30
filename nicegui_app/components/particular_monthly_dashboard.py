@@ -9,7 +9,6 @@ from nicegui_app.services.particular_monthly_dashboard import (
 )
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.components.particular_doctor_dashboard import render_doctor_dashboard
-from nicegui_app.components.particular_doctor_financial_composition import render_doctor_financial_composition
 from nicegui_app.components.particular_financial_composition import render_financial_composition
 from nicegui_app.components.particular_item_dashboard import render_item_dashboard
 
@@ -49,8 +48,6 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
     doctors_panel = ui.column().classes("w-full gap-4 pt-2")
     with doctors_panel:
         render_doctor_dashboard(access, months, rows_by_month)
-        ui.separator().classes("my-2")
-        render_doctor_financial_composition(access, months, rows_by_month)
 
     items_panel = ui.column().classes("w-full gap-4 pt-2")
     with items_panel:
