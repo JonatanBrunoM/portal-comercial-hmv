@@ -116,7 +116,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                     "event_busy",
                 )
 
-            with ui.row().classes("w-full gap-4 items-stretch flex-wrap"):
+            with ui.row().classes("w-full gap-4 items-start flex-wrap"):
                 with ui.card().classes("flex-[2] min-w-[520px] p-5 gap-4 shadow-sm"):
                     with ui.row().classes("w-full items-start justify-between gap-3 flex-wrap"):
                         with ui.column().classes("gap-1"):
@@ -161,7 +161,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                                     if competence
                                     else "Sem data"
                                 )
-                                with ui.card().classes("flex-1 min-w-[135px] p-3 gap-0 bg-grey-1"):
+                                with ui.card().classes("w-[145px] min-w-[145px] p-3 gap-0 bg-grey-1"):
                                     ui.label(label).classes("text-caption text-grey-7")
                                     ui.label(
                                         f'{_int(item.get("budgets"))} · {_pct(item.get("pct_budgets"))}'
@@ -297,13 +297,14 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
     ui.separator().classes("my-2")
 
     with ui.expansion(
-        "Análises financeiras e detalhamentos",
+        "Composições por médico, itens e análise financeira",
         icon="analytics",
-        value=False,
+        value=True,
     ).classes("w-full border rounded-lg"):
         with ui.column().classes("w-full p-2 gap-4"):
             ui.label(
-                "Análises complementares preservadas do painel anterior."
+                "As composições detalhadas continuam disponíveis e usam a mesma base financeira "
+                "validada do painel anterior."
             ).classes("text-body2 text-grey-7")
             render_particular_monthly_dashboard(access)
 
