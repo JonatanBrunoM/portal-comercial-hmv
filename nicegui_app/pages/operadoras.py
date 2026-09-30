@@ -628,6 +628,14 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
             asyncio.create_task(_animate_entry())
 
+        def _back_to_journey() -> None:
+            journey_state["selected"] = None
+            render_journey_workspace.refresh()
+
+        def _back_to_plans() -> None:
+            plan_state["selected"] = None
+            render_plan_workspace.refresh()
+
         @ui.refreshable
         def render_journey_workspace() -> None:
             selected = journey_state["selected"]
@@ -680,12 +688,7 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
-                            on_click=lambda: _switch_workspace(
-                                ".portal-operator-journey-stage",
-                                journey_state,
-                                None,
-                                render_journey_workspace.refresh,
-                            ),
+                            on_click=_back_to_journey,
                         ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
                             ui.icon("biotech" if is_udi else "fact_check")
@@ -781,12 +784,7 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
-                            on_click=lambda: _switch_workspace(
-                                ".portal-operator-plan-stage",
-                                plan_state,
-                                None,
-                                render_plan_workspace.refresh,
-                            ),
+                            on_click=_back_to_plans,
                         ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
                             ui.icon("badge")
