@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 from urllib.parse import urlparse
 
@@ -566,9 +565,6 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             )
         )
 
-        journey_state: dict[str, dict[str, Any] | None] = {"selected": None}
-        plan_state: dict[str, dict[str, Any] | None] = {"selected": None}
-
         udi_coverage = next(
             (
                 row
@@ -583,126 +579,33 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
         )
 
-        def _detail_field(label: str, value: str) -> None:
+        def _modal_field(label: str, value: str) -> None:
             if not value:
                 return
-            with ui.element("div").classes("portal-operator-rule-field"):
-                ui.label(label).classes("portal-operator-rule-label")
-                ui.label(value).classes("portal-operator-rule-value")
+            with ui.element("div").classes("portal-operator-modal-field"):
+                ui.label(label).classes("portal-operator-modal-label")
+                ui.label(value).classes("portal-operator-modal-value")
 
-        async def _switch_workspace(
-            selector: str,
-            state: dict[str, dict[str, Any] | None],
-            value: dict[str, Any] | None,
-            refresh,
-        ) -> None:
-            # Never let a cosmetic animation block navigation. The state change
-            # is the source of truth; JavaScript only decorates the transition.
-            try:
-                await ui.run_javascript(
-                    f"""const el=document.querySelector('{selector}');
-                    if(el){{el.classList.remove('is-entering');el.classList.add('is-leaving');}}""",
-                    timeout=0.5,
-                )
-            except Exception:
-                pass
-
-            await asyncio.sleep(0.16)
-            state["selected"] = value
-            refresh()
-
-            async def _animate_entry() -> None:
-                await asyncio.sleep(0.03)
-                try:
-                    await ui.run_javascript(
-                        f"""const el=document.querySelector('{selector}');
-                        if(el){{
-                            el.classList.remove('is-leaving');
-                            el.classList.add('is-entering');
-                            setTimeout(()=>el.classList.remove('is-entering'),360);
-                        }}""",
-                        timeout=0.5,
-                    )
-                except Exception:
-                    pass
-
-            asyncio.create_task(_animate_entry())
-
-        def _back_to_journey() -> None:
-            journey_state["selected"] = None
-            render_journey_workspace.refresh()
-
-        def _back_to_plans() -> None:
-            plan_state["selected"] = None
-            render_plan_workspace.refresh()
-
-        @ui.refreshable
-        def render_journey_workspace() -> None:
-            selected = journey_state["selected"]
-
-            if selected is None:
-                if not detail.autorizacoes:
-                    ui.label("Nenhum fluxo operacional cadastrado.").classes(
-                        "portal-operator-rule-empty"
-                    )
-                    return
-
-                with ui.element("div").classes("portal-operator-reference-layout portal-operator-workspace-grid"):
-                    for row in detail.autorizacoes:
-                        title = _authorization_title(row)
-                        with ui.element("article").classes(
-                            "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
-                        ).on(
-                            "click",
-                            lambda _event, selected_row=row: _switch_workspace(
-                                ".portal-operator-journey-stage",
-                                journey_state,
-                                selected_row,
-                                render_journey_workspace.refresh,
-                            ),
-                        ):
-                            with ui.row().classes("portal-operator-reference-head"):
-                                with ui.element("div").classes("portal-operator-resource-icon"):
-                                    ui.icon(
-                                        "biotech"
-                                        if "UDI" in _text(row, "codigo").upper()
-                                        else "fact_check"
-                                    )
-                                ui.label(title).classes("portal-operator-resource-title")
-                                ui.icon("arrow_forward").classes("text-primary")
-
-                            ui.label(_authorization_summary(row)).classes(
-                                "portal-operator-resource-subtitle"
-                            )
-                            ui.label("Consultar orientação completa").classes(
-                                "portal-operator-resource-meta"
-                            )
-                return
-
-            row = selected
+        def _open_authorization_modal(row: dict[str, Any]) -> None:
             code = _text(row, "codigo").upper()
             is_udi = "UDI" in code
-
-            with ui.element("article").classes("portal-operator-rule-card portal-operator-workspace-detail"):
-                with ui.row().classes("portal-operator-detail-header"):
-                    with ui.row().classes("portal-operator-detail-heading"):
-                        ui.button(
-                            icon="arrow_back",
-                            on_click=_back_to_journey,
-                        ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
-                        with ui.element("div").classes("portal-operator-rule-icon"):
+            with ui.dialog() as dialog, ui.card().classes("portal-operator-modal-card"):
+                with ui.row().classes("portal-operator-modal-header"):
+                    with ui.row().classes("portal-operator-modal-heading"):
+                        with ui.element("div").classes("portal-operator-modal-icon"):
                             ui.icon("biotech" if is_udi else "fact_check")
-                        with ui.column().classes("portal-operator-rule-head-copy"):
+                        with ui.column().classes("gap-0"):
                             ui.label(_authorization_title(row)).classes(
-                                "portal-operator-rule-title"
+                                "portal-operator-modal-title"
                             )
-                            ui.label("ORIENTAÇÃO OPERACIONAL").classes(
-                                "portal-operator-rule-count"
+                            ui.label("Sul América · Orientação operacional").classes(
+                                "portal-operator-modal-subtitle"
                             )
+                    ui.button(icon="close", on_click=dialog.close).props(
+                        "flat round dense aria-label='Fechar'"
+                    ).classes("portal-operator-modal-close")
 
-                with ui.element("div").classes(
-                    "portal-operator-rule-fields portal-operator-detail-fields"
-                ):
+                with ui.element("div").classes("portal-operator-modal-grid"):
                     for label, keys in [
                         ("Precisa autorização", ("necessita_autorizacao",)),
                         ("Quando", ("momento_autorizacao",)),
@@ -710,116 +613,70 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         ("Canal", ("meio_solicitacao",)),
                         ("Prazo", ("prazo",)),
                     ]:
-                        _detail_field(label, _display_value(row, *keys))
+                        _modal_field(label, _display_value(row, *keys))
 
                 orientation = _text(row, "orientacao")
                 observations = _text(row, "observacoes")
                 if orientation:
-                    with ui.element("div").classes("portal-operator-reference-column"):
-                        ui.label("ORIENTAÇÃO").classes("portal-operator-reference-kicker")
-                        ui.label(orientation).classes("portal-operator-resource-subtitle")
+                    with ui.element("section").classes("portal-operator-modal-section"):
+                        ui.label("ORIENTAÇÃO").classes("portal-operator-modal-kicker")
+                        ui.label(orientation).classes("portal-operator-modal-copy")
                 if observations:
-                    with ui.element("div").classes("portal-operator-reference-column"):
-                        ui.label("OBSERVAÇÕES").classes("portal-operator-reference-kicker")
-                        ui.label(observations).classes("portal-operator-resource-subtitle")
+                    with ui.element("section").classes("portal-operator-modal-section"):
+                        ui.label("OBSERVAÇÕES").classes("portal-operator-modal-kicker")
+                        ui.label(observations).classes("portal-operator-modal-copy")
 
                 if is_udi and udi_coverage:
-                    with ui.element("div").classes("portal-operator-reference-column"):
-                        ui.label("REGRAS PARA EXAMES").classes(
-                            "portal-operator-reference-kicker"
-                        )
+                    with ui.element("section").classes("portal-operator-modal-section"):
+                        ui.label("REGRAS PARA EXAMES").classes("portal-operator-modal-kicker")
                         ui.label(_text(udi_coverage, "observacoes")).classes(
-                            "portal-operator-resource-subtitle"
+                            "portal-operator-modal-copy"
                         )
                         restriction = _text(udi_coverage, "restricoes_cobertura")
                         if restriction:
-                            ui.label(restriction).classes("portal-operator-resource-meta")
+                            ui.label(restriction).classes("portal-operator-modal-copy")
 
-        @ui.refreshable
-        def render_plan_workspace() -> None:
-            selected = plan_state["selected"]
+            dialog.open()
 
-            if selected is None:
-                with ui.element("div").classes("portal-operator-reference-layout portal-operator-workspace-grid"):
-                    for plan in detail.planos[:4]:
-                        coverage = _coverage_for_plan(plan, detail.coberturas)
-                        accommodation = _text(coverage, "acomodacao")
-                        with ui.element("article").classes(
-                            "portal-operator-reference-column portal-operator-workspace-card portal-operator-plan-card cursor-pointer"
-                        ).on(
-                            "click",
-                            lambda _event, selected_plan=plan: _switch_workspace(
-                                ".portal-operator-plan-stage",
-                                plan_state,
-                                selected_plan,
-                                render_plan_workspace.refresh,
-                            ),
-                        ):
-                            with ui.row().classes("portal-operator-reference-head"):
-                                ui.label(
-                                    _text(plan, "nome_padronizado", "nome") or "Plano"
-                                ).classes("portal-operator-resource-title")
-                                with ui.row().classes("items-center gap-2"):
-                                    if _text(plan, "codigo"):
-                                        ui.label(_text(plan, "codigo")).classes(
-                                            "portal-operator-reference-count"
-                                        )
-                                    ui.icon("arrow_forward").classes("text-primary")
-
-                            ui.label(
-                                accommodation
-                                or _text(plan, "tipo_plano")
-                                or "Sem regra de acomodação"
-                            ).classes("portal-operator-resource-subtitle")
-                            ui.label("Consultar regras do plano").classes(
-                                "portal-operator-resource-meta"
-                            )
-                return
-
-            plan = selected
+        def _open_plan_modal(plan: dict[str, Any]) -> None:
             coverage = _coverage_for_plan(plan, detail.coberturas)
-
-            with ui.element("article").classes("portal-operator-rule-card portal-operator-workspace-detail"):
-                with ui.row().classes("portal-operator-detail-header"):
-                    with ui.row().classes("portal-operator-detail-heading"):
-                        ui.button(
-                            icon="arrow_back",
-                            on_click=_back_to_plans,
-                        ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
-                        with ui.element("div").classes("portal-operator-rule-icon"):
+            with ui.dialog() as dialog, ui.card().classes("portal-operator-modal-card"):
+                with ui.row().classes("portal-operator-modal-header"):
+                    with ui.row().classes("portal-operator-modal-heading"):
+                        with ui.element("div").classes("portal-operator-modal-icon"):
                             ui.icon("badge")
-                        with ui.column().classes("portal-operator-rule-head-copy"):
+                        with ui.column().classes("gap-0"):
                             ui.label(
                                 _text(plan, "nome_padronizado", "nome") or "Plano"
-                            ).classes("portal-operator-rule-title")
+                            ).classes("portal-operator-modal-title")
                             ui.label(
-                                f"PLANO {_text(plan, 'codigo')}"
+                                f"Sul América · Plano {_text(plan, 'codigo')}"
                                 if _text(plan, "codigo")
-                                else "DETALHES DO PLANO"
-                            ).classes("portal-operator-rule-count")
+                                else "Sul América · Plano"
+                            ).classes("portal-operator-modal-subtitle")
+                    ui.button(icon="close", on_click=dialog.close).props(
+                        "flat round dense aria-label='Fechar'"
+                    ).classes("portal-operator-modal-close")
 
                 if coverage:
-                    with ui.element("div").classes(
-                        "portal-operator-rule-fields portal-operator-detail-fields"
-                    ):
-                        _detail_field("Acomodação", _text(coverage, "acomodacao"))
-                        _detail_field("Acompanhante", _text(coverage, "acompanhante"))
-                        _detail_field(
-                            "Restrições",
-                            _text(coverage, "restricoes_cobertura"),
-                        )
+                    with ui.element("div").classes("portal-operator-modal-grid"):
+                        _modal_field("Acomodação", _text(coverage, "acomodacao"))
+                        _modal_field("Acompanhante", _text(coverage, "acompanhante"))
+                        _modal_field("Restrições", _text(coverage, "restricoes_cobertura"))
 
                     notes = _text(coverage, "observacoes")
                     if notes:
-                        with ui.element("div").classes("portal-operator-reference-column"):
+                        with ui.element("section").classes("portal-operator-modal-section"):
                             ui.label("ORIENTAÇÕES DO PLANO").classes(
-                                "portal-operator-reference-kicker"
+                                "portal-operator-modal-kicker"
                             )
-                            ui.label(notes).classes("portal-operator-resource-subtitle")
+                            ui.label(notes).classes("portal-operator-modal-copy")
                 else:
                     ui.label("Nenhuma regra específica cadastrada para este plano.").classes(
                         "portal-operator-rule-empty"
                     )
+
+            dialog.open()
 
         # Breadcrumb / contextual actions.
         with ui.row().classes("portal-operator-cockpit-nav"):
@@ -983,17 +840,48 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     tone="success",
                 )
 
-        # 2. Operational journey as an in-place mini workspace.
+        # 2. Operational journey: compact cards with native detail modal.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "COMO ATENDER",
                 "Jornada operacional",
-                "Selecione um fluxo para consultar a orientação no próprio espaço da jornada.",
+                "Selecione um fluxo para consultar a orientação completa.",
             )
-            with ui.element("div").classes(
-                "portal-operator-workspace-stage portal-operator-journey-stage"
-            ):
-                render_journey_workspace()
+
+            if detail.autorizacoes:
+                with ui.element("div").classes(
+                    "portal-operator-reference-layout portal-operator-workspace-grid"
+                ):
+                    for row in detail.autorizacoes:
+                        with ui.element("article").classes(
+                            "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
+                        ).on(
+                            "click",
+                            lambda _event, selected_row=row: _open_authorization_modal(
+                                selected_row
+                            ),
+                        ):
+                            with ui.row().classes("portal-operator-reference-head"):
+                                with ui.element("div").classes("portal-operator-resource-icon"):
+                                    ui.icon(
+                                        "biotech"
+                                        if "UDI" in _text(row, "codigo").upper()
+                                        else "fact_check"
+                                    )
+                                ui.label(_authorization_title(row)).classes(
+                                    "portal-operator-resource-title"
+                                )
+                                ui.icon("arrow_forward").classes("text-primary")
+                            ui.label(_authorization_summary(row)).classes(
+                                "portal-operator-resource-subtitle"
+                            )
+                            ui.label("Consultar orientação completa").classes(
+                                "portal-operator-resource-meta"
+                            )
+            else:
+                ui.label("Nenhum fluxo operacional cadastrado.").classes(
+                    "portal-operator-rule-empty"
+                )
 
             if alert_rows:
                 ui.label("ATENÇÃO OPERACIONAL").classes(
@@ -1017,17 +905,44 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             "portal-operator-quick-helper"
                         )
 
-        # 3. Plans as an in-place mini workspace.
+        # 3. Plans: compact cards with native detail modal.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "PLANOS",
                 "Planos e acomodações",
-                "Selecione um plano para consultar suas regras no próprio espaço.",
+                "Selecione um plano para consultar suas regras completas.",
             )
+
             with ui.element("div").classes(
-                "portal-operator-workspace-stage portal-operator-plan-stage"
+                "portal-operator-reference-layout portal-operator-workspace-grid"
             ):
-                render_plan_workspace()
+                for plan in detail.planos[:4]:
+                    coverage = _coverage_for_plan(plan, detail.coberturas)
+                    accommodation = _text(coverage, "acomodacao")
+                    with ui.element("article").classes(
+                        "portal-operator-reference-column portal-operator-workspace-card portal-operator-plan-card cursor-pointer"
+                    ).on(
+                        "click",
+                        lambda _event, selected_plan=plan: _open_plan_modal(selected_plan),
+                    ):
+                        with ui.row().classes("portal-operator-reference-head"):
+                            ui.label(
+                                _text(plan, "nome_padronizado", "nome") or "Plano"
+                            ).classes("portal-operator-resource-title")
+                            with ui.row().classes("items-center gap-2"):
+                                if _text(plan, "codigo"):
+                                    ui.label(_text(plan, "codigo")).classes(
+                                        "portal-operator-reference-count"
+                                    )
+                                ui.icon("arrow_forward").classes("text-primary")
+                        ui.label(
+                            accommodation
+                            or _text(plan, "tipo_plano")
+                            or "Sem regra de acomodação"
+                        ).classes("portal-operator-resource-subtitle")
+                        ui.label("Consultar regras do plano").classes(
+                            "portal-operator-resource-meta"
+                        )
 
             if detail.documentos:
                 with ui.element("div").classes("portal-operator-reference-column"):
