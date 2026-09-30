@@ -448,30 +448,32 @@ def render_particular(user: dict) -> None:
     with portal_layout(user=user, active="particular"):
         with ui.column().classes("w-full gap-3"):
             with ui.card().classes("w-full p-0 overflow-hidden shadow-sm"):
-                with ui.row().classes("w-full items-center justify-between gap-4 px-5 py-4 flex-wrap"):
-                    with ui.column().classes("gap-0"):
-                        ui.label("GESTÃO COMERCIAL  /  PARTICULAR").classes(
-                            "text-caption text-weight-bold text-primary"
-                        )
-                        with ui.row().classes("items-center gap-3"):
-                            ui.label("Particular").classes("text-h4 text-weight-bold")
-                            ui.badge(
-                                "Gestor" if access.module_role == "MANAGER" else "Operador",
-                                color="primary",
-                            ).props("outline")
-                        ui.label(
-                            "Inteligência operacional e financeira da carteira."
-                        ).classes("text-body2 text-grey-7")
+                with ui.row().classes("w-full items-center justify-between gap-4 px-5 pt-4 pb-3 flex-wrap"):
+                    with ui.row().classes("items-center gap-3"):
+                        with ui.element("div").classes(
+                            "w-10 h-10 rounded-lg bg-blue-1 flex items-center justify-center"
+                        ):
+                            ui.icon("insights", size="24px").classes("text-primary")
+                        with ui.column().classes("gap-0"):
+                            with ui.row().classes("items-center gap-2"):
+                                ui.label("Particular").classes("text-h5 text-weight-bold")
+                                ui.badge(
+                                    "Gestor" if access.module_role == "MANAGER" else "Operador",
+                                    color="primary",
+                                ).props("outline")
+                            ui.label(
+                                "Carteira · operação · inteligência"
+                            ).classes("text-caption text-grey-7")
 
-                    with ui.row().classes("items-center gap-2"):
-                        ui.label(
-                            f"{pending_count} duplicidade(s) pendente(s)"
-                            if pending_count
-                            else "Sem duplicidades pendentes"
-                        ).classes("text-caption text-grey-7")
+                    if pending_count:
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("fact_check", size="18px").classes("text-warning")
+                            ui.label(
+                                f"{pending_count} revisão(ões) pendente(s)"
+                            ).classes("text-caption text-weight-medium text-grey-8")
 
-                with ui.tabs().props("dense no-caps indicator-color=transparent").classes(
-                    "w-full px-4 py-2 border-t border-grey-3 bg-grey-1 rounded-b-lg"
+                with ui.tabs().props("dense no-caps indicator-color=transparent active-color=primary").classes(
+                    "w-full px-4 pb-2 bg-white"
                 ) as tabs:
                     overview_tab = ui.tab("Visão geral", icon="space_dashboard").classes(
                         "rounded-lg px-4"
