@@ -34,9 +34,9 @@ def _money(value: object) -> Decimal:
 def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     """Renderiza tabela de médicos ligada ao mesmo seletor do painel mensal."""
     with ui.column().classes('w-full gap-3'):
-        ui.label('Visão por médico').classes('text-h6 text-weight-bold')
-        ui.label('Valores totais dos orçamentos associados ao médico, não honorários nem receita realizada.').classes('text-body2 text-grey-7')
-        ui.label('Registros com CONSULTORIO no nome do médico são exibidos separadamente como transcrições.').classes('text-body2 text-grey-7')
+        with ui.row().classes('w-full items-center justify-between gap-3'):
+            ui.label('Visão por médico').classes('text-h6 text-weight-bold')
+            ui.label('Carteira por médico').classes('text-caption text-grey-7')
         status = ui.column().classes('w-full gap-2')
         table_area = ui.column().classes('w-full gap-3')
         version = 0
@@ -79,11 +79,9 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                         excluded = sum(int(r.get('orcamentos_excluidos') or 0) for r in transcription)
                         incomplete = sum(int(r.get('orcamentos_decisao_incompleta') or 0) for r in transcription)
                         ui.label(
-                            f'CONSULTORIO identificado: {identified} orçamento(s) · {format_brl(total)} bruto'
-                        ).classes('text-subtitle2')
-                        ui.label(
-                            f'Classificados como transcrição: {classified} orçamento(s) · {format_brl(classified_value)}'
-                        ).classes('text-body2 text-grey-8')
+                            f'CONSULTORIO · {identified} orçamento(s) · {format_brl(total)} bruto · '
+                            f'{classified} transcrição(ões) · {format_brl(classified_value)}'
+                        ).classes('text-caption text-grey-7')
                         if pending or excluded or incomplete:
                             ui.label(
                                 f'Os demais registros com CONSULTORIO permanecem em classificações prioritárias: '
@@ -126,5 +124,5 @@ def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, m
                         ui.label('Não foi possível carregar a composição por médico. Confira a visão e as permissões no Supabase.').classes('text-negative')
 
         month_select.on_value_change(lambda event: load(event.value))
-        ui.button('Atualizar composição por médico', icon='refresh', on_click=lambda: load(month_select.value, True)).props('outline no-caps')
+        ui.button('Atualizar médicos', icon='refresh', on_click=lambda: load(month_select.value, True)).props('flat dense no-caps')
         ui.timer(0.2, lambda: load(month_select.value), once=True)
