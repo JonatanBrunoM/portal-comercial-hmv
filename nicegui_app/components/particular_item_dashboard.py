@@ -16,7 +16,8 @@ def _decimal(value: object) -> Decimal:
 
 def render_item_dashboard(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     """Renderiza composição por código ligada ao seletor mensal principal."""
-    with ui.expansion("Composição por itens dos orçamentos", icon="inventory_2").classes("w-full border rounded-lg"):
+    with ui.column().classes("w-full gap-3"):
+        ui.label("Composição por itens").classes("text-h6 text-weight-bold")
         ui.label(
             "Detalhamento dos itens dos orçamentos liberados. Os valores representam somente "
             "os itens disponíveis na base e não o valor integral dos orçamentos."
