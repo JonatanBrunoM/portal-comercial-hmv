@@ -423,29 +423,16 @@ def _rule_card(
             ).classes("portal-operator-rule-more")
 
 
-def _operational_card(
-    icon: str,
-    title: str,
-    row: dict[str, Any],
-    fields: list[tuple[str, tuple[str, ...]]],
-) -> None:
-    with ui.element("article").classes("portal-operator-rule-card"):
-        with ui.row().classes("portal-operator-rule-head"):
-            with ui.element("div").classes("portal-operator-rule-icon"):
-                ui.icon(icon)
-            with ui.column().classes("portal-operator-rule-head-copy"):
-                ui.label(title).classes("portal-operator-rule-title")
-                code = _text(row, "codigo")
-                if code:
-                    ui.label(code).classes("portal-operator-rule-count")
-
-        with ui.element("div").classes("portal-operator-rule-fields"):
-            for label, keys in fields:
-                value = _text(row, *keys)
-                if value:
-                    with ui.element("div").classes("portal-operator-rule-field"):
-                        ui.label(label).classes("portal-operator-rule-label")
-                        ui.label(value).classes("portal-operator-rule-value")
+def _display_value(row: dict[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = row.get(key)
+        if value is True:
+            return "Sim"
+        if value is False:
+            return "Não"
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
 
 
 def _authorization_title(row: dict[str, Any]) -> str:
@@ -457,19 +444,56 @@ def _authorization_title(row: dict[str, Any]) -> str:
     if "INTERNACAO" in code:
         return "Internação"
     if "CONSULTA" in code or "EMERG" in code:
-        return "Consulta na Emergência"
+        return "Emergência"
     return "Autorização"
 
 
-def _coverage_title(row: dict[str, Any]) -> str:
-    code = _text(row, "codigo").upper()
-    if "NEUROPEDIATRIA" in code:
-        return "Alerta — Neuropediatria"
-    if "UDI" in code:
-        return "UDI / Exames"
-    if _text(row, "plano_id"):
-        return f"Plano {_text(row, 'codigo').split('-')[1] if '-' in _text(row, 'codigo') else ''}".strip()
-    return "Cobertura / restrição"
+def _authorization_summary(row: dict[str, Any]) -> str:
+    parts: list[str] = []
+    needs = _display_value(row, "necessita_autorizacao")
+    if needs:
+        parts.append(f"Autorização: {needs}")
+    channel = _text(row, "meio_solicitacao")
+    if channel:
+        parts.append(channel)
+    deadline = _text(row, "prazo")
+    if deadline:
+        parts.append(f"Prazo: {deadline}")
+    return " · ".join(parts) or "Consulte as orientações"
+
+
+def _compact_expansion(
+    *,
+    icon: str,
+    title: str,
+    summary: str,
+    row: dict[str, Any],
+    fields: list[tuple[str, tuple[str, ...]]],
+) -> None:
+    with ui.expansion(title, icon=icon, value=False).classes("portal-operator-expansion"):
+        ui.label(summary).classes("portal-operator-rule-count")
+        with ui.element("div").classes("portal-operator-rule-fields"):
+            for label, keys in fields:
+                value = _display_value(row, *keys)
+                if value:
+                    with ui.element("div").classes("portal-operator-rule-field"):
+                        ui.label(label).classes("portal-operator-rule-label")
+                        ui.label(value).classes("portal-operator-rule-value")
+
+
+def _coverage_for_plan(
+    plan: dict[str, Any],
+    coverages: tuple[dict[str, Any], ...],
+) -> dict[str, Any]:
+    plan_id = _text(plan, "id")
+    plan_code = _text(plan, "codigo")
+    for row in coverages:
+        if plan_id and _text(row, "plano_id") == plan_id:
+            return row
+        code = _text(row, "codigo")
+        if plan_code and f"-{plan_code}-" in code:
+            return row
+    return {}
 
 
 def _resource_item(
@@ -703,124 +727,167 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     tone="success",
                 )
 
-        # 2. Operational journey: every relevant rule stays visible.
+        # 2. Compact operational journey: summary first, detail on demand.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "COMO ATENDER",
                 "Jornada operacional",
-                "Consulta, internação, alta, exames e restrições aparecem separadamente para consulta rápida.",
+                "Bata o olho no fluxo e abra somente a orientação que precisar.",
             )
 
             if detail.elegibilidade:
-                with ui.element("div").classes("portal-operator-rule-grid"):
-                    for row in detail.elegibilidade:
-                        _operational_card(
-                            "verified",
-                            "Elegibilidade",
-                            row,
-                            [
-                                ("Orientação", ("orientacao",)),
-                                ("Observação", ("observacoes",)),
-                            ],
-                        )
+                with ui.expansion(
+                    "Elegibilidade",
+                    icon="verified",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    with ui.element("div").classes("portal-operator-expansion-content"):
+                        for row in detail.elegibilidade:
+                            _resource_item(
+                                "verified",
+                                "Orientação de elegibilidade",
+                                _text(row, "orientacao"),
+                                _text(row, "observacoes"),
+                            )
 
             if detail.autorizacoes:
-                ui.label("AUTORIZAÇÕES E FLUXOS").classes("portal-operator-reference-kicker")
-                with ui.element("div").classes("portal-operator-rule-grid"):
+                with ui.element("div").classes("portal-operator-reference-layout"):
                     for row in detail.autorizacoes:
-                        _operational_card(
-                            "fact_check",
-                            _authorization_title(row),
-                            row,
-                            [
-                                ("Precisa autorização", ("necessita_autorizacao",)),
-                                ("Quando", ("momento_autorizacao",)),
-                                ("Quem solicita", ("quem_solicita",)),
-                                ("Canal", ("meio_solicitacao",)),
-                                ("Prazo", ("prazo",)),
-                                ("Orientação", ("orientacao",)),
-                                ("Observações", ("observacoes",)),
-                            ],
-                        )
-            else:
-                ui.label("Nenhuma regra de autorização cadastrada.").classes(
-                    "portal-operator-rule-empty"
-                )
+                        with ui.element("div").classes("portal-operator-reference-column"):
+                            with ui.row().classes("portal-operator-reference-head"):
+                                with ui.element("div").classes("portal-operator-resource-icon"):
+                                    ui.icon("fact_check")
+                                ui.label(_authorization_title(row)).classes(
+                                    "portal-operator-resource-title"
+                                )
+                            ui.label(_authorization_summary(row)).classes(
+                                "portal-operator-resource-subtitle"
+                            )
+                            with ui.expansion(
+                                "Ver orientações",
+                                icon="expand_more",
+                                value=False,
+                            ).classes("portal-operator-expansion"):
+                                with ui.element("div").classes("portal-operator-rule-fields"):
+                                    for label, keys in [
+                                        ("Precisa autorização", ("necessita_autorizacao",)),
+                                        ("Quando", ("momento_autorizacao",)),
+                                        ("Quem solicita", ("quem_solicita",)),
+                                        ("Canal", ("meio_solicitacao",)),
+                                        ("Prazo", ("prazo",)),
+                                        ("Orientação", ("orientacao",)),
+                                        ("Observações", ("observacoes",)),
+                                    ]:
+                                        value = _display_value(row, *keys)
+                                        if value:
+                                            with ui.element("div").classes("portal-operator-rule-field"):
+                                                ui.label(label).classes("portal-operator-rule-label")
+                                                ui.label(value).classes("portal-operator-rule-value")
 
-            if detail.coberturas:
-                ui.label("COBERTURAS, PLANOS E RESTRIÇÕES").classes(
-                    "portal-operator-reference-kicker"
-                )
-                with ui.element("div").classes("portal-operator-rule-grid"):
-                    for row in detail.coberturas:
-                        _operational_card(
-                            "health_and_safety",
-                            _coverage_title(row),
-                            row,
-                            [
-                                ("Acomodação", ("acomodacao",)),
-                                ("Acompanhante", ("acompanhante",)),
-                                ("Restrições", ("restricoes_cobertura",)),
-                                ("Orientações", ("observacoes",)),
-                            ],
+            alert_rows = tuple(
+                row
+                for row in detail.coberturas
+                if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
+            )
+            if alert_rows:
+                ui.label("ATENÇÃO OPERACIONAL").classes("portal-operator-reference-kicker")
+                for row in alert_rows:
+                    with ui.element("article").classes(
+                        "portal-operator-quick-panel is-warning"
+                    ):
+                        with ui.row().classes("portal-operator-quick-head"):
+                            with ui.element("div").classes("portal-operator-quick-icon"):
+                                ui.icon("warning_amber")
+                            ui.label("ALERTA — NEUROPEDIATRIA").classes(
+                                "portal-operator-quick-eyebrow"
+                            )
+                        ui.label(
+                            _text(row, "restricoes_cobertura")
+                            or "Restrição operacional cadastrada."
+                        ).classes("portal-operator-quick-title")
+                        ui.label(_text(row, "observacoes")).classes(
+                            "portal-operator-quick-helper"
                         )
 
-        # 3. Plans and documents visible in the same page.
+            udi_rows = tuple(
+                row
+                for row in detail.coberturas
+                if "UDI" in _text(row, "codigo").upper()
+            )
+            if udi_rows:
+                with ui.expansion(
+                    "Detalhes complementares da UDI / Exames",
+                    icon="radiology",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    with ui.element("div").classes("portal-operator-expansion-content"):
+                        for row in udi_rows:
+                            _resource_item(
+                                "radiology",
+                                "Regras para exames",
+                                _text(row, "observacoes"),
+                                _text(row, "restricoes_cobertura"),
+                            )
+
+        # 3. Plans: compact list, with coverage rules on demand.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
-                "REFERÊNCIAS",
-                "Planos e documentos",
-                "Materiais que ajudam a identificar o produto e preparar o atendimento.",
+                "PLANOS",
+                "Planos e acomodações",
+                "Consulte a regra específica somente quando precisar.",
             )
 
             with ui.element("div").classes("portal-operator-reference-layout"):
-                with ui.element("div").classes("portal-operator-reference-column"):
-                    with ui.row().classes("portal-operator-reference-head"):
-                        ui.label("PLANOS").classes("portal-operator-reference-kicker")
-                        ui.label(str(len(detail.planos)).zfill(2)).classes(
-                            "portal-operator-reference-count"
-                        )
-
-                    if detail.planos:
-                        for row in detail.planos[:4]:
-                            _resource_item(
-                                "view_list",
-                                _text(row, "nome_padronizado", "nome") or "Plano",
-                                _text(row, "tipo_plano") or "Tipo não informado",
-                                (
-                                    f"Código: {_text(row, 'codigo')}"
-                                    if _text(row, "codigo")
-                                    else ""
-                                ),
-                            )
-                    else:
-                        ui.label("Nenhum plano cadastrado.").classes(
-                            "portal-operator-reference-empty"
-                        )
-
-                if detail.documentos:
+                for plan in detail.planos[:4]:
+                    coverage = _coverage_for_plan(plan, detail.coberturas)
                     with ui.element("div").classes("portal-operator-reference-column"):
                         with ui.row().classes("portal-operator-reference-head"):
-                            ui.label("DOCUMENTOS").classes("portal-operator-reference-kicker")
-                            ui.label(str(len(detail.documentos)).zfill(2)).classes(
-                                "portal-operator-reference-count"
-                            )
-
-                        for row in detail.documentos[:4]:
-                            file_url = _safe_external_url(_text(row, "arquivo_url"))
-                            meta = " · ".join(
-                                item
-                                for item in (
-                                    "Obrigatório" if row.get("obrigatorio") is True else "",
-                                    _text(row, "formato"),
+                            ui.label(
+                                _text(plan, "nome_padronizado", "nome") or "Plano"
+                            ).classes("portal-operator-resource-title")
+                            if _text(plan, "codigo"):
+                                ui.label(_text(plan, "codigo")).classes(
+                                    "portal-operator-reference-count"
                                 )
-                                if item
-                            )
+
+                        accommodation = _text(coverage, "acomodacao")
+                        ui.label(
+                            accommodation or _text(plan, "tipo_plano") or "Sem regra de acomodação"
+                        ).classes("portal-operator-resource-subtitle")
+
+                        if coverage:
+                            with ui.expansion(
+                                "Ver regras do plano",
+                                icon="expand_more",
+                                value=False,
+                            ).classes("portal-operator-expansion"):
+                                with ui.element("div").classes("portal-operator-rule-fields"):
+                                    for label, keys in [
+                                        ("Acomodação", ("acomodacao",)),
+                                        ("Acompanhante", ("acompanhante",)),
+                                        ("Restrições", ("restricoes_cobertura",)),
+                                        ("Orientações", ("observacoes",)),
+                                    ]:
+                                        value = _display_value(coverage, *keys)
+                                        if value:
+                                            with ui.element("div").classes("portal-operator-rule-field"):
+                                                ui.label(label).classes("portal-operator-rule-label")
+                                                ui.label(value).classes("portal-operator-rule-value")
+
+            if detail.documentos:
+                with ui.expansion(
+                    f"Documentos ({len(detail.documentos)})",
+                    icon="description",
+                    value=False,
+                ).classes("portal-operator-expansion"):
+                    with ui.element("div").classes("portal-operator-expansion-content"):
+                        for row in detail.documentos:
+                            file_url = _safe_external_url(_text(row, "arquivo_url"))
                             _resource_item(
                                 "description",
                                 _text(row, "nome") or "Documento",
                                 _text(row, "orientacao") or "Referência cadastrada.",
-                                meta,
+                                _text(row, "formato"),
                                 "Abrir arquivo" if file_url else "",
                                 (
                                     lambda url=file_url: ui.navigate.to(url, new_tab=True)
