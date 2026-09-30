@@ -2105,3 +2105,48 @@
     .portal-particular-workspace-nav { overflow-x: auto; }
     .portal-particular-tabs { min-width: 520px; }
 }
+
+
+/* Particular · navegação integrada ao hero */
+.portal-particular-hero {
+    padding-bottom: 82px;
+}
+.portal-particular-workspace-nav {
+    position: absolute;
+    z-index: 5;
+    left: 22px;
+    right: 22px;
+    bottom: 14px;
+    width: auto;
+    min-height: 50px;
+    padding: 4px 6px;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 12px;
+    background: rgba(255,255,255,.10);
+    box-shadow: none;
+    backdrop-filter: blur(8px);
+}
+.portal-particular-tabs .q-tab {
+    min-height: 40px;
+    color: rgba(255,255,255,.76) !important;
+}
+.portal-particular-tabs .q-tab:hover {
+    background: rgba(255,255,255,.07);
+}
+.portal-particular-tabs .q-tab--active {
+    background: rgba(255,255,255,.16);
+    color: #fff !important;
+}
+.portal-particular-tabs .q-tab--active .q-icon,
+.portal-particular-tabs .q-tab--active .q-tab__label {
+    color: #fff !important;
+}
+
+@media (max-width: 760px) {
+    .portal-particular-hero { padding-bottom: 82px; }
+    .portal-particular-workspace-nav {
+        left: 14px;
+        right: 14px;
+        bottom: 12px;
+    }
+}
