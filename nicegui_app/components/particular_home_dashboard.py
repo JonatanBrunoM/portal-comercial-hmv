@@ -304,15 +304,13 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
             on_click=refresh,
         ).props("flat no-caps")
 
-    with ui.expansion(
-        "Análises da carteira",
-        icon="analytics",
-        value=True,
-    ).classes("w-full border rounded-lg"):
-        with ui.column().classes("w-full p-2 gap-4"):
-            ui.label(
-                "Médicos, composição financeira, itens e evolução dos orçamentos em uma área analítica única."
-            ).classes("text-body2 text-grey-7")
-            render_particular_monthly_dashboard(access)
+    with ui.column().classes("w-full gap-3 pt-2"):
+        with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
+            with ui.column().classes("gap-0"):
+                ui.label("Análises da carteira").classes("text-h5 text-weight-bold")
+                ui.label(
+                    "Médicos, composição financeira, itens e evolução dos orçamentos."
+                ).classes("text-body2 text-grey-7")
+        render_particular_monthly_dashboard(access)
 
     ui.timer(0.1, refresh, once=True)
