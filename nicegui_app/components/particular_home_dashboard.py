@@ -203,26 +203,45 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                         "da carteira ORIGINAL."
                     ).classes("text-caption text-grey-7")
 
-            with ui.column().classes("w-full gap-2"):
+            with ui.card().classes("w-full p-5 gap-3 shadow-sm"):
                 with ui.column().classes("gap-0"):
                     ui.label("Leitura operacional da carteira").classes("text-h6 text-weight-bold")
                     ui.label(
-                        "Distribuição das evidências por unidade e relação entre competências."
+                        "Onde a primeira evidência operacional foi observada e como ela se relaciona com a competência de criação."
                     ).classes("text-body2 text-grey-7")
-                with ui.row().classes("w-full gap-2 flex-wrap"):
-                    for label, value, detail in (
-                        ("SEDE", row.get("budgets_sede"), "localização observada"),
-                        ("Pontal", row.get("budgets_pontal"), "localização observada"),
-                        ("Unidade não identificada", row.get("budgets_location_unidentified"), "data observada em outra evidência"),
-                        ("Mesma competência", row.get("budgets_same_competence"), _compact_brl(row.get("value_same_competence"))),
-                        ("Competência futura", row.get("budgets_future_competence"), _compact_brl(row.get("value_future_competence"))),
-                    ):
-                        with ui.card().classes("flex-1 min-w-[170px] p-3 gap-0 border border-grey-3 shadow-none"):
-                            ui.label(label).classes("text-caption text-grey-7")
-                            ui.label(str(_int(value))).classes("text-h6 text-weight-bold")
-                            ui.label(str(detail)).classes("text-caption text-grey-7")
 
-                with ui.row().classes("w-full items-start gap-2 mt-1"):
+                with ui.row().classes("w-full gap-5 items-center flex-wrap"):
+                    ui.echart({
+                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
+                        "legend": {"orient": "vertical", "right": 10, "top": "center"},
+                        "series": [{
+                            "type": "pie",
+                            "radius": ["48%", "72%"],
+                            "center": ["35%", "50%"],
+                            "avoidLabelOverlap": True,
+                            "label": {"show": False},
+                            "data": [
+                                {"value": _int(row.get("budgets_sede")), "name": "SEDE"},
+                                {"value": _int(row.get("budgets_pontal")), "name": "Pontal"},
+                                {"value": _int(row.get("budgets_location_unidentified")), "name": "Unidade não identificada"},
+                            ],
+                        }],
+                    }).classes("flex-[2] min-w-[420px] h-52")
+
+                    with ui.column().classes("flex-1 min-w-[280px] gap-2"):
+                        for label, value, detail, icon in (
+                            ("Mesma competência", row.get("budgets_same_competence"), _compact_brl(row.get("value_same_competence")), "calendar_month"),
+                            ("Competência futura", row.get("budgets_future_competence"), _compact_brl(row.get("value_future_competence")), "event_upcoming"),
+                        ):
+                            with ui.row().classes("w-full items-center justify-between gap-3 p-3 border border-grey-3 rounded-lg"):
+                                with ui.row().classes("items-center gap-3"):
+                                    ui.icon(icon, size="22px").classes("text-primary")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(label).classes("text-body2 text-weight-medium")
+                                        ui.label(str(detail)).classes("text-caption text-grey-7")
+                                ui.label(str(_int(value))).classes("text-h6 text-weight-bold")
+
+                with ui.row().classes("w-full items-start gap-2"):
                     ui.icon("info", size="16px").classes("text-grey-6 mt-0.5")
                     ui.label(
                         "Evidência operacional indica presença nas fontes persistidas. "
