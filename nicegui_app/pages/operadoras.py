@@ -565,6 +565,221 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             )
         )
 
+        journey_state: dict[str, dict[str, Any] | None] = {"selected": None}
+        plan_state: dict[str, dict[str, Any] | None] = {"selected": None}
+
+        udi_coverage = next(
+            (
+                row
+                for row in detail.coberturas
+                if "UDI" in _text(row, "codigo").upper()
+            ),
+            {},
+        )
+        alert_rows = tuple(
+            row
+            for row in detail.coberturas
+            if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
+        )
+
+        def _detail_field(label: str, value: str) -> None:
+            if not value:
+                return
+            with ui.element("div").classes("portal-operator-rule-field"):
+                ui.label(label).classes("portal-operator-rule-label")
+                ui.label(value).classes("portal-operator-rule-value")
+
+        @ui.refreshable
+        def render_journey_workspace() -> None:
+            selected = journey_state["selected"]
+
+            if selected is None:
+                if not detail.autorizacoes:
+                    ui.label("Nenhum fluxo operacional cadastrado.").classes(
+                        "portal-operator-rule-empty"
+                    )
+                    return
+
+                with ui.element("div").classes("portal-operator-reference-layout"):
+                    for row in detail.autorizacoes:
+                        title = _authorization_title(row)
+                        with ui.element("article").classes(
+                            "portal-operator-reference-column cursor-pointer"
+                        ).on(
+                            "click",
+                            lambda _event, selected_row=row: (
+                                journey_state.__setitem__("selected", selected_row),
+                                render_journey_workspace.refresh(),
+                            ),
+                        ):
+                            with ui.row().classes("portal-operator-reference-head"):
+                                with ui.element("div").classes("portal-operator-resource-icon"):
+                                    ui.icon(
+                                        "radiology"
+                                        if "UDI" in _text(row, "codigo").upper()
+                                        else "fact_check"
+                                    )
+                                ui.label(title).classes("portal-operator-resource-title")
+                                ui.icon("arrow_forward").classes("text-primary")
+
+                            ui.label(_authorization_summary(row)).classes(
+                                "portal-operator-resource-subtitle"
+                            )
+                            ui.label("Consultar orientação completa").classes(
+                                "portal-operator-resource-meta"
+                            )
+                return
+
+            row = selected
+            code = _text(row, "codigo").upper()
+            is_udi = "UDI" in code
+
+            with ui.element("article").classes("portal-operator-rule-card"):
+                with ui.row().classes(
+                    "portal-operator-rule-head items-center justify-between"
+                ):
+                    with ui.row().classes("items-center gap-3"):
+                        ui.button(
+                            icon="arrow_back",
+                            on_click=lambda: (
+                                journey_state.__setitem__("selected", None),
+                                render_journey_workspace.refresh(),
+                            ),
+                        ).props("flat round dense").classes("portal-operator-cockpit-back")
+                        with ui.element("div").classes("portal-operator-rule-icon"):
+                            ui.icon("radiology" if is_udi else "fact_check")
+                        with ui.column().classes("portal-operator-rule-head-copy"):
+                            ui.label(_authorization_title(row)).classes(
+                                "portal-operator-rule-title"
+                            )
+                            ui.label("ORIENTAÇÃO OPERACIONAL").classes(
+                                "portal-operator-rule-count"
+                            )
+
+                with ui.element("div").classes(
+                    "portal-operator-rule-fields grid grid-cols-1 md:grid-cols-2 gap-x-8"
+                ):
+                    for label, keys in [
+                        ("Precisa autorização", ("necessita_autorizacao",)),
+                        ("Quando", ("momento_autorizacao",)),
+                        ("Quem solicita", ("quem_solicita",)),
+                        ("Canal", ("meio_solicitacao",)),
+                        ("Prazo", ("prazo",)),
+                    ]:
+                        _detail_field(label, _display_value(row, *keys))
+
+                orientation = _text(row, "orientacao")
+                observations = _text(row, "observacoes")
+                if orientation:
+                    with ui.element("div").classes("portal-operator-reference-column"):
+                        ui.label("ORIENTAÇÃO").classes("portal-operator-reference-kicker")
+                        ui.label(orientation).classes("portal-operator-resource-subtitle")
+                if observations:
+                    with ui.element("div").classes("portal-operator-reference-column"):
+                        ui.label("OBSERVAÇÕES").classes("portal-operator-reference-kicker")
+                        ui.label(observations).classes("portal-operator-resource-subtitle")
+
+                if is_udi and udi_coverage:
+                    with ui.element("div").classes("portal-operator-reference-column"):
+                        ui.label("REGRAS PARA EXAMES").classes(
+                            "portal-operator-reference-kicker"
+                        )
+                        ui.label(_text(udi_coverage, "observacoes")).classes(
+                            "portal-operator-resource-subtitle"
+                        )
+                        restriction = _text(udi_coverage, "restricoes_cobertura")
+                        if restriction:
+                            ui.label(restriction).classes("portal-operator-resource-meta")
+
+        @ui.refreshable
+        def render_plan_workspace() -> None:
+            selected = plan_state["selected"]
+
+            if selected is None:
+                with ui.element("div").classes("portal-operator-reference-layout"):
+                    for plan in detail.planos[:4]:
+                        coverage = _coverage_for_plan(plan, detail.coberturas)
+                        accommodation = _text(coverage, "acomodacao")
+                        with ui.element("article").classes(
+                            "portal-operator-reference-column cursor-pointer"
+                        ).on(
+                            "click",
+                            lambda _event, selected_plan=plan: (
+                                plan_state.__setitem__("selected", selected_plan),
+                                render_plan_workspace.refresh(),
+                            ),
+                        ):
+                            with ui.row().classes("portal-operator-reference-head"):
+                                ui.label(
+                                    _text(plan, "nome_padronizado", "nome") or "Plano"
+                                ).classes("portal-operator-resource-title")
+                                with ui.row().classes("items-center gap-2"):
+                                    if _text(plan, "codigo"):
+                                        ui.label(_text(plan, "codigo")).classes(
+                                            "portal-operator-reference-count"
+                                        )
+                                    ui.icon("arrow_forward").classes("text-primary")
+
+                            ui.label(
+                                accommodation
+                                or _text(plan, "tipo_plano")
+                                or "Sem regra de acomodação"
+                            ).classes("portal-operator-resource-subtitle")
+                            ui.label("Consultar regras do plano").classes(
+                                "portal-operator-resource-meta"
+                            )
+                return
+
+            plan = selected
+            coverage = _coverage_for_plan(plan, detail.coberturas)
+
+            with ui.element("article").classes("portal-operator-rule-card"):
+                with ui.row().classes(
+                    "portal-operator-rule-head items-center justify-between"
+                ):
+                    with ui.row().classes("items-center gap-3"):
+                        ui.button(
+                            icon="arrow_back",
+                            on_click=lambda: (
+                                plan_state.__setitem__("selected", None),
+                                render_plan_workspace.refresh(),
+                            ),
+                        ).props("flat round dense").classes("portal-operator-cockpit-back")
+                        with ui.element("div").classes("portal-operator-rule-icon"):
+                            ui.icon("badge")
+                        with ui.column().classes("portal-operator-rule-head-copy"):
+                            ui.label(
+                                _text(plan, "nome_padronizado", "nome") or "Plano"
+                            ).classes("portal-operator-rule-title")
+                            ui.label(
+                                f"PLANO {_text(plan, 'codigo')}"
+                                if _text(plan, "codigo")
+                                else "DETALHES DO PLANO"
+                            ).classes("portal-operator-rule-count")
+
+                if coverage:
+                    with ui.element("div").classes(
+                        "portal-operator-rule-fields grid grid-cols-1 md:grid-cols-2 gap-x-8"
+                    ):
+                        _detail_field("Acomodação", _text(coverage, "acomodacao"))
+                        _detail_field("Acompanhante", _text(coverage, "acompanhante"))
+                        _detail_field(
+                            "Restrições",
+                            _text(coverage, "restricoes_cobertura"),
+                        )
+
+                    notes = _text(coverage, "observacoes")
+                    if notes:
+                        with ui.element("div").classes("portal-operator-reference-column"):
+                            ui.label("ORIENTAÇÕES DO PLANO").classes(
+                                "portal-operator-reference-kicker"
+                            )
+                            ui.label(notes).classes("portal-operator-resource-subtitle")
+                else:
+                    ui.label("Nenhuma regra específica cadastrada para este plano.").classes(
+                        "portal-operator-rule-empty"
+                    )
+
         # Breadcrumb / contextual actions.
         with ui.row().classes("portal-operator-cockpit-nav"):
             ui.button(
@@ -727,68 +942,15 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     tone="success",
                 )
 
-        # 2. Compact operational journey: summary first, detail on demand.
+        # 2. Operational journey as an in-place mini workspace.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "COMO ATENDER",
                 "Jornada operacional",
-                "Bata o olho no fluxo e abra somente a orientação que precisar.",
+                "Selecione um fluxo para consultar a orientação no próprio espaço da jornada.",
             )
+            render_journey_workspace()
 
-            if detail.elegibilidade:
-                with ui.expansion(
-                    "Elegibilidade",
-                    icon="verified",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    with ui.element("div").classes("portal-operator-expansion-content"):
-                        for row in detail.elegibilidade:
-                            _resource_item(
-                                "verified",
-                                "Orientação de elegibilidade",
-                                _text(row, "orientacao"),
-                                _text(row, "observacoes"),
-                            )
-
-            if detail.autorizacoes:
-                with ui.element("div").classes("portal-operator-reference-layout"):
-                    for row in detail.autorizacoes:
-                        with ui.element("div").classes("portal-operator-reference-column"):
-                            with ui.row().classes("portal-operator-reference-head"):
-                                with ui.element("div").classes("portal-operator-resource-icon"):
-                                    ui.icon("fact_check")
-                                ui.label(_authorization_title(row)).classes(
-                                    "portal-operator-resource-title"
-                                )
-                            ui.label(_authorization_summary(row)).classes(
-                                "portal-operator-resource-subtitle"
-                            )
-                            with ui.expansion(
-                                "Ver orientações",
-                                icon="expand_more",
-                                value=False,
-                            ).classes("portal-operator-expansion"):
-                                with ui.element("div").classes("portal-operator-rule-fields"):
-                                    for label, keys in [
-                                        ("Precisa autorização", ("necessita_autorizacao",)),
-                                        ("Quando", ("momento_autorizacao",)),
-                                        ("Quem solicita", ("quem_solicita",)),
-                                        ("Canal", ("meio_solicitacao",)),
-                                        ("Prazo", ("prazo",)),
-                                        ("Orientação", ("orientacao",)),
-                                        ("Observações", ("observacoes",)),
-                                    ]:
-                                        value = _display_value(row, *keys)
-                                        if value:
-                                            with ui.element("div").classes("portal-operator-rule-field"):
-                                                ui.label(label).classes("portal-operator-rule-label")
-                                                ui.label(value).classes("portal-operator-rule-value")
-
-            alert_rows = tuple(
-                row
-                for row in detail.coberturas
-                if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
-            )
             if alert_rows:
                 ui.label("ATENÇÃO OPERACIONAL").classes("portal-operator-reference-kicker")
                 for row in alert_rows:
@@ -809,94 +971,36 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             "portal-operator-quick-helper"
                         )
 
-            udi_rows = tuple(
-                row
-                for row in detail.coberturas
-                if "UDI" in _text(row, "codigo").upper()
-            )
-            if udi_rows:
-                with ui.expansion(
-                    "Detalhes complementares da UDI / Exames",
-                    icon="radiology",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    with ui.element("div").classes("portal-operator-expansion-content"):
-                        for row in udi_rows:
-                            _resource_item(
-                                "radiology",
-                                "Regras para exames",
-                                _text(row, "observacoes"),
-                                _text(row, "restricoes_cobertura"),
-                            )
-
-        # 3. Plans: compact list, with coverage rules on demand.
+        # 3. Plans as an in-place mini workspace.
         with ui.element("section").classes("portal-operator-section-block"):
             _section_heading(
                 "PLANOS",
                 "Planos e acomodações",
-                "Consulte a regra específica somente quando precisar.",
+                "Selecione um plano para consultar suas regras no próprio espaço.",
             )
-
-            with ui.element("div").classes("portal-operator-reference-layout"):
-                for plan in detail.planos[:4]:
-                    coverage = _coverage_for_plan(plan, detail.coberturas)
-                    with ui.element("div").classes("portal-operator-reference-column"):
-                        with ui.row().classes("portal-operator-reference-head"):
-                            ui.label(
-                                _text(plan, "nome_padronizado", "nome") or "Plano"
-                            ).classes("portal-operator-resource-title")
-                            if _text(plan, "codigo"):
-                                ui.label(_text(plan, "codigo")).classes(
-                                    "portal-operator-reference-count"
-                                )
-
-                        accommodation = _text(coverage, "acomodacao")
-                        ui.label(
-                            accommodation or _text(plan, "tipo_plano") or "Sem regra de acomodação"
-                        ).classes("portal-operator-resource-subtitle")
-
-                        if coverage:
-                            with ui.expansion(
-                                "Ver regras do plano",
-                                icon="expand_more",
-                                value=False,
-                            ).classes("portal-operator-expansion"):
-                                with ui.element("div").classes("portal-operator-rule-fields"):
-                                    for label, keys in [
-                                        ("Acomodação", ("acomodacao",)),
-                                        ("Acompanhante", ("acompanhante",)),
-                                        ("Restrições", ("restricoes_cobertura",)),
-                                        ("Orientações", ("observacoes",)),
-                                    ]:
-                                        value = _display_value(coverage, *keys)
-                                        if value:
-                                            with ui.element("div").classes("portal-operator-rule-field"):
-                                                ui.label(label).classes("portal-operator-rule-label")
-                                                ui.label(value).classes("portal-operator-rule-value")
+            render_plan_workspace()
 
             if detail.documentos:
-                with ui.expansion(
-                    f"Documentos ({len(detail.documentos)})",
-                    icon="description",
-                    value=False,
-                ).classes("portal-operator-expansion"):
-                    with ui.element("div").classes("portal-operator-expansion-content"):
-                        for row in detail.documentos:
-                            file_url = _safe_external_url(_text(row, "arquivo_url"))
-                            _resource_item(
-                                "description",
-                                _text(row, "nome") or "Documento",
-                                _text(row, "orientacao") or "Referência cadastrada.",
-                                _text(row, "formato"),
-                                "Abrir arquivo" if file_url else "",
-                                (
-                                    lambda url=file_url: ui.navigate.to(url, new_tab=True)
-                                    if url
-                                    else None
-                                )
-                                if file_url
-                                else None,
+                with ui.element("div").classes("portal-operator-reference-column"):
+                    ui.label(f"DOCUMENTOS · {len(detail.documentos)}").classes(
+                        "portal-operator-reference-kicker"
+                    )
+                    for row in detail.documentos:
+                        file_url = _safe_external_url(_text(row, "arquivo_url"))
+                        _resource_item(
+                            "description",
+                            _text(row, "nome") or "Documento",
+                            _text(row, "orientacao") or "Referência cadastrada.",
+                            _text(row, "formato"),
+                            "Abrir arquivo" if file_url else "",
+                            (
+                                lambda url=file_url: ui.navigate.to(url, new_tab=True)
+                                if url
+                                else None
                             )
+                            if file_url
+                            else None,
+                        )
 
         # 4. Secondary information via native Quasar expansion panels.
         with ui.element("section").classes("portal-operator-section-block"):
