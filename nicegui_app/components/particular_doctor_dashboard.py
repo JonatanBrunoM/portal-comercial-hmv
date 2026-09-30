@@ -33,7 +33,8 @@ def _money(value: object) -> Decimal:
 
 def render_doctor_dashboard(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     """Renderiza tabela de médicos ligada ao mesmo seletor do painel mensal."""
-    with ui.expansion('Composição financeira por médico', icon='medical_services').classes('w-full border rounded-lg'):
+    with ui.column().classes('w-full gap-3'):
+        ui.label('Visão por médico').classes('text-h6 text-weight-bold')
         ui.label('Valores totais dos orçamentos associados ao médico, não honorários nem receita realizada.').classes('text-body2 text-grey-7')
         ui.label('Registros com CONSULTORIO no nome do médico são exibidos separadamente como transcrições.').classes('text-body2 text-grey-7')
         status = ui.column().classes('w-full gap-2')
