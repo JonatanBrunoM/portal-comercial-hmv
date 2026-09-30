@@ -16,11 +16,9 @@ def _decimal(value: object) -> Decimal:
 
 def render_financial_composition(access: ParticularAccess, month_select: ui.select, monthly_rows: dict) -> None:
     with ui.column().classes("w-full gap-3"):
-        ui.label("Composição financeira").classes("text-h6 text-weight-bold")
-        ui.label(
-            "Decomposição dos orçamentos liberados entre procedimentos e materiais. "
-            "Os valores são de orçamento e não representam faturamento realizado."
-        ).classes("text-body2 text-grey-7")
+        with ui.row().classes("w-full items-center justify-between gap-3"):
+            ui.label("Composição financeira").classes("text-h6 text-weight-bold")
+            ui.label("Procedimentos × materiais").classes("text-caption text-grey-7")
         status = ui.column().classes("w-full gap-2")
         area = ui.column().classes("w-full gap-3")
         cache: dict[str, list[dict]] = {}
@@ -59,18 +57,14 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
                 with area:
                     if not reconciled:
                         difference = total - expected
-                        with ui.card().classes("w-full p-4 gap-1"):
-                            ui.label("Composição disponível com divergência de conciliação").classes(
-                                "text-subtitle2 text-weight-bold text-warning"
-                            )
+                        with ui.row().classes("w-full items-center justify-between gap-3 px-1 py-1 flex-wrap"):
+                            with ui.row().classes("items-center gap-2"):
+                                ui.icon("warning_amber", size="18px").classes("text-warning")
+                                ui.label("Conciliação pendente").classes(
+                                    "text-body2 text-weight-bold text-warning"
+                                )
                             ui.label(
-                                f"A composição detalhada soma {format_brl(total)}, enquanto o total mensal "
-                                f"liberado por duplicidade é {format_brl(expected)}. "
-                                f"Diferença: {format_brl(difference)}."
-                            ).classes("text-body2")
-                            ui.label(
-                                "Os dados abaixo permanecem visíveis para diagnóstico, mas não devem ser "
-                                "tratados como conciliados até a divergência ser resolvida."
+                                f"Diferença {format_brl(difference)}"
                             ).classes("text-caption text-grey-7")
 
                     with ui.row().classes("w-full gap-3 flex-wrap"):
@@ -85,7 +79,7 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
                                 ui.label(value).classes("text-h5 text-weight-bold")
                                 ui.label(note).classes("text-caption text-grey-7")
 
-                    ui.label("Distribuição do valor liberado").classes("text-h6 text-weight-bold")
+                    ui.label("Distribuição do valor").classes("text-subtitle1 text-weight-bold")
                     ui.echart({
                         "tooltip": {"trigger": "item", "formatter": "{b}: R$ {c} mi ({d}%)"},
                         "legend": {"bottom": 0},
@@ -100,17 +94,12 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
                                 {"name": "Materiais", "value": float(materials / Decimal("1000000"))},
                             ],
                         }],
-                    }).classes("w-full h-80")
-                    reconciliation_text = (
-                        f'Procedimentos + materiais = {format_brl(total)}. '
-                        f'Os itens detalhados somam {format_brl(row.get("valor_itens_detalhados"))} '
-                        f'({_decimal(row.get("cobertura_financeira_itens_percentual")):.2f}% do valor da composição).'.replace(".", ",")
-                    )
-                    if reconciled:
-                        reconciliation_text = "Conciliação confirmada. " + reconciliation_text
-                    else:
-                        reconciliation_text = "Conciliação pendente. " + reconciliation_text
-                    ui.label(reconciliation_text).classes("text-caption text-grey-7")
+                    }).classes("w-full h-64")
+                    coverage = _decimal(row.get("cobertura_financeira_itens_percentual"))
+                    ui.label(
+                        f'Itens detalhados: {format_brl(row.get("valor_itens_detalhados"))} · '
+                        f'{coverage:.2f}% da composição'.replace(".", ",")
+                    ).classes("text-caption text-grey-7")
             except Exception:
                 if request == version:
                     status.clear()
@@ -122,8 +111,8 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
 
         month_select.on_value_change(lambda event: load(event.value))
         ui.button(
-            "Atualizar composição financeira",
+            "Atualizar composição",
             icon="refresh",
             on_click=lambda: load(month_select.value, True),
-        ).props("outline no-caps")
+        ).props("flat dense no-caps")
         ui.timer(0.25, lambda: load(month_select.value), once=True)
