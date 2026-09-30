@@ -481,13 +481,13 @@ def render_particular(user: dict) -> None:
                     with ui.tabs().props(
                         "dense no-caps indicator-color=transparent active-color=primary"
                     ).classes("portal-particular-tabs") as tabs:
-                    overview_tab = ui.tab("Visão geral", icon="space_dashboard")
-                    operation_tab = ui.tab("Carteira", icon="receipt_long")
-                    review_tab = ui.tab(
-                        f"Revisões ({pending_count})" if pending_count else "Revisões",
-                        icon="fact_check",
-                    )
-                    import_tab = ui.tab("Dados", icon="database")
+                        overview_tab = ui.tab("Visão geral", icon="space_dashboard")
+                        operation_tab = ui.tab("Carteira", icon="receipt_long")
+                        review_tab = ui.tab(
+                            f"Revisões ({pending_count})" if pending_count else "Revisões",
+                            icon="fact_check",
+                        )
+                        import_tab = ui.tab("Dados", icon="database")
 
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
