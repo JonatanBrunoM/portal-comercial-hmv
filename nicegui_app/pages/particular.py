@@ -470,13 +470,22 @@ def render_particular(user: dict) -> None:
                             else "Sem duplicidades pendentes"
                         ).classes("text-caption text-grey-7")
 
-                with ui.tabs().props("dense inline-label align=left no-caps").classes(
-                    "w-full px-3 border-t border-grey-3"
+                with ui.tabs().props("dense no-caps indicator-color=transparent").classes(
+                    "w-full px-4 py-2 border-t border-grey-3 bg-grey-1 rounded-b-lg"
                 ) as tabs:
-                    overview_tab = ui.tab("Visão geral", icon="dashboard")
-                    operation_tab = ui.tab("Orçamentos", icon="receipt_long")
-                    review_tab = ui.tab("Duplicidades", icon="compare_arrows")
-                    import_tab = ui.tab("Importação", icon="upload_file")
+                    overview_tab = ui.tab("Visão geral", icon="space_dashboard").classes(
+                        "rounded-lg px-4"
+                    )
+                    operation_tab = ui.tab("Carteira", icon="receipt_long").classes(
+                        "rounded-lg px-4"
+                    )
+                    review_tab = ui.tab(
+                        f"Revisões ({pending_count})" if pending_count else "Revisões",
+                        icon="fact_check",
+                    ).classes("rounded-lg px-4")
+                    import_tab = ui.tab("Dados", icon="database").classes(
+                        "rounded-lg px-4"
+                    )
 
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
