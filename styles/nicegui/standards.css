@@ -2150,3 +2150,103 @@
         bottom: 12px;
     }
 }
+
+
+/* Particular · navegação leve integrada, sem container interno */
+.portal-particular-hero {
+    padding-bottom: 76px;
+}
+
+.portal-particular-workspace-nav {
+    left: 30px;
+    right: auto;
+    bottom: 16px;
+    width: auto;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.portal-particular-tabs {
+    width: auto;
+}
+
+.portal-particular-tabs .q-tabs__content {
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.portal-particular-tabs .q-tab {
+    position: relative;
+    min-width: 118px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 9px;
+    background: transparent;
+    color: rgba(255,255,255,.72) !important;
+}
+
+.portal-particular-tabs .q-tab__content {
+    display: grid;
+    grid-template-columns: 22px auto;
+    grid-template-rows: 1fr;
+    align-items: center;
+    justify-content: center;
+    column-gap: 9px;
+    min-width: 0;
+    padding: 0;
+}
+
+.portal-particular-tabs .q-tab .q-icon {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0 !important;
+    font-size: 19px;
+    line-height: 1;
+}
+
+.portal-particular-tabs .q-tab__label {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 680;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.portal-particular-tabs .q-tab:hover {
+    background: rgba(255,255,255,.07);
+    color: #fff !important;
+}
+
+.portal-particular-tabs .q-tab--active {
+    background: rgba(255,255,255,.12);
+    color: #fff !important;
+}
+
+.portal-particular-tabs .q-tab--active::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.92);
+}
+
+@media (max-width: 760px) {
+    .portal-particular-workspace-nav {
+        left: 16px;
+        right: 16px;
+        overflow-x: auto;
+    }
+    .portal-particular-tabs {
+        min-width: 520px;
+    }
+}
