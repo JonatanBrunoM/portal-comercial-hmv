@@ -48,9 +48,9 @@ def _metric_card(
     emphasis: bool = False,
 ) -> None:
     classes = (
-        "flex-1 min-w-[210px] p-4 gap-1 border border-blue-100 shadow-sm"
+        "flex-1 min-w-[190px] p-4 gap-1 border-0 border-r border-grey-3 shadow-none"
         if emphasis
-        else "flex-1 min-w-[210px] p-4 gap-1 shadow-sm"
+        else "flex-1 min-w-[190px] p-4 gap-1 border-0 border-r border-grey-3 shadow-none"
     )
     with ui.card().classes(classes):
         with ui.row().classes("w-full items-center justify-between"):
@@ -66,13 +66,12 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
     competence_cache: dict[str, list[dict[str, Any]]] = {}
 
     with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
-        with ui.column().classes("gap-1"):
-            ui.label("VISÃO GERENCIAL").classes("text-caption text-weight-bold text-primary")
-            ui.label("Carteira Particular").classes("text-h5 text-weight-bold")
+        with ui.column().classes("gap-0"):
+            ui.label("CARTEIRA PARTICULAR").classes("text-caption text-weight-bold text-primary")
             ui.label(
                 "Da criação do orçamento à primeira evidência operacional identificada."
             ).classes("text-body2 text-grey-7")
-        month_select = ui.select(options={}, label="Competência de criação").classes("min-w-[230px]")
+        month_select = ui.select(options={}, label="Competência de criação").props("dense outlined").classes("w-[210px]")
     month_select.set_visibility(False)
 
     executive = ui.column().classes("w-full gap-4")
@@ -84,8 +83,9 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
             return
 
         with executive:
-            with ui.row().classes("w-full gap-3 flex-wrap"):
-                _metric_card(
+            with ui.card().classes("w-full p-0 gap-0 overflow-hidden shadow-sm"):
+                with ui.row().classes("w-full gap-0 flex-wrap"):
+                    _metric_card(
                     "Orçamentos",
                     f'{_int(row.get("budgets_total")):,}'.replace(",", "."),
                     f"Carteira criada em {month_label(month)}",
@@ -117,7 +117,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                 )
 
             with ui.row().classes("w-full gap-4 items-start flex-wrap"):
-                with ui.card().classes("flex-[2] min-w-[520px] p-5 gap-4 shadow-sm"):
+                with ui.card().classes("flex-[2] min-w-[520px] p-5 gap-3 shadow-sm"):
                     with ui.row().classes("w-full items-start justify-between gap-3 flex-wrap"):
                         with ui.column().classes("gap-1"):
                             ui.label("Carteira → operação").classes("text-h6 text-weight-bold")
@@ -154,7 +154,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                                     "data": [_int(item.get("budgets")) for item in chart_rows],
                                     "itemStyle": {"color": "#005691", "borderRadius": [5, 5, 0, 0]},
                                 }],
-                            }).classes("w-full h-64")
+                            }).classes("w-full h-56")
 
                         with ui.row().classes("w-full gap-2 flex-wrap"):
                             for item in competence_rows:
@@ -177,7 +177,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                             "text-body2 text-grey-7"
                         )
 
-                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-4 shadow-sm"):
+                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm"):
                     ui.label("Atenção operacional").classes("text-h6 text-weight-bold")
                     ui.label(
                         "Sinais que merecem acompanhamento sem presumir cancelamento, transferência ou realização."
@@ -304,12 +304,13 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
             on_click=refresh,
         ).props("flat no-caps")
 
-    with ui.column().classes("w-full gap-3 pt-2"):
-        with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
+    with ui.element("section").classes("w-full pt-3"):
+        with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap mb-3"):
             with ui.column().classes("gap-0"):
+                ui.label("EXPLORAR").classes("text-caption text-weight-bold text-primary")
                 ui.label("Análises da carteira").classes("text-h5 text-weight-bold")
                 ui.label(
-                    "Médicos, composição financeira, itens e evolução dos orçamentos."
+                    "Aprofunde a leitura financeira, médica, por itens e evolução."
                 ).classes("text-body2 text-grey-7")
         render_particular_monthly_dashboard(access)
 
