@@ -92,26 +92,12 @@ def render_doctor_financial_composition(access: ParticularAccess, month_select: 
                         ],
                     }).classes("w-full h-[360px]")
 
-                    columns = [
-                        {"name": "medico", "label": "Médico", "field": "medico", "align": "left", "sortable": True},
-                        {"name": "orcamentos", "label": "Orçamentos", "field": "orcamentos", "align": "right", "sortable": True},
-                        {"name": "procedimentos", "label": "Procedimentos", "field": "procedimentos", "align": "right", "sortable": True},
-                        {"name": "materiais", "label": "Materiais", "field": "materiais", "align": "right", "sortable": True},
-                        {"name": "total", "label": "Total liberado", "field": "total", "align": "right", "sortable": True},
-                        {"name": "pct_materiais", "label": "% Materiais", "field": "pct_materiais", "align": "right", "sortable": True},
-                    ]
-                    table_rows = [
-                        {
-                            "medico": str(row.get("medico") or "Médico não informado"),
-                            "orcamentos": int(row.get("orcamentos_liberados") or 0),
-                            "procedimentos": format_brl(row.get("valor_procedimentos")),
-                            "materiais": format_brl(row.get("valor_materiais")),
-                            "total": format_brl(row.get("valor_total_liberado")),
-                            "pct_materiais": f'{_decimal(row.get("participacao_materiais_percentual")):.2f}%'.replace(".", ","),
-                        }
-                        for row in rows
-                    ]
-                    ui.table(columns=columns, rows=table_rows, row_key="medico", pagination=10).classes("w-full")
+                    with ui.row().classes("w-full items-center gap-2 px-1"):
+                        ui.icon("info_outline", size="17px").classes("text-grey-6")
+                        ui.label(
+                            "Detalhamento individual disponível em Consultar carteira médica. "
+                            "Aqui o foco é comparar a composição entre procedimentos e materiais."
+                        ).classes("text-caption text-grey-7")
             except Exception:
                 if request == version:
                     status.clear()
