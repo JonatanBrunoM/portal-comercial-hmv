@@ -482,148 +482,105 @@ def render_particular(user: dict) -> None:
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
                         render_particular_home_dashboard(access)
-                        ui.label("Conferências e apontamentos").classes(
-                            "text-h6 text-weight-bold mt-2"
-                        )
-                        ui.label(
-                            "Consultas complementares para validar a base e acompanhar "
-                            "pendências. Não representam receita realizada."
-                        ).classes("text-body2 text-grey-7")
+                        with ui.element("section").classes("w-full pt-3"):
+                            ui.label("CONFERÊNCIAS").classes(
+                                "text-caption text-weight-bold text-primary"
+                            )
+                            ui.label("Qualidade e revisão da carteira").classes(
+                                "text-h5 text-weight-bold"
+                            )
+                            ui.label(
+                                "Ferramentas de apoio para conferir fontes e tratar pendências sem misturá-las à leitura gerencial."
+                            ).classes("text-body2 text-grey-7")
 
-                        with ui.expansion(
-                            "Indicadores das grades · Google Sheets",
-                            icon="table_chart",
-                            value=False,
-                        ).classes("w-full border rounded-lg"):
-                            with ui.card().classes("w-full p-5 gap-4"):
-                                ui.label("Indicadores das grades").classes(
-                                    "text-h6 text-weight-bold"
-                                )
-                                ui.label(
-                                    "Dados da cópia de testes do Google Sheets. "
-                                    "Os totais representam números de orçamento distintos "
-                                    "nas grades, não procedimentos realizados no MV."
-                                ).classes("text-body2 text-grey-7")
-
-                                sheets_result = ui.column().classes("w-full gap-3")
-
-                                async def load_sheets_summary():
-                                    from nicegui import run
-
-                                    load_button.disable()
-                                    sheets_result.clear()
-
-                                    with sheets_result:
-                                        ui.label("Consultando as três grades...").classes(
-                                            "text-body2 text-grey-7"
-                                        )
-
-                                    try:
-                                        summary = await run.io_bound(
-                                            get_particular_sheets_summary,
-                                            access,
-                                        )
-                                    except Exception:
-                                        sheets_result.clear()
-                                        with sheets_result:
-                                            ui.label(
-                                                "Não foi possível carregar os indicadores "
-                                                "das grades. Tente novamente mais tarde."
-                                            ).classes("text-negative")
-                                        return
-                                    finally:
-                                        load_button.enable()
-
-                                    sheets_result.clear()
-
-                                    with sheets_result:
-                                        with ui.row().classes("w-full gap-4 flex-wrap"):
-                                            with ui.card().classes(
-                                                "flex-1 min-w-[180px] p-4 gap-2"
-                                            ):
-                                                ui.label("Orçamentos distintos nas três grades")
-                                                ui.label(
-                                                    f'{summary["orcamentos_distintos_total"]:,}'
-                                                    .replace(",", ".")
-                                                ).classes("text-h4 text-weight-bold")
-
-                                            with ui.card().classes(
-                                                "flex-1 min-w-[180px] p-4 gap-2"
-                                            ):
-                                                ui.label("Presentes em mais de uma grade")
-                                                ui.label(
-                                                    f'{summary["orcamentos_em_mais_de_uma_aba"]:,}'
-                                                    .replace(",", ".")
-                                                ).classes("text-h4 text-weight-bold")
-
-                                        with ui.row().classes("w-full gap-4 flex-wrap"):
-                                            for name, stats in summary["abas"].items():
-                                                with ui.card().classes(
-                                                    "flex-1 min-w-[180px] p-4 gap-2"
-                                                ):
-                                                    ui.label(name).classes(
-                                                        "text-subtitle2 text-weight-bold"
-                                                    )
-                                                    ui.label(
-                                                        f'{stats["orcamentos_distintos"]:,}'
-                                                        .replace(",", ".")
-                                                    ).classes("text-h5 text-weight-bold")
-                                                    ui.label(
-                                                        "Orçamentos distintos nesta grade"
-                                                    ).classes("text-caption text-grey-7")
-
-                                        ui.label(
-                                            "Um mesmo orçamento pode constar em várias grades. "
-                                            "A presença de aviso ou contato não comprova "
-                                            "a realização do procedimento."
-                                        ).classes("text-caption text-grey-7")
-
-                                load_button = ui.button(
-                                    "Atualizar indicadores das grades",
-                                    icon="refresh",
-                                    on_click=load_sheets_summary,
-                                ).props("outline no-caps")
-
-                        with ui.expansion(
-                            f"Revisão de duplicidades · {pending_count} pendente(s)",
-                            icon="fact_check",
-                            value=False,
-                        ).classes("w-full border rounded-lg"):
-                            with ui.row().classes("w-full gap-4 flex-wrap"):
-                                for label, value, icon in (
-                                    ("Relações identificadas", len(rows), "account_tree"),
-                                    ("Aguardando revisão", pending_count, "pending_actions"),
-                                    ("Relações revisadas", reviewed_count, "task_alt"),
+                            with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
+                                with ui.card().classes(
+                                    "flex-1 min-w-[300px] p-5 gap-3 shadow-sm"
                                 ):
-                                    with ui.card().classes("flex-1 min-w-[180px] p-5 gap-2"):
-                                        ui.icon(icon, size="28px").classes("text-primary")
-                                        ui.label(label).classes("text-caption text-grey-7")
-                                        ui.label(str(value)).classes("text-h4 text-weight-bold")
-                            with ui.row().classes("w-full gap-4 flex-wrap"):
-                                with ui.card().classes("flex-1 min-w-[250px] p-5 gap-3"):
-                                    ui.icon("receipt_long", size="30px").classes("text-primary")
-                                    ui.label("Operação de orçamentos").classes("text-h6 text-weight-bold")
-                                    ui.label(
-                                        "Busque pelo número do orçamento e consulte os detalhes "
-                                        "e o histórico de conferências no MV."
-                                    ).classes("text-body2 text-grey-7")
+                                    with ui.row().classes("w-full items-start justify-between gap-3"):
+                                        with ui.row().classes("items-center gap-3"):
+                                            ui.icon("fact_check", size="26px").classes("text-primary")
+                                            with ui.column().classes("gap-0"):
+                                                ui.label("Duplicidades").classes("text-subtitle1 text-weight-bold")
+                                                ui.label("Revisão humana da carteira").classes("text-caption text-grey-7")
+                                        ui.badge(str(pending_count), color="warning" if pending_count else "positive")
+                                    with ui.row().classes("w-full gap-6"):
+                                        with ui.column().classes("gap-0"):
+                                            ui.label(str(len(rows))).classes("text-h6 text-weight-bold")
+                                            ui.label("identificadas").classes("text-caption text-grey-7")
+                                        with ui.column().classes("gap-0"):
+                                            ui.label(str(reviewed_count)).classes("text-h6 text-weight-bold")
+                                            ui.label("revisadas").classes("text-caption text-grey-7")
                                     ui.button(
-                                        "Consultar orçamentos",
-                                        icon="arrow_forward",
-                                        on_click=lambda: tabs.set_value(operation_tab),
-                                    ).props("unelevated no-caps")
-                                with ui.card().classes("flex-1 min-w-[250px] p-5 gap-3"):
-                                    ui.icon("compare_arrows", size="30px").classes("text-primary")
-                                    ui.label("Revisão de duplicidades").classes("text-h6 text-weight-bold")
-                                    ui.label(
-                                        "Analise as relações detectadas, registre decisões "
-                                        "e consulte o histórico das revisões."
-                                    ).classes("text-body2 text-grey-7")
-                                    ui.button(
-                                        "Abrir revisão",
+                                        "Abrir fila de revisão",
                                         icon="arrow_forward",
                                         on_click=lambda: tabs.set_value(review_tab),
-                                    ).props("outline no-caps")
+                                    ).props("flat no-caps").classes("self-start")
+
+                                with ui.card().classes(
+                                    "flex-1 min-w-[300px] p-5 gap-3 shadow-sm"
+                                ):
+                                    with ui.row().classes("w-full items-start justify-between gap-3"):
+                                        with ui.row().classes("items-center gap-3"):
+                                            ui.icon("table_chart", size="26px").classes("text-primary")
+                                            with ui.column().classes("gap-0"):
+                                                ui.label("Fontes operacionais").classes("text-subtitle1 text-weight-bold")
+                                                ui.label("Conferência das grades Google Sheets").classes("text-caption text-grey-7")
+                                        ui.badge("Sob demanda").props("outline")
+                                    ui.label(
+                                        "Consulta complementar das três grades. Um mesmo orçamento pode aparecer em mais de uma fonte."
+                                    ).classes("text-body2 text-grey-7")
+                                    sheets_result = ui.column().classes("w-full gap-2")
+
+                                    async def load_sheets_summary():
+                                        from nicegui import run
+
+                                        load_button.disable()
+                                        sheets_result.clear()
+                                        with sheets_result:
+                                            ui.label("Consultando as três grades...").classes("text-body2 text-grey-7")
+                                        try:
+                                            summary = await run.io_bound(get_particular_sheets_summary, access)
+                                        except Exception:
+                                            sheets_result.clear()
+                                            with sheets_result:
+                                                ui.label(
+                                                    "Não foi possível carregar os indicadores das grades."
+                                                ).classes("text-negative")
+                                            return
+                                        finally:
+                                            load_button.enable()
+
+                                        sheets_result.clear()
+                                        with sheets_result:
+                                            with ui.row().classes("w-full gap-5 flex-wrap"):
+                                                with ui.column().classes("gap-0"):
+                                                    ui.label(
+                                                        f'{summary["orcamentos_distintos_total"]:,}'.replace(",", ".")
+                                                    ).classes("text-h6 text-weight-bold")
+                                                    ui.label("orçamentos distintos").classes("text-caption text-grey-7")
+                                                with ui.column().classes("gap-0"):
+                                                    ui.label(
+                                                        f'{summary["orcamentos_em_mais_de_uma_aba"]:,}'.replace(",", ".")
+                                                    ).classes("text-h6 text-weight-bold")
+                                                    ui.label("em mais de uma grade").classes("text-caption text-grey-7")
+                                            with ui.row().classes("w-full gap-4 flex-wrap"):
+                                                for name, stats in summary["abas"].items():
+                                                    with ui.column().classes("gap-0 min-w-[120px]"):
+                                                        ui.label(name).classes("text-caption text-grey-7")
+                                                        ui.label(
+                                                            f'{stats["orcamentos_distintos"]:,}'.replace(",", ".")
+                                                        ).classes("text-subtitle1 text-weight-bold")
+                                            ui.label(
+                                                "Presença em grade é evidência operacional e não comprova realização."
+                                            ).classes("text-caption text-grey-7")
+
+                                    load_button = ui.button(
+                                        "Consultar fontes",
+                                        icon="refresh",
+                                        on_click=load_sheets_summary,
+                                    ).props("flat no-caps").classes("self-start")
+
 
                 with ui.tab_panel(operation_tab).classes("px-0 py-2"):
                     render_particular_operational_budgets(access=access)
