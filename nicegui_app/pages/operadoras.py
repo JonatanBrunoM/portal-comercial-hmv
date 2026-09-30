@@ -579,12 +579,15 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
         )
 
-        def _modal_field(label: str, value: str) -> None:
+        def _modal_field(label: str, value: str, icon: str = "info") -> None:
             if not value:
                 return
             with ui.element("div").classes("portal-operator-modal-field"):
-                ui.label(label).classes("portal-operator-modal-label")
-                ui.label(value).classes("portal-operator-modal-value")
+                with ui.element("div").classes("portal-operator-modal-field-icon"):
+                    ui.icon(icon)
+                with ui.column().classes("portal-operator-modal-field-copy gap-0"):
+                    ui.label(label).classes("portal-operator-modal-label")
+                    ui.label(value).classes("portal-operator-modal-value")
 
         def _open_authorization_modal(row: dict[str, Any]) -> None:
             code = _text(row, "codigo").upper()
@@ -606,14 +609,14 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     ).classes("portal-operator-modal-close")
 
                 with ui.element("div").classes("portal-operator-modal-grid"):
-                    for label, keys in [
-                        ("Precisa autorização", ("necessita_autorizacao",)),
-                        ("Quando", ("momento_autorizacao",)),
-                        ("Quem solicita", ("quem_solicita",)),
-                        ("Canal", ("meio_solicitacao",)),
-                        ("Prazo", ("prazo",)),
+                    for label, keys, icon in [
+                        ("Autorização", ("necessita_autorizacao",), "verified_user"),
+                        ("Quando", ("momento_autorizacao",), "schedule"),
+                        ("Solicitante", ("quem_solicita",), "domain"),
+                        ("Canal", ("meio_solicitacao",), "language"),
+                        ("Prazo", ("prazo",), "hourglass_top"),
                     ]:
-                        _modal_field(label, _display_value(row, *keys))
+                        _modal_field(label, _display_value(row, *keys), icon)
 
                 orientation = _text(row, "orientacao")
                 observations = _text(row, "observacoes")
@@ -660,9 +663,9 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
                 if coverage:
                     with ui.element("div").classes("portal-operator-modal-grid"):
-                        _modal_field("Acomodação", _text(coverage, "acomodacao"))
-                        _modal_field("Acompanhante", _text(coverage, "acompanhante"))
-                        _modal_field("Restrições", _text(coverage, "restricoes_cobertura"))
+                        _modal_field("Acomodação", _text(coverage, "acomodacao"), "hotel")
+                        _modal_field("Acompanhante", _text(coverage, "acompanhante"), "group")
+                        _modal_field("Restrições", _text(coverage, "restricoes_cobertura"), "warning_amber")
 
                     notes = _text(coverage, "observacoes")
                     if notes:
