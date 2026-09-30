@@ -58,11 +58,20 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
 
                 with area:
                     if not reconciled:
-                        ui.label(
-                            "A composição financeira não está conciliada com o total mensal liberado. "
-                            "Atualize os dados antes de utilizar esta análise."
-                        ).classes("text-negative text-weight-bold")
-                        return
+                        difference = total - expected
+                        with ui.card().classes("w-full p-4 gap-1"):
+                            ui.label("Composição disponível com divergência de conciliação").classes(
+                                "text-subtitle2 text-weight-bold text-warning"
+                            )
+                            ui.label(
+                                f"A composição detalhada soma {format_brl(total)}, enquanto o total mensal "
+                                f"liberado por duplicidade é {format_brl(expected)}. "
+                                f"Diferença: {format_brl(difference)}."
+                            ).classes("text-body2")
+                            ui.label(
+                                "Os dados abaixo permanecem visíveis para diagnóstico, mas não devem ser "
+                                "tratados como conciliados até a divergência ser resolvida."
+                            ).classes("text-caption text-grey-7")
 
                     with ui.row().classes("w-full gap-3 flex-wrap"):
                         for label, value, note in (
@@ -92,11 +101,16 @@ def render_financial_composition(access: ParticularAccess, month_select: ui.sele
                             ],
                         }],
                     }).classes("w-full h-80")
-                    ui.label(
-                        f'Conciliação: procedimentos + materiais = {format_brl(total)}. '
+                    reconciliation_text = (
+                        f'Procedimentos + materiais = {format_brl(total)}. '
                         f'Os itens detalhados somam {format_brl(row.get("valor_itens_detalhados"))} '
-                        f'({_decimal(row.get("cobertura_financeira_itens_percentual")):.2f}% do valor liberado).'.replace(".", ",")
-                    ).classes("text-caption text-grey-7")
+                        f'({_decimal(row.get("cobertura_financeira_itens_percentual")):.2f}% do valor da composição).'.replace(".", ",")
+                    )
+                    if reconciled:
+                        reconciliation_text = "Conciliação confirmada. " + reconciliation_text
+                    else:
+                        reconciliation_text = "Conciliação pendente. " + reconciliation_text
+                    ui.label(reconciliation_text).classes("text-caption text-grey-7")
             except Exception:
                 if request == version:
                     status.clear()
