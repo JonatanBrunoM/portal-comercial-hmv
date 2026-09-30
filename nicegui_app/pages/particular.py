@@ -461,14 +461,16 @@ def render_particular(user: dict) -> None:
                     color="primary",
                 ).props("outline")
 
-            with ui.tabs().classes("w-full") as tabs:
+            with ui.tabs().props("dense inline-label align=left no-caps").classes(
+                "w-full border-b border-grey-3"
+            ) as tabs:
                 overview_tab = ui.tab("Visão geral", icon="dashboard")
                 operation_tab = ui.tab("Orçamentos", icon="receipt_long")
                 review_tab = ui.tab("Duplicidades", icon="compare_arrows")
                 import_tab = ui.tab("Importação", icon="upload_file")
 
-            with ui.tab_panels(tabs, value=overview_tab).classes("w-full"):
-                with ui.tab_panel(overview_tab):
+            with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
+                with ui.tab_panel(overview_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
                         render_particular_home_dashboard(access)
                         ui.label("Conferências e apontamentos").classes(
@@ -614,13 +616,13 @@ def render_particular(user: dict) -> None:
                                         on_click=lambda: tabs.set_value(review_tab),
                                     ).props("outline no-caps")
 
-                with ui.tab_panel(operation_tab):
+                with ui.tab_panel(operation_tab).classes("px-0 py-2"):
                     render_particular_operational_budgets(access=access)
 
-                with ui.tab_panel(import_tab):
+                with ui.tab_panel(import_tab).classes("px-0 py-2"):
                     render_particular_import(access=access)
 
-                with ui.tab_panel(review_tab):
+                with ui.tab_panel(review_tab).classes("px-0 py-2"):
                     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                         with ui.column().classes("gap-1"):
                             ui.label("PARTICULAR").classes("text-caption text-weight-bold")
