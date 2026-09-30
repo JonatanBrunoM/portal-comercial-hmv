@@ -23,20 +23,19 @@ _WEEK_FIELDS = (
 
 
 def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
-    ui.label("Análise gerencial · Orçamentos").classes("text-h5 text-weight-bold")
-    ui.label(
-        "Valores de orçamentos importados, classificados pelas decisões de duplicidade. "
-        "Não representam faturamento realizado nem comprovam cobertura completa do mês."
-    ).classes("text-body2 text-grey-7")
-
-    with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
-        months = ui.select(options={}, label="Mês de referência").classes("min-w-[220px]")
-    months.set_visibility(False)
-    content = ui.column().classes("w-full gap-4")
     rows_by_month: dict[str, dict] = {}
     weekly_cache: dict[str, list[dict]] = {}
-    weekly_content = ui.column().classes("w-full gap-3")
-    with ui.tabs().classes("w-full") as analysis_tabs:
+
+    with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+        with ui.column().classes("gap-0"):
+            ui.label("Explorar carteira").classes("text-h6 text-weight-bold")
+            ui.label(
+                "Escolha uma leitura analítica. Os valores são de orçamento e não representam faturamento realizado."
+            ).classes("text-body2 text-grey-7")
+        months = ui.select(options={}, label="Competência").classes("min-w-[200px]")
+    months.set_visibility(False)
+
+    with ui.tabs().props("dense inline-label align=left no-caps").classes("w-full") as analysis_tabs:
         financial_tab = ui.tab("Financeiro", icon="account_balance")
         doctors_tab = ui.tab("Médicos", icon="medical_services")
         items_tab = ui.tab("Itens", icon="inventory_2")
@@ -44,17 +43,20 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
 
     with ui.tab_panels(analysis_tabs, value=financial_tab).classes("w-full bg-transparent p-0"):
         with ui.tab_panel(financial_tab).classes("px-0 py-3"):
+            content = ui.column().classes("w-full gap-4")
             render_financial_composition(access, months, rows_by_month)
+
         with ui.tab_panel(doctors_tab).classes("px-0 py-3"):
             render_doctor_dashboard(access, months, rows_by_month)
+            ui.separator().classes("my-3")
             render_doctor_financial_composition(access, months, rows_by_month)
+
         with ui.tab_panel(items_tab).classes("px-0 py-3"):
             render_item_dashboard(access, months, rows_by_month)
+
         with ui.tab_panel(evolution_tab).classes("px-0 py-3"):
-            ui.label("Evolução financeira do mês").classes("text-h6 text-weight-bold")
-            ui.label(
-                "Leitura por faixas da data de criação do orçamento; não representa data de realização."
-            ).classes("text-body2 text-grey-7")
+            weekly_content = ui.column().classes("w-full gap-3")
+
     selection_version = 0
 
     def render_month(value: str | None) -> None:
