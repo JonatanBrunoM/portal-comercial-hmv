@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 from urllib.parse import urlparse
 
@@ -589,6 +590,29 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                 ui.label(label).classes("portal-operator-rule-label")
                 ui.label(value).classes("portal-operator-rule-value")
 
+        async def _switch_workspace(
+            selector: str,
+            state: dict[str, dict[str, Any] | None],
+            value: dict[str, Any] | None,
+            refresh,
+        ) -> None:
+            await ui.run_javascript(
+                f"""const el=document.querySelector('{selector}');
+                if(el){{el.classList.remove('is-entering');el.classList.add('is-leaving');}}"""
+            )
+            await asyncio.sleep(0.18)
+            state["selected"] = value
+            refresh()
+            await asyncio.sleep(0.02)
+            await ui.run_javascript(
+                f"""const el=document.querySelector('{selector}');
+                if(el){{
+                    el.classList.remove('is-leaving');
+                    el.classList.add('is-entering');
+                    setTimeout(()=>el.classList.remove('is-entering'),360);
+                }}"""
+            )
+
         @ui.refreshable
         def render_journey_workspace() -> None:
             selected = journey_state["selected"]
@@ -607,15 +631,17 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                             "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
                         ).on(
                             "click",
-                            lambda _event, selected_row=row: (
-                                journey_state.__setitem__("selected", selected_row),
-                                render_journey_workspace.refresh(),
+                            lambda _event, selected_row=row: _switch_workspace(
+                                ".portal-operator-journey-stage",
+                                journey_state,
+                                selected_row,
+                                render_journey_workspace.refresh,
                             ),
                         ):
                             with ui.row().classes("portal-operator-reference-head"):
                                 with ui.element("div").classes("portal-operator-resource-icon"):
                                     ui.icon(
-                                        "radiology"
+                                        "biotech"
                                         if "UDI" in _text(row, "codigo").upper()
                                         else "fact_check"
                                     )
@@ -639,13 +665,15 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
-                            on_click=lambda: (
-                                journey_state.__setitem__("selected", None),
-                                render_journey_workspace.refresh(),
+                            on_click=lambda: _switch_workspace(
+                                ".portal-operator-journey-stage",
+                                journey_state,
+                                None,
+                                render_journey_workspace.refresh,
                             ),
                         ).props("flat round dense aria-label='Voltar'").classes("portal-operator-detail-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
-                            ui.icon("radiology" if is_udi else "fact_check")
+                            ui.icon("biotech" if is_udi else "fact_check")
                         with ui.column().classes("portal-operator-rule-head-copy"):
                             ui.label(_authorization_title(row)).classes(
                                 "portal-operator-rule-title"
@@ -699,12 +727,14 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         coverage = _coverage_for_plan(plan, detail.coberturas)
                         accommodation = _text(coverage, "acomodacao")
                         with ui.element("article").classes(
-                            "portal-operator-reference-column portal-operator-workspace-card cursor-pointer"
+                            "portal-operator-reference-column portal-operator-workspace-card portal-operator-plan-card cursor-pointer"
                         ).on(
                             "click",
-                            lambda _event, selected_plan=plan: (
-                                plan_state.__setitem__("selected", selected_plan),
-                                render_plan_workspace.refresh(),
+                            lambda _event, selected_plan=plan: _switch_workspace(
+                                ".portal-operator-plan-stage",
+                                plan_state,
+                                selected_plan,
+                                render_plan_workspace.refresh,
                             ),
                         ):
                             with ui.row().classes("portal-operator-reference-head"):
@@ -736,9 +766,11 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                     with ui.row().classes("portal-operator-detail-heading"):
                         ui.button(
                             icon="arrow_back",
-                            on_click=lambda: (
-                                plan_state.__setitem__("selected", None),
-                                render_plan_workspace.refresh(),
+                            on_click=lambda: _switch_workspace(
+                                ".portal-operator-plan-stage",
+                                plan_state,
+                                None,
+                                render_plan_workspace.refresh,
                             ),
                         ).props("flat round dense").classes("portal-operator-cockpit-back")
                         with ui.element("div").classes("portal-operator-rule-icon"):
@@ -945,10 +977,15 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                 "Jornada operacional",
                 "Selecione um fluxo para consultar a orientação no próprio espaço da jornada.",
             )
-            render_journey_workspace()
+            with ui.element("div").classes(
+                "portal-operator-workspace-stage portal-operator-journey-stage"
+            ):
+                render_journey_workspace()
 
             if alert_rows:
-                ui.label("ATENÇÃO OPERACIONAL").classes("portal-operator-reference-kicker")
+                ui.label("ATENÇÃO OPERACIONAL").classes(
+                    "portal-operator-reference-kicker portal-operator-alert-kicker"
+                )
                 for row in alert_rows:
                     with ui.element("article").classes(
                         "portal-operator-quick-panel is-warning"
@@ -974,7 +1011,10 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                 "Planos e acomodações",
                 "Selecione um plano para consultar suas regras no próprio espaço.",
             )
-            render_plan_workspace()
+            with ui.element("div").classes(
+                "portal-operator-workspace-stage portal-operator-plan-stage"
+            ):
+                render_plan_workspace()
 
             if detail.documentos:
                 with ui.element("div").classes("portal-operator-reference-column"):
