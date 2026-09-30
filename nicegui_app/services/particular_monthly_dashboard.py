@@ -55,6 +55,54 @@ def list_weekly_validation(access: ParticularAccess, month: str) -> list[dict[st
     return [row for row in rows if isinstance(row, dict)]
 
 
+def list_home_management(access: ParticularAccess) -> list[dict[str, Any]]:
+    """Consulta o resumo gerencial da Home por competência de criação."""
+    _check_access(access)
+    rows = rest_select(
+        "particular_home_management_v1",
+        select=(
+            "budget_competence,budgets_total,procedure_value_total,material_value_total,"
+            "original_value_total,budgets_with_operational_date,value_with_operational_date,"
+            "budgets_without_operational_date,value_without_operational_date,"
+            "budgets_sede,budgets_pontal,budgets_location_unidentified,"
+            "budgets_same_competence,value_same_competence,"
+            "budgets_future_competence,value_future_competence,"
+            "budgets_review,value_review,budgets_date_change,"
+            "budgets_cancellation_signal,budgets_multiple_notice,budgets_transfer_signal,"
+            "pct_budgets_with_operational_date,pct_budgets_without_operational_date,"
+            "pct_value_with_operational_date,pct_value_without_operational_date"
+        ),
+        params={"order": "budget_competence.desc", "limit": "120"},
+    )
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def list_home_operational_competence(
+    access: ParticularAccess,
+    month: str,
+) -> list[dict[str, Any]]:
+    """Distribui a carteira de uma competência pela primeira competência operacional observada."""
+    _check_access(access)
+    reference = date.fromisoformat(month[:10])
+    if reference.day != 1:
+        raise ValueError("Mês de referência inválido.")
+
+    rows = rest_select(
+        "particular_home_operational_competence_v1",
+        select=(
+            "budget_competence,first_operational_competence,competence_relation,"
+            "budgets,pct_budgets,procedure_value,material_value,"
+            "original_value,pct_original_value"
+        ),
+        params={
+            "budget_competence": f"eq.{reference.isoformat()}",
+            "order": "first_operational_competence.asc.nullslast",
+            "limit": "120",
+        },
+    )
+    return [row for row in rows if isinstance(row, dict)]
+
+
 def format_brl(value: Any) -> str:
     amount = Decimal(str(value if value is not None else "0"))
     formatted = f"{amount:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
