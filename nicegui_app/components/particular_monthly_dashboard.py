@@ -41,9 +41,9 @@ def render_particular_monthly_dashboard(access: ParticularAccess) -> None:
         items_tab = ui.tab("Itens", icon="inventory_2")
         evolution_tab = ui.tab("Evolução", icon="timeline")
 
+    content = ui.column().classes("w-full gap-4")
     with ui.tab_panels(analysis_tabs, value=financial_tab).classes("w-full bg-transparent p-0"):
         with ui.tab_panel(financial_tab).classes("px-0 py-3"):
-            content = ui.column().classes("w-full gap-4")
             render_financial_composition(access, months, rows_by_month)
 
         with ui.tab_panel(doctors_tab).classes("px-0 py-3"):
