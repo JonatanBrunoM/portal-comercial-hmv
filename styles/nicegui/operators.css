@@ -1376,3 +1376,140 @@
         justify-self: start;
     }
 }
+
+
+/* Etapa 20.3E · Mini workspaces da operadora */
+.portal-operator-workspace-grid {
+    align-items: stretch;
+}
+
+.portal-operator-workspace-card {
+    position: relative;
+    min-height: 104px;
+    cursor: pointer;
+    transition:
+        transform .22s cubic-bezier(.2,.8,.2,1),
+        border-color .22s ease,
+        box-shadow .22s ease,
+        background-color .22s ease;
+}
+
+.portal-operator-workspace-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 86, 145, .22);
+    background: #fcfeff;
+    box-shadow: 0 10px 25px rgba(18, 48, 65, .07);
+}
+
+.portal-operator-workspace-card .portal-operator-reference-head {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 22px;
+    align-items: center;
+    gap: 10px;
+}
+
+.portal-operator-workspace-card .portal-operator-reference-head > .portal-operator-resource-title {
+    justify-self: start;
+    text-align: left;
+}
+
+.portal-operator-workspace-card .portal-operator-reference-head > .q-icon:last-child {
+    justify-self: end;
+    font-size: 16px;
+    transition: transform .2s ease;
+}
+
+.portal-operator-workspace-card:hover .portal-operator-reference-head > .q-icon:last-child {
+    transform: translateX(3px);
+}
+
+.portal-operator-workspace-detail {
+    min-height: 0;
+    padding: 18px;
+    overflow: hidden;
+    animation: portalWorkspaceIn .32s cubic-bezier(.2,.8,.2,1) both;
+    transform-origin: top center;
+    box-shadow: 0 8px 24px rgba(18, 48, 65, .04);
+}
+
+.portal-operator-detail-header {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.portal-operator-detail-heading {
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.portal-operator-detail-back {
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    color: var(--portal-primary-700) !important;
+    background: var(--portal-primary-50) !important;
+}
+
+.portal-operator-detail-back .q-icon {
+    font-size: 17px;
+}
+
+.portal-operator-detail-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px 28px;
+    margin: 2px 0 14px;
+    padding: 13px 14px;
+    border-radius: 11px;
+    background: #f8fbfd;
+}
+
+.portal-operator-detail-fields .portal-operator-rule-field {
+    grid-template-columns: 105px minmax(0, 1fr);
+    align-items: baseline;
+}
+
+.portal-operator-workspace-detail > .portal-operator-reference-column {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 11px;
+    background: #fcfdfe;
+}
+
+.portal-operator-workspace-detail .portal-operator-reference-kicker {
+    display: block;
+    margin-bottom: 5px;
+}
+
+@keyframes portalWorkspaceIn {
+    from {
+        opacity: 0;
+        transform: translateY(9px) scale(.992);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 760px) {
+    .portal-operator-detail-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-operator-detail-fields .portal-operator-rule-field {
+        grid-template-columns: 100px minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-operator-workspace-card,
+    .portal-operator-workspace-card .q-icon,
+    .portal-operator-workspace-detail {
+        transition: none;
+        animation: none;
+    }
+}
