@@ -6,6 +6,7 @@ from nicegui_app.layout import portal_layout
 from nicegui_app.services.usuarios_admin_service import (
     ManagedProfile,
     get_managed_profiles,
+    save_particular_access,
     save_profile_access,
 )
 
@@ -114,6 +115,30 @@ def render_admin_usuarios(user: dict) -> None:
                     label="Status",
                 ).props("outlined").classes("portal-admin-user-dialog-field")
 
+                ui.separator().classes("portal-admin-user-dialog-separator")
+                ui.label("MÓDULO PARTICULAR").classes("portal-section-kicker")
+                ui.label(
+                    "Conceda acesso independente do perfil geral do Portal."
+                ).classes("portal-admin-user-dialog-module-helper")
+
+                particular_enabled = ui.switch(
+                    "Permitir acesso ao Particular",
+                    value=profile.particular_access,
+                ).classes("portal-admin-user-dialog-switch")
+                particular_role = ui.select(
+                    {
+                        "OPERATOR": "Operador",
+                        "MANAGER": "Gestor",
+                    },
+                    value=(
+                        profile.particular_role
+                        if profile.particular_role in {"OPERATOR", "MANAGER"}
+                        else "OPERATOR"
+                    ),
+                    label="Perfil no Particular",
+                ).props("outlined").classes("portal-admin-user-dialog-field")
+                particular_role.bind_visibility_from(particular_enabled, "value")
+
                 if is_self:
                     ui.label(
                         "Por segurança, seu próprio usuário deve permanecer Administrador e Ativo."
@@ -128,6 +153,12 @@ def render_admin_usuarios(user: dict) -> None:
                             profile_id=profile.profile_id,
                             role=role.value,
                             status=status.value,
+                            actor=user,
+                        )
+                        save_particular_access(
+                            profile_id=profile.profile_id,
+                            enabled=bool(particular_enabled.value),
+                            module_role=str(particular_role.value or "OPERATOR"),
                             actor=user,
                         )
                     except Exception as error:
@@ -179,6 +210,7 @@ def render_admin_usuarios(user: dict) -> None:
                     ui.label("USUÁRIO")
                     ui.label("PERFIL")
                     ui.label("STATUS")
+                    ui.label("PARTICULAR")
                     ui.label("ÚLTIMO LOGIN")
                     ui.label("")
 
@@ -206,6 +238,21 @@ def render_admin_usuarios(user: dict) -> None:
                         ):
                             ui.element("span").classes("portal-admin-users-status-dot")
                             ui.label(profile.status)
+
+                        with ui.element("div").classes(
+                            "portal-admin-users-particular "
+                            + ("is-active" if profile.particular_access else "is-none")
+                        ):
+                            ui.icon("lock_open" if profile.particular_access else "lock")
+                            ui.label(
+                                (
+                                    "Gestor"
+                                    if profile.particular_role == "MANAGER"
+                                    else "Operador"
+                                )
+                                if profile.particular_access
+                                else "Sem acesso"
+                            )
 
                         ui.label(profile.last_login).classes(
                             "portal-admin-users-last-login"
