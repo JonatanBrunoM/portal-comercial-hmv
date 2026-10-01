@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from nicegui_app.auth.admin_access import require_current_admin
@@ -12,13 +12,18 @@ from nicegui_app.repositories.usuarios_admin_repository import (
     append_profile_audit,
     count_active_admins,
     get_profile,
+    get_particular_access,
+    insert_particular_access,
+    list_particular_access,
     list_profiles,
+    update_particular_access,
     update_profile_access,
 )
 
 
 VALID_ROLES = {"usuario", "admin"}
 VALID_STATUSES = {"Ativo", "Inativo"}
+VALID_PARTICULAR_ROLES = {"OPERATOR", "MANAGER"}
 
 
 
@@ -50,6 +55,9 @@ class ManagedProfile:
     status: str
     last_login: str
     updated_at: str
+    particular_access: bool = False
+    particular_role: str = ""
+    particular_status: str = ""
 
 
 def _to_profile(row: dict[str, Any]) -> ManagedProfile:
@@ -65,7 +73,85 @@ def _to_profile(row: dict[str, Any]) -> ManagedProfile:
 
 
 def get_managed_profiles() -> list[ManagedProfile]:
-    return [_to_profile(row) for row in list_profiles()]
+    access_by_profile = {
+        _text(row, "profile_id"): row
+        for row in list_particular_access()
+        if _text(row, "profile_id")
+    }
+    profiles: list[ManagedProfile] = []
+    for row in list_profiles():
+        base = _to_profile(row)
+        access = access_by_profile.get(base.profile_id, {})
+        profiles.append(
+            ManagedProfile(
+                profile_id=base.profile_id,
+                name=base.name,
+                email=base.email,
+                role=base.role,
+                status=base.status,
+                last_login=base.last_login,
+                updated_at=base.updated_at,
+                particular_access=bool(access.get("has_particular_access")),
+                particular_role=_text(access, "particular_role"),
+                particular_status=_text(access, "particular_status"),
+            )
+        )
+    return profiles
+
+
+def save_particular_access(
+    *,
+    profile_id: str,
+    enabled: bool,
+    module_role: str,
+    actor: dict,
+) -> None:
+    actor = require_current_admin(actor)
+    module_role = str(module_role or "").strip().upper()
+    if enabled and module_role not in VALID_PARTICULAR_ROLES:
+        raise ValueError("Perfil do módulo Particular inválido.")
+
+    if not get_profile(profile_id):
+        raise ValueError("Usuário não encontrado.")
+
+    actor_id = str(actor.get("profile_id") or actor.get("id") or "").strip() or None
+    current = get_particular_access(profile_id)
+    now = datetime.now(timezone.utc).isoformat()
+
+    if enabled:
+        if current:
+            update_particular_access(
+                _text(current, "id"),
+                payload={
+                    "module_role": module_role,
+                    "status": "ACTIVE",
+                    "granted_by": actor_id,
+                    "granted_at": now,
+                    "revoked_by": None,
+                    "revoked_at": None,
+                    "revocation_reason": None,
+                    "updated_at": now,
+                },
+            )
+        else:
+            insert_particular_access(
+                profile_id,
+                module_role=module_role,
+                granted_by=actor_id,
+            )
+        return
+
+    if current and _text(current, "status") == "ACTIVE":
+        update_particular_access(
+            _text(current, "id"),
+            payload={
+                "status": "INACTIVE",
+                "revoked_by": actor_id,
+                "revoked_at": now,
+                "revocation_reason": "Acesso revogado pela Administração do Portal.",
+                "updated_at": now,
+            },
+        )
 
 
 def save_profile_access(
