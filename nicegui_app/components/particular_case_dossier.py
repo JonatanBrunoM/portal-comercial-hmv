@@ -103,6 +103,31 @@ def _evidence(icon: str, title: str, when: str, body: str, source: str) -> None:
             ui.label(body).classes("text-sm text-grey-8 whitespace-pre-wrap break-words")
 
 
+def _closure_review_context(
+    events: list[dict[str, Any]],
+    evolutions: list[dict[str, Any]],
+) -> tuple[str | None, str | None]:
+    """Retorna somente o contexto factual que explica a validação de valor."""
+    relevant = [
+        event for event in events
+        if str(event.get("closure_mode") or "").upper() in {"HIGHER", "LOWER"}
+    ]
+    if not relevant:
+        return None, None
+
+    event = relevant[-1]
+    mode = str(event.get("closure_mode") or "").upper()
+    label = "Fechou a maior" if mode == "HIGHER" else "Fechou a menor"
+
+    evidence_id = str(event.get("evidence_id") or "")
+    evidence = next(
+        (item for item in evolutions if str(item.get("id") or "") == evidence_id),
+        None,
+    )
+    description = _text((evidence or {}).get("description_raw"))
+    return label, None if description == "—" else description
+
+
 def _decision_for(row: dict[str, Any]) -> tuple[str, str, str]:
     code = str(row.get("account_review_reason") or row.get("work_reason") or "").strip()
     if code in DECISIONS:
@@ -199,6 +224,18 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
                     with ui.column().classes("gap-1 flex-1"):
                         ui.label(title).classes("text-h6 text-weight-bold")
                         ui.label(next_action).classes("text-body1")
+
+            closure_label, closure_reason = _closure_review_context(events, evolutions)
+            if str(row.get("account_review_reason") or "") == "VALIDAR_VALOR_FINAL" and closure_label:
+                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
+                    with ui.row().classes("w-full items-start gap-4 flex-wrap"):
+                        with ui.column().classes("gap-0 min-w-[150px]"):
+                            ui.label("O que foi identificado").classes("text-caption text-grey-6")
+                            ui.label(closure_label).classes("text-body1 text-weight-bold")
+                        if closure_reason:
+                            with ui.column().classes("gap-0 flex-1 min-w-[280px]"):
+                                ui.label("Motivo registrado").classes("text-caption text-grey-6")
+                                ui.label(closure_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
             with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
