@@ -30,3 +30,62 @@ def list_particular_work_queue() -> list[dict[str, Any]]:
     if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
         raise RuntimeError("A fila inteligente do Particular retornou formato inválido.")
     return rows
+
+
+
+def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
+    """Monta o dossiê factual de um orçamento sem inferir novos desfechos."""
+    queue = rest_select(
+        "particular_work_queue_v1",
+        select="*",
+        params={"budget_id": f"eq.{budget_id}", "limit": "1"},
+        timeout=20.0,
+    )
+    if not queue:
+        raise LookupError("Orçamento não encontrado na fila inteligente.")
+    row = queue[0]
+
+    occurrences = rest_select(
+        "particular_occurrences",
+        select=(
+            "id,budget_id,notice_number,procedure_date,location,operational_value,"
+            "contact_status,patient_confirmation,evolution_status,notes_original,"
+            "occurrence_status,source_row_number,source_row_key,patient_name,doctor_name,"
+            "differential,negative_type_value"
+        ),
+        params={"budget_id": f"eq.{budget_id}", "order": "procedure_date.asc"},
+        timeout=20.0,
+    )
+
+    events = rest_select(
+        "particular_account_events",
+        select=(
+            "id,evidence_id,attendance_number,event_type,closure_mode,event_at,"
+            "confidence,requires_review,review_reason,interpretation_details,created_at"
+        ),
+        params={"budget_id": f"eq.{budget_id}", "order": "event_at.asc"},
+        timeout=20.0,
+    )
+
+    attendance = row.get("attendance_number")
+    evolutions: list[dict[str, Any]] = []
+    if attendance:
+        evolutions = rest_select(
+            "particular_admin_evolution_evidences",
+            select=(
+                "id,source_row_number,patient_name_raw,attendance_number,attendance_date,"
+                "admin_evolution_code,evolution_recorded_at,user_name,evolution_type,description_raw"
+            ),
+            params={
+                "attendance_number": f"eq.{attendance}",
+                "order": "evolution_recorded_at.asc",
+            },
+            timeout=20.0,
+        )
+
+    return {
+        "queue": row,
+        "occurrences": occurrences,
+        "events": events,
+        "evolutions": evolutions,
+    }
