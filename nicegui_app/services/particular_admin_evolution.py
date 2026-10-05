@@ -43,7 +43,20 @@ def _datetime(value: str) -> str | None:
     raw = str(value or "").strip()
     if not raw:
         return None
-    for fmt in ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%y %H:%M:%S", "%d/%m/%y %H:%M"):
+    # O export real pode trazer apenas a data (ex.: 31/08/26), sem horario.
+    # Nesse caso preservamos meia-noite como horario tecnico, sem inventar
+    # uma hora operacional que a fonte nao informou.
+    for fmt in (
+        "%d/%m/%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%d/%m/%y %H:%M:%S",
+        "%d/%m/%y %H:%M",
+        "%d/%m/%Y",
+        "%d/%m/%y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d",
+    ):
         try:
             return datetime.strptime(raw, fmt).isoformat(timespec="seconds")
         except ValueError:
