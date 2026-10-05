@@ -8,6 +8,7 @@ from typing import Any
 from nicegui import run, ui
 
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
+from nicegui_app.components.particular_account_resolution_dialog import open_account_resolution_dialog
 from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import get_particular_case_dossier
@@ -219,6 +220,16 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
                     "Consultar grades", icon="table_view",
                     on_click=lambda: open_particular_sheet_budget_dialog(access=access, budget_number=number),
                 ).props("outline no-caps")
+                if needs_review and access.can_write:
+                    ui.button(
+                        "Registrar conclusão", icon="task_alt",
+                        on_click=lambda: open_account_resolution_dialog(
+                            access=access,
+                            budget_id=budget_id,
+                            budget_number=number,
+                            on_resolved=dialog.close,
+                        ),
+                    ).props("outline no-caps")
 
             ui.label(
                 "O histórico detalhado e as evidências técnicas ficarão disponíveis na área de auditoria."
