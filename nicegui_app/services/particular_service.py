@@ -17,6 +17,7 @@ from nicegui_app.repositories.particular_repository import (
     annulment_preflight,
     decide_annulment,
     commit_xml_import,
+    commit_admin_evolution_import,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -846,3 +847,33 @@ def preflight_particular_import(
             if row["review_state"] == "PENDING"
         ),
     }
+
+
+def commit_particular_admin_evolution_import(
+    *,
+    access: ParticularAccess,
+    preview: dict[str, Any],
+) -> dict[str, Any]:
+    """Grava apenas as evidencias administrativas previamente validadas."""
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil nao possui permissao para importar dados no modulo Particular."
+        )
+    if preview.get("valid_for_import") is not True:
+        raise ValueError("O relatorio administrativo nao passou pela pre-validacao.")
+    records = preview.get("records")
+    if not isinstance(records, list) or not records:
+        raise ValueError("Nenhuma evolucao administrativa valida foi encontrada.")
+    return commit_admin_evolution_import(
+        actor_profile_id=access.profile_id,
+        source_filename=str(preview.get("source_filename") or ""),
+        file_sha256=str(preview.get("file_sha256") or ""),
+        reference_month=preview.get("reference_month"),
+        records=records,
+        metadata={
+            "protocol": "ADMIN_EVOLUTION_IMPORT_V1",
+            "distinct_attendances": int(preview.get("distinct_attendances") or 0),
+            "months_found": preview.get("months_found") or [],
+            "embedded_tab_rows": int(preview.get("embedded_tab_rows") or 0),
+        },
+    )
