@@ -112,6 +112,8 @@ def inspect_admin_evolution(content: bytes, filename: str) -> dict[str, Any]:
     attendances: set[str] = set()
     months: set[str] = set()
     embedded_tab_rows = 0
+    first_row_by_hash: dict[str, int] = {}
+    exact_duplicates: list[dict[str, int]] = []
 
     for row_number, raw in enumerate(reader, start=2):
         if not raw or not any(str(v).strip() for v in raw):
@@ -172,5 +174,8 @@ def inspect_admin_evolution(content: bytes, filename: str) -> dict[str, Any]:
         "reference_month": next(iter(months)) + "-01" if len(months) == 1 else None,
         "months_found": sorted(months),
         "embedded_tab_rows": embedded_tab_rows,
+        "unique_evidence_count": len(first_row_by_hash),
+        "exact_duplicate_count": len(exact_duplicates),
+        "exact_duplicates": exact_duplicates,
         "valid_for_import": True,
     }
