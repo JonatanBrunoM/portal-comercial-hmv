@@ -7,7 +7,7 @@ from typing import Any
 
 from nicegui import ui, run
 
-from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
+from nicegui_app.components.particular_case_dossier import open_particular_case_dossier
 from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import list_particular_work_queue
@@ -235,8 +235,8 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
                             budget_id = str(row.get("budget_id") or "")
                             number = str(row.get("budget_number") or "")
                             ui.button(
-                                "Detalhes", icon="open_in_new",
-                                on_click=lambda _=None, bid=budget_id: open_particular_mv_dialog(
+                                "Analisar", icon="account_tree",
+                                on_click=lambda _=None, bid=budget_id: open_particular_case_dossier(
                                     access=access, budget_id=bid,
                                 ),
                             ).props("outline dense no-caps")
