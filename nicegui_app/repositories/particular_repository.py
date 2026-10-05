@@ -1419,3 +1419,37 @@ def commit_admin_evolution_import(*, actor_profile_id: str, source_filename: str
     if not isinstance(result, dict) or result.get("ok") is not True or str(result.get("status") or "").upper() != "COMPLETED":
         raise RuntimeError("A importacao administrativa nao foi concluida corretamente.")
     return result
+
+
+def resolve_account_review(
+    *,
+    actor_profile_id: str,
+    budget_id: str,
+    account_status: str,
+    closure_mode: str | None = None,
+    confirmed_final_value: str | None = None,
+    resolution_notes: str,
+) -> dict[str, Any]:
+    """Persiste uma resolução humana auditada para uma revisão de conta."""
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    budget_id = _require_uuid(budget_id, field="budget_id")
+
+    result = rest_rpc(
+        "particular_resolve_account_review",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_id": budget_id,
+            "p_account_status": account_status,
+            "p_closure_mode": closure_mode,
+            "p_confirmed_final_value": confirmed_final_value,
+            "p_resolution_notes": resolution_notes,
+        },
+        timeout=30.0,
+    )
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("particular_resolve_account_review retornou formato inesperado.")
+        result = result[0]
+    if not isinstance(result, dict) or result.get("ok") is not True:
+        raise RuntimeError("A revisão da conta não foi concluída corretamente.")
+    return result
