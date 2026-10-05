@@ -214,7 +214,12 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 ui.button(
                     "Verificar no MV", icon="fact_check",
-                    on_click=lambda: open_particular_mv_dialog(access=access, budget_id=budget_id),
+                    on_click=lambda: open_particular_mv_dialog(
+                        access=access,
+                        budget_id=budget_id,
+                        attendance_number=str(row.get("attendance_number") or "") or None,
+                        notice_number=str(row.get("notice_number") or "") or None,
+                    ),
                 ).props("unelevated no-caps")
                 ui.button(
                     "Consultar grades", icon="table_view",
