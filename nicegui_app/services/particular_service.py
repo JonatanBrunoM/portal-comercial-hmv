@@ -18,6 +18,7 @@ from nicegui_app.repositories.particular_repository import (
     decide_annulment,
     commit_xml_import,
     commit_admin_evolution_import,
+    resolve_account_review,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -876,4 +877,50 @@ def commit_particular_admin_evolution_import(
             "months_found": preview.get("months_found") or [],
             "embedded_tab_rows": int(preview.get("embedded_tab_rows") or 0),
         },
+    )
+
+
+def resolve_particular_account_review(
+    *,
+    access: ParticularAccess,
+    budget_id: str,
+    account_status: str,
+    closure_mode: str | None,
+    confirmed_final_value: str | None,
+    resolution_notes: str,
+) -> dict[str, Any]:
+    """Valida e registra a conclusão humana de uma revisão de conta."""
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil não possui permissão para resolver revisões do Particular."
+        )
+
+    normalized_budget_id = str(budget_id or "").strip()
+    normalized_status = str(account_status or "").strip().upper()
+    normalized_mode = str(closure_mode or "").strip().upper() or None
+    normalized_notes = str(resolution_notes or "").strip()
+    normalized_value = str(confirmed_final_value or "").strip() or None
+
+    if not normalized_budget_id:
+        raise ValueError("O orçamento é obrigatório.")
+    if normalized_status not in {"CLOSED", "REOPENED", "SPECIAL_OUTCOME", "INCONCLUSIVE"}:
+        raise ValueError("Situação final da conta inválida.")
+    if normalized_mode is not None and normalized_mode not in {
+        "ACCORDING_TO_BUDGET", "HIGHER", "LOWER", "WITH_ADJUSTMENT", "OTHER"
+    }:
+        raise ValueError("Modo de fechamento inválido.")
+    if not normalized_notes:
+        raise ValueError("A observação da resolução é obrigatória.")
+    if len(normalized_notes) > 2000:
+        raise ValueError("A observação deve possuir no máximo 2000 caracteres.")
+    if normalized_mode in {"HIGHER", "LOWER"} and normalized_value is None:
+        raise ValueError("Fechamentos a maior ou a menor exigem o valor final confirmado.")
+
+    return resolve_account_review(
+        actor_profile_id=access.profile_id,
+        budget_id=normalized_budget_id,
+        account_status=normalized_status,
+        closure_mode=normalized_mode,
+        confirmed_final_value=normalized_value,
+        resolution_notes=normalized_notes,
     )
