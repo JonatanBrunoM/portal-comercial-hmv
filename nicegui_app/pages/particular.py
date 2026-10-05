@@ -23,8 +23,8 @@ from nicegui_app.components.particular_mv_dialog import (
 from nicegui_app.services.particular_sheets_service import (
     get_particular_sheets_summary,
 )
-from nicegui_app.components.particular_operational_budgets import (
-    render_particular_operational_budgets,
+from nicegui_app.components.particular_work_queue import (
+    render_particular_work_queue,
 )
 from nicegui_app.components.particular_home_dashboard import (
     render_particular_home_dashboard,
@@ -594,7 +594,7 @@ def render_particular(user: dict) -> None:
 
 
                 with ui.tab_panel(operation_tab).classes("px-0 py-2"):
-                    render_particular_operational_budgets(access=access)
+                    render_particular_work_queue(access=access)
 
                 with ui.tab_panel(import_tab).classes("px-0 py-2"):
                     render_particular_import(access=access)
