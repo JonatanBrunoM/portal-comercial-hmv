@@ -1070,8 +1070,14 @@ def render_particular_import(access: ParticularAccess) -> None:
                     return
                 with admin_result_area:
                     ui.label("Relatório aprovado na pré-validação").classes("text-positive text-weight-bold")
-                    ui.label(f'{preview["records_total"]} evoluções · {preview["distinct_attendances"]} atendimentos distintos · competências: {", ".join(preview["months_found"]) or "—"}').classes("text-body1")
+                    ui.label(f'{preview["records_total"]} linhas · {preview["unique_evidence_count"]} evidências únicas · {preview["distinct_attendances"]} atendimentos distintos · competências: {", ".join(preview["months_found"]) or "—"}').classes("text-body1")
                     ui.label(f'{preview["embedded_tab_rows"]} linha(s) com TAB interno na descrição foram preservadas.').classes("text-caption text-grey-7")
+                    if preview["exact_duplicate_count"]:
+                        duplicates = ", ".join(
+                            f'linha {item["source_row_number"]} = linha {item["duplicate_of_row_number"]}'
+                            for item in preview["exact_duplicates"]
+                        )
+                        ui.label(f'{preview["exact_duplicate_count"]} duplicata(s) exata(s) na fonte: {duplicates}.').classes("text-warning text-weight-medium")
                     status_area = ui.column().classes("w-full gap-1")
 
                     async def execute_admin_import() -> None:
