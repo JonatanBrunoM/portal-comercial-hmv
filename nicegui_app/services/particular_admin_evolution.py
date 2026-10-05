@@ -73,8 +73,27 @@ def inspect_admin_evolution(content: bytes, filename: str) -> dict[str, Any]:
     except StopIteration as exc:
         raise ValueError("O relatorio esta vazio.") from exc
 
-    if tuple(_header(v) for v in header) != EXPECTED_HEADER:
-        raise ValueError("Estrutura do Relatorio Evolucao AGO nao reconhecida.")
+    normalized_header = tuple(_header(v) for v in header)
+    header_aliases = {
+        "paciente": {"paciente", "nm_paciente", "nome_paciente"},
+        "atendimento": {"atendimento", "nr_atendimento", "cd_atendimento"},
+        "dt_atendimento": {"dt_atendimento", "data_atendimento"},
+        "cd_evol_admin": {"cd_evol_admin", "codigo_evol_admin", "codigo_evolucao_admin"},
+        "dt_registro_evol_admin": {"dt_registro_evol_admin", "data_registro_evol_admin", "dt_evol_admin"},
+        "nm_usuario": {"nm_usuario", "usuario", "nome_usuario"},
+        "tipo_evolucao": {"tipo_evolucao", "tipo_evol", "ds_tipo_evolucao"},
+        "descricao": {"descricao", "ds_evolucao", "descricao_evolucao", "evolucao"},
+    }
+    if len(normalized_header) < 8:
+        raise ValueError(
+            f"Estrutura do Relatorio Evolucao AGO incompleta: {len(normalized_header)} coluna(s)."
+        )
+    for position, expected in enumerate(EXPECTED_HEADER):
+        if normalized_header[position] not in header_aliases[expected]:
+            raise ValueError(
+                "Estrutura do Relatorio Evolucao AGO nao reconhecida. "
+                f"Coluna {position + 1}: recebido '{header[position]}'."
+            )
 
     records: list[dict[str, Any]] = []
     attendances: set[str] = set()
