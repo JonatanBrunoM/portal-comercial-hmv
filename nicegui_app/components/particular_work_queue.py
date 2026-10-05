@@ -5,21 +5,20 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from nicegui import ui, run
+from nicegui import run, ui
 
 from nicegui_app.components.particular_case_dossier import open_particular_case_dossier
-from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import list_particular_work_queue
 
 logger = logging.getLogger(__name__)
 
 GROUPS = {
-    "REVISAR_FECHAMENTO": ("Revisar fechamento", "error", "rule"),
-    "REVISAR_TRAJETORIA": ("Revisar trajetória", "warning", "timeline"),
-    "GRADE_SEM_OPERACAO": ("Grade sem evidência", "warning", "search"),
-    "NEGATIVA_SEM_OPERACAO": ("Negativa sem evidência", "warning", "search"),
-    "OPERACAO_COMPETENCIA": ("Operação na competência", "primary", "event_available"),
+    "REVISAR_FECHAMENTO": ("Fechamento", "error", "payments"),
+    "REVISAR_TRAJETORIA": ("Trajetória", "warning", "timeline"),
+    "GRADE_SEM_OPERACAO": ("Sem evidência", "warning", "manage_search"),
+    "NEGATIVA_SEM_OPERACAO": ("Sem evidência", "warning", "manage_search"),
+    "OPERACAO_COMPETENCIA": ("Em acompanhamento", "primary", "event_available"),
     "OPERACAO_FUTURA": ("Operação futura", "info", "event_upcoming"),
     "FECHAMENTO_IDENTIFICADO": ("Fechamento identificado", "positive", "verified"),
     "CONSULTORIO_SEM_OPERACAO": ("Consultório", "grey", "business_center"),
@@ -30,7 +29,7 @@ GROUPS = {
 REVIEW_GROUPS = {"REVISAR_FECHAMENTO", "REVISAR_TRAJETORIA"}
 INVESTIGATE_GROUPS = {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}
 FOLLOW_GROUPS = {"OPERACAO_COMPETENCIA", "OPERACAO_FUTURA"}
-RESOLVED_GROUPS = {
+ARCHIVE_GROUPS = {
     "FECHAMENTO_IDENTIFICADO", "CONSULTORIO_SEM_OPERACAO",
     "COTACAO", "TRANSCRICAO", "ANULADO_CONFIRMADO",
 }
@@ -40,8 +39,7 @@ def _money(value: Any) -> str:
     if value is None or str(value).strip() == "":
         return "—"
     amount = Decimal(str(value))
-    text = f"{amount:,.2f}".replace(",", "#").replace(".", ",").replace("#", ".")
-    return f"R$ {text}"
+    return "R$ " + f"{amount:,.2f}".replace(",", "#").replace(".", ",").replace("#", ".")
 
 
 def _date(value: Any) -> str:
@@ -58,42 +56,48 @@ def _date(value: Any) -> str:
 
 
 def _count(rows: list[dict[str, Any]], groups: set[str]) -> int:
-    return sum(str(row.get("work_group") or "") in groups for row in rows)
+    return sum(str(r.get("work_group") or "") in groups for r in rows)
 
 
 def _sum(rows: list[dict[str, Any]], groups: set[str]) -> Decimal:
     return sum(
-        (Decimal(str(row.get("original_value") or 0)) for row in rows
-         if str(row.get("work_group") or "") in groups),
+        (Decimal(str(r.get("original_value") or 0)) for r in rows
+         if str(r.get("work_group") or "") in groups),
         Decimal("0"),
     )
 
 
-def _reason(row: dict[str, Any]) -> str:
-    reason = str(row.get("account_review_reason") or row.get("work_reason") or "").strip()
-    labels = {
-        "VALIDAR_VALOR_FINAL": "Confirmar o valor final da conta",
-        "COMPOSICAO_DIVERGENTE": "Composição da conta exige conferência",
-        "COBRANCA_EXTERNA_OU_TERCEIRO": "Há cobrança externa ou por terceiro",
-        "ORCAMENTO_VALOR_APROXIMADO": "Orçamento possui valor aproximado",
-        "DEVOLUCAO_OU_ESTORNO": "Há devolução ou estorno",
-        "CONTA_REABERTA": "Conta reaberta",
-        "AJUSTE_SEM_FECHAMENTO_CONCLUSIVO": "Ajuste sem fechamento conclusivo",
-        "DESFECHO_FINANCEIRO_PENDENTE": "Desfecho financeiro pendente",
-        "EVOLUCAO_INCONCLUSIVA": "Evolução administrativa inconclusiva",
-        "MULTIPLOS_EVENTOS_MESMA_DATA": "Múltiplos eventos na mesma data",
-        "SEQUENCIA_TEMPORAL_AMBIGUA": "Sequência temporal ambígua",
-        "ORIGEM_GRADE_SEM_EVIDENCIA_OPERACIONAL": "Origem Grade sem evidência operacional encontrada",
-        "ORIGEM_NEGATIVA_SEM_EVIDENCIA_OPERACIONAL": "Origem Negativa sem evidência operacional encontrada",
-        "FECHAMENTO_ADMINISTRATIVO_IDENTIFICADO": "Fechamento administrativo identificado pelo motor",
-        "OPERACAO_NA_COMPETENCIA": "Operação identificada na competência",
-        "OPERACAO_EM_COMPETENCIA_POSTERIOR": "Operação identificada em competência posterior",
+def _action(row: dict[str, Any]) -> tuple[str, str]:
+    code = str(row.get("account_review_reason") or row.get("work_reason") or "").strip()
+    actions = {
+        "VALIDAR_VALOR_FINAL": ("Confirmar valor final", "A evolução indica fechamento a maior ou a menor."),
+        "COMPOSICAO_DIVERGENTE": ("Conferir composição da conta", "Há item, exame ou material que exige validação."),
+        "DEVOLUCAO_OU_ESTORNO": ("Validar ajuste financeiro", "Há devolução ou estorno associado ao fechamento."),
+        "CONTA_REABERTA": ("Confirmar situação atual", "Há evidência de reabertura da conta."),
+        "AJUSTE_SEM_FECHAMENTO_CONCLUSIVO": ("Confirmar desfecho da conta", "Existe ajuste, mas não há fechamento conclusivo."),
+        "DESFECHO_FINANCEIRO_PENDENTE": ("Confirmar desfecho financeiro", "A evidência disponível ainda não comprova o fechamento."),
+        "EVOLUCAO_INCONCLUSIVA": ("Revisar evolução administrativa", "A evolução não permite concluir o desfecho."),
+        "MULTIPLOS_EVENTOS_MESMA_DATA": ("Definir sequência dos eventos", "Há eventos na mesma data sem horário real para ordenação."),
+        "SEQUENCIA_TEMPORAL_AMBIGUA": ("Confirmar estado atual da conta", "Fechamento e reabertura aparecem na mesma data."),
+        "ORCAMENTO_VALOR_APROXIMADO": ("Validar valor e fechamento", "O fechamento referencia orçamento de valor aproximado."),
+        "ORIGEM_GRADE_SEM_EVIDENCIA_OPERACIONAL": ("Investigar ausência na grade", "Origem Grade sem ocorrência operacional encontrada."),
+        "ORIGEM_NEGATIVA_SEM_EVIDENCIA_OPERACIONAL": ("Investigar ausência de evidência", "Origem Negativa sem ocorrência operacional encontrada."),
     }
-    return labels.get(reason, reason.replace("_", " ").title() if reason else "Acompanhar evidências")
+    if code in actions:
+        return actions[code]
+    group = str(row.get("work_group") or "")
+    if group == "REVISAR_TRAJETORIA":
+        return ("Revisar trajetória operacional", "Há mudança ou conflito que exige validação.")
+    if group == "FECHAMENTO_IDENTIFICADO":
+        return ("Nenhuma ação imediata", "Fechamento identificado pela evolução administrativa.")
+    if group == "OPERACAO_FUTURA":
+        return ("Monitorar", f'Operação observada para {_date(row.get("last_observed_operational_date"))}.')
+    if group == "OPERACAO_COMPETENCIA":
+        return ("Acompanhar evolução", "Há operação identificada na competência.")
+    return ("Consultar caso", code.replace("_", " ").title() if code else "Consulte as evidências disponíveis.")
 
 
 def render_particular_work_queue(*, access: ParticularAccess) -> None:
-    """Central diária orientada por exceção sobre particular_work_queue_v1."""
     if not access.can_read:
         ui.label("Você não possui acesso à carteira operacional.")
         return
@@ -101,157 +105,55 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
     state = {"scope": "ACTION", "search": "", "group": "TODOS", "origin": "TODOS"}
     all_rows: list[dict[str, Any]] = []
 
-    with ui.column().classes("w-full gap-5"):
+    with ui.column().classes("w-full gap-4"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
-            with ui.column().classes("gap-1"):
-                ui.label("CENTRAL DE ACOMPANHAMENTO").classes("text-caption text-weight-bold text-primary")
-                ui.label("O que precisa da sua atenção").classes("text-h4 text-weight-bold")
+            with ui.column().classes("gap-0"):
+                ui.label("CENTRAL DE TRABALHO").classes("text-caption text-weight-bold text-primary")
+                ui.label("Prioridades do Particular").classes("text-h4 text-weight-bold")
                 ui.label(
-                    "O motor cruza carteira, grades e evolução administrativa para separar ação, investigação e acompanhamento."
+                    "A fila mostra primeiro o que exige decisão. Evidências e carteira completa continuam disponíveis sem poluir o trabalho diário."
                 ).classes("text-body2 text-grey-7")
             ui.badge("Motor operacional V1").props("outline").classes("text-primary")
 
         summary = ui.row().classes("w-full gap-3 flex-wrap")
         scope_row = ui.row().classes("w-full gap-2 flex-wrap")
-        with ui.card().classes("w-full p-4 shadow-sm"):
+
+        with ui.card().classes("w-full p-3 shadow-sm"):
             with ui.row().classes("w-full items-end gap-3 flex-wrap"):
                 search = ui.input(
-                    "Buscar",
-                    placeholder="Orçamento, médico ou atendimento",
-                ).props("outlined dense clearable").classes("min-w-[280px] flex-1")
+                    "Buscar", placeholder="Orçamento, médico ou atendimento"
+                ).props("outlined dense clearable").classes("min-w-[300px] flex-1")
                 group_select = ui.select(
-                    {"TODOS": "Todas as situações"}, value="TODOS", label="Situação"
-                ).props("outlined dense").classes("min-w-[220px]")
+                    {"TODOS": "Todas"}, value="TODOS", label="Motivo"
+                ).props("outlined dense").classes("min-w-[210px]")
                 origin_select = ui.select(
-                    {"TODOS": "Todas as origens"}, value="TODOS", label="Origem"
-                ).props("outlined dense").classes("min-w-[190px]")
+                    {"TODOS": "Todas"}, value="TODOS", label="Origem"
+                ).props("outlined dense").classes("min-w-[180px]")
+
         result_label = ui.label("").classes("text-sm text-grey-7")
         results = ui.column().classes("w-full gap-2")
 
     def visible_rows() -> list[dict[str, Any]]:
-        rows = all_rows
         scope = state["scope"]
-        if scope == "ACTION":
-            allowed = REVIEW_GROUPS
-        elif scope == "INVESTIGATE":
-            allowed = INVESTIGATE_GROUPS
-        elif scope == "FOLLOW":
-            allowed = FOLLOW_GROUPS
-        elif scope == "RESOLVED":
-            allowed = RESOLVED_GROUPS
-        else:
-            allowed = set(GROUPS)
-        rows = [r for r in rows if str(r.get("work_group") or "") in allowed]
+        allowed = (
+            REVIEW_GROUPS if scope == "ACTION"
+            else INVESTIGATE_GROUPS if scope == "INVESTIGATE"
+            else FOLLOW_GROUPS if scope == "FOLLOW"
+            else ARCHIVE_GROUPS if scope == "ARCHIVE"
+            else set(GROUPS)
+        )
+        rows = [r for r in all_rows if str(r.get("work_group") or "") in allowed]
         if state["group"] != "TODOS":
             rows = [r for r in rows if r.get("work_group") == state["group"]]
         if state["origin"] != "TODOS":
             rows = [r for r in rows if r.get("portfolio_origin") == state["origin"]]
         term = state["search"].casefold().strip()
         if term:
-            rows = [
-                r for r in rows
-                if term in " ".join([
-                    str(r.get("budget_number") or ""),
-                    str(r.get("doctor_name") or ""),
-                    str(r.get("attendance_number") or ""),
-                    str(r.get("original_requester") or ""),
-                ]).casefold()
-            ]
+            rows = [r for r in rows if term in " ".join([
+                str(r.get("budget_number") or ""), str(r.get("doctor_name") or ""),
+                str(r.get("attendance_number") or ""), str(r.get("original_requester") or ""),
+            ]).casefold()]
         return rows
-
-    def render_summary() -> None:
-        summary.clear()
-        cards = [
-            ("error_outline", "Precisa de análise", REVIEW_GROUPS, "Casos com decisão humana necessária"),
-            ("manage_search", "Investigar", INVESTIGATE_GROUPS, "Origem operacional sem evidência encontrada"),
-            ("verified", "Fechamento identificado", {"FECHAMENTO_IDENTIFICADO"}, "Identificado pela evolução administrativa"),
-            ("event", "Acompanhamento", FOLLOW_GROUPS, "Operação identificada nas grades"),
-        ]
-        with summary:
-            for icon, title, groups, subtitle in cards:
-                with ui.card().classes("flex-1 min-w-[220px] p-4 gap-1 shadow-sm"):
-                    with ui.row().classes("w-full items-center justify-between"):
-                        ui.icon(icon, size="24px").classes("text-primary")
-                        ui.label(str(_count(all_rows, groups))).classes("text-h5 text-weight-bold")
-                    ui.label(title).classes("text-subtitle2 text-weight-bold")
-                    ui.label(_money(_sum(all_rows, groups))).classes("text-body2 text-weight-medium")
-                    ui.label(subtitle).classes("text-caption text-grey-7")
-
-    def render_scopes() -> None:
-        scope_row.clear()
-        options = [
-            ("ACTION", "Precisa de ação", _count(all_rows, REVIEW_GROUPS)),
-            ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
-            ("FOLLOW", "Acompanhamento", _count(all_rows, FOLLOW_GROUPS)),
-            ("RESOLVED", "Fora da fila principal", _count(all_rows, RESOLVED_GROUPS)),
-            ("ALL", "Todos", len(all_rows)),
-        ]
-        with scope_row:
-            for key, label, count in options:
-                props = "unelevated no-caps" if state["scope"] == key else "outline no-caps"
-                ui.button(
-                    f"{label} · {count}",
-                    on_click=lambda _=None, key=key: set_scope(key),
-                ).props(props)
-
-    def render_rows() -> None:
-        rows = visible_rows()
-        results.clear()
-        result_label.set_text(f"{len(rows)} orçamento(s) nesta leitura.")
-        with results:
-            if not rows:
-                with ui.card().classes("w-full p-6"):
-                    ui.label("Nenhum orçamento encontrado.").classes("text-subtitle1 text-weight-bold")
-                    ui.label("Ajuste os filtros ou escolha outra leitura.").classes("text-body2 text-grey-7")
-                return
-            for row in rows:
-                group = str(row.get("work_group") or "")
-                label, color, icon = GROUPS.get(group, (group, "grey", "info"))
-                with ui.card().classes("w-full p-4 shadow-sm"):
-                    with ui.row().classes("w-full items-center gap-4 flex-wrap"):
-                        with ui.row().classes("items-center gap-3 min-w-[235px]"):
-                            ui.icon(icon, size="25px").classes("text-primary")
-                            with ui.column().classes("gap-0"):
-                                ui.label(f'#{row.get("budget_number")}').classes("text-subtitle1 text-weight-bold")
-                                ui.label(_date(row.get("budget_date"))).classes("text-caption text-grey-7")
-                        with ui.column().classes("gap-0 flex-1 min-w-[260px]"):
-                            ui.label(label).classes("text-body2 text-weight-bold")
-                            ui.label(_reason(row)).classes("text-caption text-grey-7")
-                            doctor = str(row.get("doctor_name") or "").strip()
-                            if doctor:
-                                ui.label(doctor).classes("text-caption text-grey-6")
-                        with ui.column().classes("gap-0 min-w-[150px]"):
-                            ui.label(_money(row.get("original_value"))).classes("text-body2 text-weight-bold")
-                            ui.label(str(row.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-caption text-grey-7")
-                        with ui.column().classes("gap-0 min-w-[150px]"):
-                            attendance = row.get("attendance_number")
-                            ui.label(f"Atend. {attendance}" if attendance else "Sem atendimento vinculado").classes("text-body2")
-                            last_date = row.get("last_observed_operational_date")
-                            ui.label(
-                                f"Última data observada: {_date(last_date)}" if last_date else "Sem data operacional identificada"
-                            ).classes("text-caption text-grey-7")
-                        ui.badge(label, color=color).props("outline")
-                        with ui.row().classes("gap-2"):
-                            budget_id = str(row.get("budget_id") or "")
-                            number = str(row.get("budget_number") or "")
-                            ui.button(
-                                "Analisar", icon="account_tree",
-                                on_click=lambda _=None, bid=budget_id: open_particular_case_dossier(
-                                    access=access, budget_id=bid,
-                                ),
-                            ).props("outline dense no-caps")
-                            ui.button(
-                                icon="table_view",
-                                on_click=lambda _=None, number=number: open_particular_sheet_budget_dialog(
-                                    access=access, budget_number=number,
-                                ),
-                            ).props("flat round dense").tooltip("Consultar evidências nas grades")
-
-    def refresh() -> None:
-        state["search"] = str(search.value or "").strip()
-        state["group"] = str(group_select.value or "TODOS")
-        state["origin"] = str(origin_select.value or "TODOS")
-        render_rows()
 
     def set_scope(scope: str) -> None:
         state["scope"] = scope
@@ -260,23 +162,124 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
         render_scopes()
         render_rows()
 
+    def render_summary() -> None:
+        summary.clear()
+        cards = [
+            ("priority_high", "Decisão necessária", REVIEW_GROUPS, "AÇÃO", "Casos que dependem de validação humana"),
+            ("manage_search", "Investigar", INVESTIGATE_GROUPS, "INVESTIGAR", "Origem operacional sem evidência correspondente"),
+            ("event", "Monitorar", FOLLOW_GROUPS, "ACOMPANHAR", "Operações identificadas que ainda estão em trajetória"),
+        ]
+        with summary:
+            for icon, title, groups, kicker, subtitle in cards:
+                with ui.card().classes("flex-1 min-w-[260px] p-4 gap-1 shadow-sm"):
+                    with ui.row().classes("w-full items-center justify-between"):
+                        ui.label(kicker).classes("text-caption text-weight-bold text-primary")
+                        ui.icon(icon, size="23px").classes("text-primary")
+                    ui.label(str(_count(all_rows, groups))).classes("text-h4 text-weight-bold")
+                    ui.label(title).classes("text-subtitle1 text-weight-bold")
+                    ui.label(_money(_sum(all_rows, groups))).classes("text-body2 text-weight-medium")
+                    ui.label(subtitle).classes("text-caption text-grey-7")
+
+    def render_scopes() -> None:
+        scope_row.clear()
+        options = [
+            ("ACTION", "Decisão necessária", _count(all_rows, REVIEW_GROUPS)),
+            ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
+            ("FOLLOW", "Monitorar", _count(all_rows, FOLLOW_GROUPS)),
+            ("ARCHIVE", "Carteira completa / resolvidos", _count(all_rows, ARCHIVE_GROUPS)),
+            ("ALL", "Todos", len(all_rows)),
+        ]
+        with scope_row:
+            for key, label, count in options:
+                props = "unelevated no-caps" if state["scope"] == key else "outline no-caps"
+                ui.button(
+                    f"{label} · {count}", on_click=lambda _=None, key=key: set_scope(key)
+                ).props(props)
+
+    def render_rows() -> None:
+        rows = visible_rows()
+        results.clear()
+        result_label.set_text(f"{len(rows)} caso(s) nesta fila.")
+        with results:
+            if not rows:
+                with ui.card().classes("w-full p-6"):
+                    ui.label("Nenhum caso nesta fila.").classes("text-subtitle1 text-weight-bold")
+                    ui.label("Ajuste os filtros ou escolha outra leitura.").classes("text-body2 text-grey-7")
+                return
+
+            for row in rows:
+                group = str(row.get("work_group") or "")
+                label, color, icon = GROUPS.get(group, (group, "grey", "info"))
+                action, explanation = _action(row)
+                with ui.card().classes("w-full p-0 shadow-sm overflow-hidden"):
+                    with ui.row().classes("w-full items-stretch no-wrap"):
+                        with ui.element("div").classes(
+                            "w-[5px] bg-red-5" if group in REVIEW_GROUPS
+                            else "w-[5px] bg-orange-5" if group in INVESTIGATE_GROUPS
+                            else "w-[5px] bg-blue-5"
+                        ):
+                            pass
+                        with ui.row().classes("flex-1 items-center gap-4 p-4 flex-wrap"):
+                            with ui.column().classes("gap-0 min-w-[135px]"):
+                                ui.label(f'#{row.get("budget_number")}').classes("text-subtitle1 text-weight-bold")
+                                ui.label(_date(row.get("budget_date"))).classes("text-caption text-grey-7")
+                                ui.label(str(row.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-caption text-grey-6")
+
+                            with ui.column().classes("gap-1 flex-1 min-w-[330px]"):
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.icon(icon, size="19px").classes("text-primary")
+                                    ui.label(action).classes("text-body1 text-weight-bold")
+                                    ui.badge(label, color=color).props("outline")
+                                ui.label(explanation).classes("text-body2 text-grey-7")
+                                doctor = str(row.get("doctor_name") or "").strip()
+                                if doctor:
+                                    ui.label(doctor).classes("text-caption text-grey-6")
+
+                            with ui.column().classes("gap-0 min-w-[145px]"):
+                                ui.label("Valor de referência").classes("text-caption text-grey-6")
+                                ui.label(_money(row.get("original_value"))).classes("text-body2 text-weight-bold")
+
+                            with ui.column().classes("gap-0 min-w-[180px]"):
+                                attendance = row.get("attendance_number")
+                                ui.label(f"Atend. {attendance}" if attendance else "Sem atendimento vinculado").classes("text-body2")
+                                last_date = row.get("last_observed_operational_date")
+                                ui.label(
+                                    f"Última data observada: {_date(last_date)}" if last_date
+                                    else "Sem data operacional identificada"
+                                ).classes("text-caption text-grey-7")
+
+                            budget_id = str(row.get("budget_id") or "")
+                            ui.button(
+                                "Abrir decisão" if group in REVIEW_GROUPS else "Abrir caso",
+                                icon="arrow_forward",
+                                on_click=lambda _=None, bid=budget_id: open_particular_case_dossier(
+                                    access=access, budget_id=bid,
+                                ),
+                            ).props("unelevated no-caps")
+
+    def refresh() -> None:
+        state["search"] = str(search.value or "").strip()
+        state["group"] = str(group_select.value or "TODOS")
+        state["origin"] = str(origin_select.value or "TODOS")
+        render_rows()
+
     async def load() -> None:
-        result_label.set_text("Carregando inteligência operacional...")
+        result_label.set_text("Carregando prioridades...")
         try:
             rows = await run.io_bound(list_particular_work_queue)
         except Exception:
             logger.exception("Falha ao carregar particular_work_queue_v1")
-            result_label.set_text("Não foi possível carregar a Central de Acompanhamento.")
+            result_label.set_text("Não foi possível carregar a Central de Trabalho.")
             ui.notify("Não foi possível carregar a fila inteligente.", type="negative")
             return
         all_rows.clear()
         all_rows.extend(rows)
         group_select.options = {
-            "TODOS": "Todas as situações",
+            "TODOS": "Todas",
             **{key: value[0] for key, value in GROUPS.items() if any(r.get("work_group") == key for r in all_rows)},
         }
-        origin_values = sorted({str(r.get("portfolio_origin") or "") for r in all_rows if r.get("portfolio_origin")})
-        origin_select.options = {"TODOS": "Todas as origens", **{x: x.replace("_", " ").title() for x in origin_values}}
+        origins = sorted({str(r.get("portfolio_origin") or "") for r in all_rows if r.get("portfolio_origin")})
+        origin_select.options = {"TODOS": "Todas", **{x: x.replace("_", " ").title() for x in origins}}
         render_summary()
         render_scopes()
         render_rows()
