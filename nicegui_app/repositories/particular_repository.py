@@ -1398,3 +1398,24 @@ def commit_sheet_sync(
         raise RuntimeError("particular_commit_sheet_sync retornou resposta inválida.")
     return result
 
+
+
+def commit_admin_evolution_import(*, actor_profile_id: str, source_filename: str, file_sha256: str, reference_month: str | None, records: list[dict[str, Any]], metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Persiste atomicamente as evidencias do relatorio administrativo."""
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    filename = str(source_filename or "").strip()
+    digest = str(file_sha256 or "").strip().lower()
+    if not filename:
+        raise ValueError("source_filename e obrigatorio.")
+    if len(digest) != 64:
+        raise ValueError("file_sha256 invalido.")
+    if not records:
+        raise ValueError("Nenhuma evolucao administrativa foi informada.")
+    result = rest_rpc("particular_commit_admin_evolution_import", {"p_actor_profile_id": actor_profile_id, "p_source_filename": filename, "p_file_sha256": digest, "p_reference_month": reference_month, "p_records": records, "p_metadata": metadata or {}}, timeout=180.0)
+    if isinstance(result, list):
+        if len(result) != 1 or not isinstance(result[0], dict):
+            raise RuntimeError("RPC de evolucao administrativa retornou formato inesperado.")
+        result = result[0]
+    if not isinstance(result, dict) or result.get("ok") is not True or str(result.get("status") or "").upper() != "COMPLETED":
+        raise RuntimeError("A importacao administrativa nao foi concluida corretamente.")
+    return result
