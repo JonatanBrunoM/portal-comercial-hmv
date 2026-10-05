@@ -7,6 +7,7 @@ from decimal import Decimal
 from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
+from nicegui_app.services.particular_admin_evolution import inspect_admin_evolution
 from nicegui_app.services.particular_sheets_service import (
     cross_particular_budgets_with_sheets,
     get_particular_occurrences_preview,
@@ -17,6 +18,7 @@ from nicegui_app.services.particular_service import (
     decide_particular_annulment,
     preflight_particular_import,
     commit_particular_xml_import,
+    commit_particular_admin_evolution_import,
 )
 
 
@@ -1051,6 +1053,46 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 ui.label(
                                     "Reenvio do mesmo arquivo concluído é bloqueado pela assinatura SHA-256."
                                 ).classes("text-caption text-grey-7")
+
+            ui.separator().classes("my-2")
+            ui.label("Evolução administrativa · fechamento de contas").classes("text-h6 text-weight-bold")
+            ui.label("Importa o Relatório Evolução AGO somente como evidência bruta; não fecha contas nem interpreta o texto nesta etapa.").classes("text-body2 text-grey-7")
+            admin_result_area = ui.column().classes("w-full gap-3")
+
+            async def handle_admin_evolution_upload(event) -> None:
+                admin_result_area.clear()
+                try:
+                    content = await event.file.read()
+                    preview = await run.io_bound(inspect_admin_evolution, content, event.file.name)
+                except Exception as exc:
+                    with admin_result_area:
+                        ui.label(f"Arquivo rejeitado: {exc}").classes("text-negative text-weight-bold")
+                    return
+                with admin_result_area:
+                    ui.label("Relatório aprovado na pré-validação").classes("text-positive text-weight-bold")
+                    ui.label(f'{preview["records_total"]} evoluções · {preview["distinct_attendances"]} atendimentos distintos · competências: {", ".join(preview["months_found"]) or "—"}').classes("text-body1")
+                    ui.label(f'{preview["embedded_tab_rows"]} linha(s) com TAB interno na descrição foram preservadas.').classes("text-caption text-grey-7")
+                    status_area = ui.column().classes("w-full gap-1")
+
+                    async def execute_admin_import() -> None:
+                        admin_import_button.disable()
+                        status_area.clear()
+                        try:
+                            result = await run.io_bound(commit_particular_admin_evolution_import, access=access, preview=preview)
+                        except Exception as exc:
+                            with status_area:
+                                ui.label(f"Importação não concluída: {exc}").classes("text-negative text-weight-bold")
+                                ui.label("Nenhum fechamento de conta foi alterado.").classes("text-caption text-grey-7")
+                            admin_import_button.enable()
+                            return
+                        with status_area:
+                            ui.label("Evidências administrativas importadas com sucesso.").classes("text-positive text-weight-bold")
+                            ui.label(f'Lote {result.get("import_id", "—")} · {result.get("records_created", 0)} criada(s) · {result.get("records_ignored", 0)} ignorada(s).').classes("text-body2")
+                        ui.notify("Relatório administrativo importado.", color="positive")
+
+                    admin_import_button = ui.button("Confirmar importação das evidências", icon="cloud_upload", on_click=execute_admin_import).props("color=primary")
+
+            ui.upload(label="Selecionar Relatório Evolução AGO", on_upload=handle_admin_evolution_upload, auto_upload=True, max_files=1).props('accept=".csv,.CSV,.txt,.TXT"').classes("w-full")
 
             ui.upload(
                 label="Selecionar relatório HMV2670",
