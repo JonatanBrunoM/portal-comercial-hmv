@@ -137,7 +137,7 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[1100px] p-0"):
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[860px] p-0"):
         header = ui.column().classes("w-full px-6 py-5 gap-1")
         ui.separator()
         body = ui.column().classes("w-full px-6 py-5 gap-4").style("max-height: 76vh; overflow-y: auto")
@@ -164,7 +164,19 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
         evolutions = data["evolutions"]
         number = str(row.get("budget_number") or "")
         title, why, next_action = _decision_for(row)
-        needs_review = str(row.get("work_group") or "") in {"REVISAR_FECHAMENTO", "REVISAR_TRAJETORIA"}
+        group = str(row.get("work_group") or "")
+        needs_review = group in {"REVISAR_FECHAMENTO", "REVISAR_TRAJETORIA"}
+        title = "Verificação necessária" if needs_review else title
+        next_action = {
+            "VALIDAR_VALOR_FINAL": "Confirmar o valor final da conta no MV.",
+            "COMPOSICAO_DIVERGENTE": "Conferir a composição final da conta no MV.",
+            "DEVOLUCAO_OU_ESTORNO": "Confirmar o desfecho após o ajuste financeiro.",
+            "AJUSTE_SEM_FECHAMENTO_CONCLUSIVO": "Confirmar no MV a situação atual da conta.",
+            "DESFECHO_FINANCEIRO_PENDENTE": "Confirmar no MV o desfecho financeiro da conta.",
+            "MULTIPLOS_EVENTOS_MESMA_DATA": "Confirmar no MV qual é a situação atual da conta.",
+            "SEQUENCIA_TEMPORAL_AMBIGUA": "Confirmar no MV qual é a situação atual da conta.",
+            "ORCAMENTO_VALOR_APROXIMADO": "Confirmar no MV o valor final e o fechamento.",
+        }.get(str(row.get("account_review_reason") or ""), next_action)
 
         header.clear()
         with header:
@@ -180,32 +192,27 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
         body.clear()
         with body:
             with ui.card().classes("w-full p-5 shadow-none border"):
-                with ui.row().classes("w-full gap-4 items-start no-wrap"):
-                    with ui.element("div").classes(
-                        "rounded-full bg-red-50 p-3" if needs_review else "rounded-full bg-blue-50 p-3"
-                    ):
-                        ui.icon("priority_high" if needs_review else "psychology", size="27px").classes("text-primary")
-                    with ui.column().classes("gap-2 flex-1"):
-                        ui.label("DECISÃO NECESSÁRIA" if needs_review else "LEITURA DO MOTOR").classes(
-                            "text-caption text-weight-bold text-primary"
-                        )
+                with ui.row().classes("w-full gap-4 items-center no-wrap"):
+                    with ui.element("div").classes("rounded-full bg-red-50 p-3" if needs_review else "rounded-full bg-blue-50 p-3"):
+                        ui.icon("priority_high" if needs_review else "check_circle", size="28px").classes("text-primary")
+                    with ui.column().classes("gap-1 flex-1"):
                         ui.label(title).classes("text-h6 text-weight-bold")
-                        ui.label(why).classes("text-body2 text-grey-8")
-                        with ui.element("div").classes("w-full bg-grey-2 rounded p-3 mt-1"):
-                            ui.label("Próxima ação").classes("text-caption text-weight-bold text-grey-7")
-                            ui.label(next_action).classes("text-body2 text-weight-medium")
+                        ui.label(next_action).classes("text-body1")
 
-            with ui.card().classes("w-full p-4 shadow-none bg-grey-1"):
-                with ui.row().classes("w-full gap-5 flex-wrap"):
-                    _metric("Valor de referência", _money(row.get("reference_budget_value") or row.get("original_value")), "Valor ORIGINAL; não é valor final confirmado")
-                    _metric("Atendimento", _text(row.get("attendance_number")))
-                    _metric("Última data operacional observada", _date(row.get("last_observed_operational_date")))
-                    status = _text(row.get("account_status")).replace("_", " ").title()
-                    _metric("Situação da conta", status, "Interpretação atual do motor")
+            with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
+                with ui.column().classes("gap-0 min-w-[160px]"):
+                    ui.label("Valor de referência").classes("text-caption text-grey-6")
+                    ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-subtitle1 text-weight-bold")
+                with ui.column().classes("gap-0 min-w-[140px]"):
+                    ui.label("Atendimento").classes("text-caption text-grey-6")
+                    ui.label(_text(row.get("attendance_number"))).classes("text-subtitle1 text-weight-bold")
+                with ui.column().classes("gap-0 min-w-[190px]"):
+                    ui.label("Data operacional observada").classes("text-caption text-grey-6")
+                    ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 ui.button(
-                    "Conferir no MV", icon="fact_check",
+                    "Verificar no MV", icon="fact_check",
                     on_click=lambda: open_particular_mv_dialog(access=access, budget_id=budget_id),
                 ).props("unelevated no-caps")
                 ui.button(
@@ -213,43 +220,9 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
                     on_click=lambda: open_particular_sheet_budget_dialog(access=access, budget_number=number),
                 ).props("outline no-caps")
 
-            with ui.expansion("Evidências que sustentam esta leitura", icon="fact_check").classes(
-                "w-full border rounded-lg"
-            ):
-                with ui.column().classes("w-full p-3 gap-1"):
-                    _evidence(
-                        "description", "Orçamento confeccionado", _date(row.get("budget_date")),
-                        f'Origem: {_text(row.get("original_requester"))} · Valor ORIGINAL: {_money(row.get("original_value"))}',
-                        "XML",
-                    )
-                    for occ in occurrences:
-                        parts = [f'Aviso: {_text(occ.get("notice_number"))}', f'Local: {_text(occ.get("location"))}']
-                        if occ.get("patient_confirmation"):
-                            parts.append(f'Confirmação: {_text(occ.get("patient_confirmation"))}')
-                        if occ.get("notes_original"):
-                            parts.append(f'Obs.: {_text(occ.get("notes_original"))}')
-                        _evidence("event", "Registro operacional", _date(occ.get("procedure_date")), " · ".join(parts), "GRADE")
-                    for evo in evolutions:
-                        _evidence(
-                            "clinical_notes", "Evolução administrativa", _date(evo.get("evolution_recorded_at")),
-                            _text(evo.get("description_raw")), f'ATEND. {_text(evo.get("attendance_number"))}',
-                        )
-                    for event in events:
-                        review = str(event.get("review_reason") or "").strip()
-                        explanation = DECISIONS.get(review, ("", "", ""))[1] if review else ""
-                        _evidence(
-                            "account_tree", _text(event.get("event_type")).replace("_", " ").title(),
-                            _date(event.get("event_at")),
-                            explanation or "Evento interpretado pelo motor a partir da evolução administrativa.",
-                            "MOTOR",
-                        )
-
-            with ui.expansion("Dados técnicos do caso", icon="tune").classes("w-full border rounded-lg"):
-                with ui.row().classes("w-full p-4 gap-6 flex-wrap"):
-                    _metric("Grupo do motor", _text(row.get("work_group")).replace("_", " ").title())
-                    _metric("Modo de fechamento", _text(row.get("closure_mode")).replace("_", " ").title())
-                    _metric("Estado operacional", _text(row.get("operational_state")).replace("_", " ").title())
-                    _metric("Localização", _text(row.get("current_location")).replace("_", " ").title())
+            ui.label(
+                "O histórico detalhado e as evidências técnicas ficarão disponíveis na área de auditoria."
+            ).classes("text-caption text-grey-6")
 
             ui.separator()
             with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
