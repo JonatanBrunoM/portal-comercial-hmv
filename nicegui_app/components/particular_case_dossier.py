@@ -128,6 +128,26 @@ def _closure_review_context(
     return label, None if description == "—" else description
 
 
+def _composition_review_context(
+    events: list[dict[str, Any]],
+    evolutions: list[dict[str, Any]],
+) -> str | None:
+    """Retorna a evidência administrativa que explica a divergência de composição."""
+    relevant = [
+        event for event in events
+        if str(event.get("review_reason") or "").upper() == "COMPOSICAO_DIVERGENTE"
+    ]
+    if not relevant:
+        return None
+    evidence_id = str(relevant[-1].get("evidence_id") or "")
+    evidence = next(
+        (item for item in evolutions if str(item.get("id") or "") == evidence_id),
+        None,
+    )
+    description = _text((evidence or {}).get("description_raw"))
+    return None if description == "—" else description
+
+
 def _decision_for(row: dict[str, Any]) -> tuple[str, str, str]:
     code = str(row.get("account_review_reason") or row.get("work_reason") or "").strip()
     if code in DECISIONS:
@@ -242,6 +262,14 @@ def open_particular_case_dossier(
                                 ui.label("Motivo registrado").classes("text-caption text-grey-6")
                                 ui.label(closure_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
+            composition_reason = _composition_review_context(events, evolutions)
+            if str(row.get("account_review_reason") or "") == "COMPOSICAO_DIVERGENTE" and composition_reason:
+                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
+                    ui.label("O que foi identificado").classes("text-caption text-grey-6")
+                    ui.label("Diferença na composição da conta").classes("text-body1 text-weight-bold")
+                    ui.label("Motivo registrado").classes("text-caption text-grey-6 mt-2")
+                    ui.label(composition_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
+
             with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
                     ui.label("Valor de referência").classes("text-caption text-grey-6")
@@ -279,6 +307,7 @@ def open_particular_case_dossier(
                             access=access,
                             budget_id=budget_id,
                             budget_number=number,
+                            review_reason=str(row.get("account_review_reason") or "") or None,
                             on_resolved=handle_resolution,
                         ),
                     ).props("outline no-caps")
