@@ -41,7 +41,7 @@ def open_particular_mv_dialog(
     budget_id: str,
     attendance_number: str | None = None,
     notice_number: str | None = None,
-    on_saved: Callable[[], None] | None = None,
+    on_saved: Callable[[dict[str, Any]], None] | None = None,
 ) -> None:
     """Conferência operacional compacta no MV; detalhes técnicos ficam na auditoria."""
     try:
@@ -138,7 +138,7 @@ def open_particular_mv_dialog(
                 saving = True
                 save_button.disable()
                 try:
-                    await run.io_bound(
+                    check_id = await run.io_bound(
                         register_particular_mv_check,
                         access=access,
                         budget_id=budget_id,
@@ -158,10 +158,17 @@ def open_particular_mv_dialog(
                 ui.notify("Conferência registrada.", type="positive")
                 dialog.close()
                 if on_saved:
-                    on_saved()
+                    on_saved({
+                        "check_id": check_id,
+                        "outcome": str(outcome.value or "PENDING"),
+                        "account_value": normalized_amount,
+                        "attendance_number": str(attendance.value or "").strip() or None,
+                        "notice_number": str(notice.value or "").strip() or None,
+                        "notes": str(notes.value or "").strip() or None,
+                    })
 
             with ui.row().classes("w-full items-center justify-between gap-2"):
-                ui.label("A conferência registra evidência; a conclusão do caso é uma etapa separada.").classes(
+                ui.label("Registre uma vez; o motor reutiliza esta conferência na decisão do caso.").classes(
                     "text-caption text-grey-6"
                 )
                 save_button = ui.button(
