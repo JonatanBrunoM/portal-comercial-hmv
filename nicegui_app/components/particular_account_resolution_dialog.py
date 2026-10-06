@@ -19,6 +19,9 @@ def open_account_resolution_dialog(
     review_reason: str | None = None,
     on_resolved: Callable[[], None] | None = None,
 ) -> None:
+    normalized_reason = str(review_reason or "").upper()
+    composition_flow = normalized_reason == "COMPOSICAO_DIVERGENTE"
+
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-[620px] p-0"):
         with ui.row().classes("w-full items-center justify-between px-5 py-4"):
             with ui.column().classes("gap-0"):
@@ -26,59 +29,85 @@ def open_account_resolution_dialog(
                 ui.label(f"Orçamento #{budget_number}").classes("text-h6 text-weight-bold")
             ui.button(icon="close", on_click=dialog.close).props("flat round")
         ui.separator()
+
         with ui.column().classes("w-full p-5 gap-3"):
-            normalized_reason = str(review_reason or "").upper()
-            if normalized_reason == "COMPOSICAO_DIVERGENTE":
+            if composition_flow:
                 ui.label("Como a conta ficou após a conferência?").classes("text-subtitle1 text-weight-bold")
                 ui.label(
-                    "Registre o desfecho confirmado no MV. A divergência identificada continuará preservada para auditoria."
+                    "Informe apenas o desfecho confirmado. A divergência identificada permanece preservada para auditoria."
                 ).classes("text-body2 text-grey-7")
+
+                outcome = ui.select(
+                    {
+                        "ACCORDING_TO_BUDGET": "Conforme orçamento",
+                        "WITH_ADJUSTMENT": "Com ajuste",
+                        "HIGHER": "A maior",
+                        "LOWER": "A menor",
+                        "OTHER": "Outro desfecho",
+                    },
+                    label="Como a conta ficou?",
+                ).props("outlined dense").classes("w-full")
+
+                final_value = ui.input(
+                    label="Valor final confirmado",
+                    placeholder="Ex.: 10526,00",
+                ).props("outlined dense").classes("w-full")
+
+                notes = ui.textarea(
+                    label="Observação da verificação",
+                    placeholder="Descreva objetivamente o que foi confirmado.",
+                ).props("outlined autogrow").classes("w-full")
+
+                def sync_composition_fields() -> None:
+                    mode = str(outcome.value or "")
+                    final_value.set_visibility(mode in {"WITH_ADJUSTMENT", "HIGHER", "LOWER", "OTHER"})
+
+                outcome.on("update:model-value", lambda _: sync_composition_fields())
+                sync_composition_fields()
+
             else:
                 ui.label(
                     "Registre somente o que foi confirmado. A conclusão ficará preservada para auditoria."
                 ).classes("text-body2 text-grey-7")
 
-            status = ui.select(
-                {
-                    "CLOSED": "Conta fechada",
-                    "REOPENED": "Conta reaberta",
-                    "SPECIAL_OUTCOME": "Outro desfecho confirmado",
-                    "INCONCLUSIVE": "Permanece inconclusivo",
-                },
-                label="Conclusão",
-            ).props("outlined dense").classes("w-full")
+                status = ui.select(
+                    {
+                        "CLOSED": "Conta fechada",
+                        "REOPENED": "Conta reaberta",
+                        "SPECIAL_OUTCOME": "Outro desfecho confirmado",
+                        "INCONCLUSIVE": "Permanece inconclusivo",
+                    },
+                    label="Conclusão",
+                ).props("outlined dense").classes("w-full")
 
-            closure_options = {
-                "ACCORDING_TO_BUDGET": "Conforme orçamento",
-                "HIGHER": "Fechada a maior",
-                "LOWER": "Fechada a menor",
-                "WITH_ADJUSTMENT": "Fechada com ajuste",
-                "OTHER": "Outro modo de fechamento",
-            }
-            closure = ui.select(
-                closure_options,
-                label="Como foi fechada",
-            ).props("outlined dense").classes("w-full")
+                closure = ui.select(
+                    {
+                        "ACCORDING_TO_BUDGET": "Conforme orçamento",
+                        "HIGHER": "Fechada a maior",
+                        "LOWER": "Fechada a menor",
+                        "WITH_ADJUSTMENT": "Fechada com ajuste",
+                        "OTHER": "Outro modo de fechamento",
+                    },
+                    label="Como foi fechada",
+                ).props("outlined dense").classes("w-full")
 
-            final_value = ui.input(
-                label="Valor final confirmado", placeholder="Ex.: 4989,60"
-            ).props("outlined dense").classes("w-full")
-            if str(review_reason or "").upper() == "COMPOSICAO_DIVERGENTE":
-                final_value.props("hint='Informe apenas quando a conferência exigir registrar o valor final.'")
+                final_value = ui.input(
+                    label="Valor final confirmado", placeholder="Ex.: 4989,60"
+                ).props("outlined dense").classes("w-full")
 
-            notes = ui.textarea(
-                label="Observação da verificação",
-                placeholder="Descreva objetivamente o que foi confirmado.",
-            ).props("outlined autogrow").classes("w-full")
+                notes = ui.textarea(
+                    label="Observação da verificação",
+                    placeholder="Descreva objetivamente o que foi confirmado.",
+                ).props("outlined autogrow").classes("w-full")
 
-            def sync_fields() -> None:
-                closed = status.value == "CLOSED"
-                closure.set_visibility(closed)
-                final_value.set_visibility(closed and closure.value in {"HIGHER", "LOWER"})
+                def sync_fields() -> None:
+                    closed = status.value == "CLOSED"
+                    closure.set_visibility(closed)
+                    final_value.set_visibility(closed and closure.value in {"HIGHER", "LOWER"})
 
-            status.on("update:model-value", lambda _: sync_fields())
-            closure.on("update:model-value", lambda _: sync_fields())
-            sync_fields()
+                status.on("update:model-value", lambda _: sync_fields())
+                closure.on("update:model-value", lambda _: sync_fields())
+                sync_fields()
 
             saving = False
 
@@ -86,20 +115,38 @@ def open_account_resolution_dialog(
                 nonlocal saving
                 if saving:
                     return
-                selected_status = str(status.value or "").strip()
-                selected_mode = str(closure.value or "").strip() or None
-                raw_value = str(final_value.value or "").strip()
-                observation = str(notes.value or "").strip()
 
-                if not selected_status:
-                    ui.notify("Selecione a conclusão.", type="warning")
+                observation = str(notes.value or "").strip()
+                if not observation:
+                    ui.notify("A observação da verificação é obrigatória.", type="warning")
                     return
-                if selected_status == "CLOSED" and not selected_mode:
-                    ui.notify("Informe como a conta foi fechada.", type="warning")
-                    return
-                if selected_mode in {"HIGHER", "LOWER"} and not raw_value:
-                    ui.notify("Informe o valor final confirmado.", type="warning")
-                    return
+
+                if composition_flow:
+                    selected_mode = str(outcome.value or "").strip() or None
+                    if not selected_mode:
+                        ui.notify("Informe como a conta ficou após a conferência.", type="warning")
+                        return
+                    selected_status = "CLOSED"
+                    raw_value = str(final_value.value or "").strip()
+
+                    if selected_mode in {"HIGHER", "LOWER"} and not raw_value:
+                        ui.notify("Informe o valor final confirmado.", type="warning")
+                        return
+                else:
+                    selected_status = str(status.value or "").strip()
+                    selected_mode = str(closure.value or "").strip() or None
+                    raw_value = str(final_value.value or "").strip()
+
+                    if not selected_status:
+                        ui.notify("Selecione a conclusão.", type="warning")
+                        return
+                    if selected_status == "CLOSED" and not selected_mode:
+                        ui.notify("Informe como a conta foi fechada.", type="warning")
+                        return
+                    if selected_mode in {"HIGHER", "LOWER"} and not raw_value:
+                        ui.notify("Informe o valor final confirmado.", type="warning")
+                        return
+
                 normalized_value = None
                 if raw_value:
                     try:
@@ -111,9 +158,6 @@ def open_account_resolution_dialog(
                         ui.notify("O valor final deve ser válido e não negativo.", type="warning")
                         return
                     normalized_value = str(amount)
-                if not observation:
-                    ui.notify("A observação da verificação é obrigatória.", type="warning")
-                    return
 
                 saving = True
                 save_button.disable()
@@ -141,5 +185,8 @@ def open_account_resolution_dialog(
 
             with ui.row().classes("w-full justify-end gap-2"):
                 ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
-                save_button = ui.button("Concluir revisão", icon="task_alt", on_click=save).props("unelevated no-caps")
+                save_button = ui.button(
+                    "Concluir revisão", icon="task_alt", on_click=save
+                ).props("unelevated no-caps")
+
     dialog.open()
