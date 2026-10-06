@@ -252,9 +252,7 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
                             ui.button(
                                 "Abrir decisão" if group in REVIEW_GROUPS else "Abrir caso",
                                 icon="arrow_forward",
-                                on_click=lambda _=None, bid=budget_id: open_particular_case_dossier(
-                                    access=access, budget_id=bid,
-                                ),
+                                on_click=lambda _=None, bid=budget_id: open_case(bid),
                             ).props("unelevated no-caps")
 
     def refresh() -> None:
@@ -262,6 +260,49 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
         state["group"] = str(group_select.value or "TODOS")
         state["origin"] = str(origin_select.value or "TODOS")
         render_rows()
+
+    async def reload_after_resolution() -> None:
+        """Recarrega a fotografia da fila depois de uma decisão humana."""
+        result_label.set_text("Atualizando prioridades...")
+        try:
+            rows = await run.io_bound(list_particular_work_queue)
+        except Exception:
+            logger.exception("Falha ao atualizar particular_work_queue_v1")
+            ui.notify(
+                "A decisão foi registrada, mas não foi possível atualizar a fila automaticamente.",
+                type="warning",
+            )
+            return
+
+        all_rows.clear()
+        all_rows.extend(rows)
+        group_select.options = {
+            "TODOS": "Todas",
+            **{
+                key: value[0]
+                for key, value in GROUPS.items()
+                if any(r.get("work_group") == key for r in all_rows)
+            },
+        }
+        origins = sorted({
+            str(r.get("portfolio_origin") or "")
+            for r in all_rows
+            if r.get("portfolio_origin")
+        })
+        origin_select.options = {
+            "TODOS": "Todas",
+            **{x: x.replace("_", " ").title() for x in origins},
+        }
+        render_summary()
+        render_scopes()
+        render_rows()
+
+    def open_case(budget_id: str) -> None:
+        open_particular_case_dossier(
+            access=access,
+            budget_id=budget_id,
+            on_resolved=lambda: ui.timer(0.05, reload_after_resolution, once=True),
+        )
 
     async def load() -> None:
         result_label.set_text("Carregando prioridades...")
