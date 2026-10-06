@@ -16,6 +16,7 @@ def open_account_resolution_dialog(
     access: ParticularAccess,
     budget_id: str,
     budget_number: Any,
+    review_reason: str | None = None,
     on_resolved: Callable[[], None] | None = None,
 ) -> None:
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-[620px] p-0"):
@@ -26,9 +27,16 @@ def open_account_resolution_dialog(
             ui.button(icon="close", on_click=dialog.close).props("flat round")
         ui.separator()
         with ui.column().classes("w-full p-5 gap-3"):
-            ui.label(
-                "Registre somente o que foi confirmado. A conclusão ficará preservada para auditoria."
-            ).classes("text-body2 text-grey-7")
+            normalized_reason = str(review_reason or "").upper()
+            if normalized_reason == "COMPOSICAO_DIVERGENTE":
+                ui.label("Como a conta ficou após a conferência?").classes("text-subtitle1 text-weight-bold")
+                ui.label(
+                    "Registre o desfecho confirmado no MV. A divergência identificada continuará preservada para auditoria."
+                ).classes("text-body2 text-grey-7")
+            else:
+                ui.label(
+                    "Registre somente o que foi confirmado. A conclusão ficará preservada para auditoria."
+                ).classes("text-body2 text-grey-7")
 
             status = ui.select(
                 {
@@ -40,20 +48,23 @@ def open_account_resolution_dialog(
                 label="Conclusão",
             ).props("outlined dense").classes("w-full")
 
+            closure_options = {
+                "ACCORDING_TO_BUDGET": "Conforme orçamento",
+                "HIGHER": "Fechada a maior",
+                "LOWER": "Fechada a menor",
+                "WITH_ADJUSTMENT": "Fechada com ajuste",
+                "OTHER": "Outro modo de fechamento",
+            }
             closure = ui.select(
-                {
-                    "ACCORDING_TO_BUDGET": "Conforme orçamento",
-                    "HIGHER": "Fechada a maior",
-                    "LOWER": "Fechada a menor",
-                    "WITH_ADJUSTMENT": "Fechada com ajuste",
-                    "OTHER": "Outro modo de fechamento",
-                },
+                closure_options,
                 label="Como foi fechada",
             ).props("outlined dense").classes("w-full")
 
             final_value = ui.input(
                 label="Valor final confirmado", placeholder="Ex.: 4989,60"
             ).props("outlined dense").classes("w-full")
+            if str(review_reason or "").upper() == "COMPOSICAO_DIVERGENTE":
+                final_value.props("hint='Informe apenas quando a conferência exigir registrar o valor final.'")
 
             notes = ui.textarea(
                 label="Observação da verificação",
