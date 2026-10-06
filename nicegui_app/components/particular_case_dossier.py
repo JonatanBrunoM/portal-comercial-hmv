@@ -10,7 +10,7 @@ from nicegui import run, ui
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
 from nicegui_app.components.particular_account_resolution_dialog import open_account_resolution_dialog
 from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
-from nicegui_app.services.particular_service import ParticularAccess
+from nicegui_app.services.particular_service import ParticularAccess, resolve_particular_account_review
 from nicegui_app.services.particular_work_queue import get_particular_case_dossier
 
 logger = logging.getLogger(__name__)
@@ -106,14 +106,14 @@ def _evidence(icon: str, title: str, when: str, body: str, source: str) -> None:
 def _closure_review_context(
     events: list[dict[str, Any]],
     evolutions: list[dict[str, Any]],
-) -> tuple[str | None, str | None]:
+) -> tuple[str | None, str | None, str | None]:
     """Retorna somente o contexto factual que explica a validação de valor."""
     relevant = [
         event for event in events
         if str(event.get("closure_mode") or "").upper() in {"HIGHER", "LOWER"}
     ]
     if not relevant:
-        return None, None
+        return None, None, None
 
     event = relevant[-1]
     mode = str(event.get("closure_mode") or "").upper()
@@ -125,7 +125,7 @@ def _closure_review_context(
         None,
     )
     description = _text((evidence or {}).get("description_raw"))
-    return label, None if description == "—" else description
+    return label, None if description == "—" else description, mode
 
 
 def _composition_review_context(
@@ -250,7 +250,7 @@ def open_particular_case_dossier(
                         ui.label(title).classes("text-h6 text-weight-bold")
                         ui.label(next_action).classes("text-body1")
 
-            closure_label, closure_reason = _closure_review_context(events, evolutions)
+            closure_label, closure_reason, closure_mode = _closure_review_context(events, evolutions)
             if str(row.get("account_review_reason") or "") == "VALIDAR_VALOR_FINAL" and closure_label:
                 with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
                     with ui.row().classes("w-full items-start gap-4 flex-wrap"):
@@ -282,6 +282,68 @@ def open_particular_case_dossier(
                     ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
             with ui.row().classes("w-full gap-2 flex-wrap"):
+                review_reason = str(row.get("account_review_reason") or "")
+
+                def finish_case() -> None:
+                    dialog.close()
+                    if on_resolved:
+                        on_resolved()
+
+                async def resolve_from_mv(saved: dict[str, Any]) -> None:
+                    if review_reason != "VALIDAR_VALOR_FINAL":
+                        return
+                    if str(saved.get("outcome") or "").upper() != "REALIZED":
+                        ui.notify(
+                            "Conferência registrada. O caso permanece na fila porque o MV não confirmou realização.",
+                            type="warning",
+                        )
+                        return
+                    final_value = str(saved.get("account_value") or "").strip()
+                    if not final_value or closure_mode not in {"HIGHER", "LOWER"}:
+                        ui.notify(
+                            "Conferência registrada. Ainda falta informação para concluir o caso.",
+                            type="warning",
+                        )
+                        return
+                    try:
+                        await run.io_bound(
+                            resolve_particular_account_review,
+                            access=access,
+                            budget_id=budget_id,
+                            account_status="CLOSED",
+                            closure_mode=closure_mode,
+                            confirmed_final_value=final_value,
+                            resolution_notes=(
+                                f"Valor final confirmado no MV pela conferência {saved.get('check_id')}."
+                            ),
+                        )
+                    except Exception:
+                        logger.exception("Falha ao concluir automaticamente a revisão após conferência MV.")
+                        ui.notify(
+                            "A conferência foi salva, mas a conclusão automática não pôde ser registrada.",
+                            type="warning",
+                        )
+                        return
+                    ui.notify("Conferência registrada e caso resolvido.", type="positive")
+                    finish_case()
+
+                def after_mv(saved: dict[str, Any]) -> None:
+                    if review_reason == "VALIDAR_VALOR_FINAL":
+                        ui.timer(0.05, lambda: resolve_from_mv(saved), once=True)
+                        return
+                    if (
+                        review_reason == "COMPOSICAO_DIVERGENTE"
+                        and str(saved.get("outcome") or "").upper() == "REALIZED"
+                    ):
+                        open_account_resolution_dialog(
+                            access=access,
+                            budget_id=budget_id,
+                            budget_number=number,
+                            review_reason=review_reason,
+                            confirmed_final_value_prefill=str(saved.get("account_value") or "") or None,
+                            on_resolved=finish_case,
+                        )
+
                 ui.button(
                     "Verificar no MV", icon="fact_check",
                     on_click=lambda: open_particular_mv_dialog(
@@ -289,6 +351,7 @@ def open_particular_case_dossier(
                         budget_id=budget_id,
                         attendance_number=str(row.get("attendance_number") or "") or None,
                         notice_number=str(row.get("notice_number") or "") or None,
+                        on_saved=after_mv,
                     ),
                 ).props("unelevated no-caps")
                 ui.button(
@@ -297,9 +360,7 @@ def open_particular_case_dossier(
                 ).props("outline no-caps")
                 if needs_review and access.can_write:
                     def handle_resolution() -> None:
-                        dialog.close()
-                        if on_resolved:
-                            on_resolved()
+                        finish_case()
 
                     ui.button(
                         "Registrar conclusão", icon="task_alt",
