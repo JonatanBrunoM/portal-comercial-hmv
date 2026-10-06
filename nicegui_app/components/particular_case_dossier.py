@@ -158,7 +158,12 @@ def _decision_for(row: dict[str, Any]) -> tuple[str, str, str]:
     )
 
 
-def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) -> None:
+def open_particular_case_dossier(
+    *,
+    access: ParticularAccess,
+    budget_id: str,
+    on_resolved: Any | None = None,
+) -> None:
     if not access.can_read:
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
@@ -263,13 +268,18 @@ def open_particular_case_dossier(*, access: ParticularAccess, budget_id: str) ->
                     on_click=lambda: open_particular_sheet_budget_dialog(access=access, budget_number=number),
                 ).props("outline no-caps")
                 if needs_review and access.can_write:
+                    def handle_resolution() -> None:
+                        dialog.close()
+                        if on_resolved:
+                            on_resolved()
+
                     ui.button(
                         "Registrar conclusão", icon="task_alt",
                         on_click=lambda: open_account_resolution_dialog(
                             access=access,
                             budget_id=budget_id,
                             budget_number=number,
-                            on_resolved=dialog.close,
+                            on_resolved=handle_resolution,
                         ),
                     ).props("outline no-caps")
 
