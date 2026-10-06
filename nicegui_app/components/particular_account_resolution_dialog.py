@@ -17,6 +17,7 @@ def open_account_resolution_dialog(
     budget_id: str,
     budget_number: Any,
     review_reason: str | None = None,
+    confirmed_final_value_prefill: str | None = None,
     on_resolved: Callable[[], None] | None = None,
 ) -> None:
     normalized_reason = str(review_reason or "").upper()
@@ -51,6 +52,7 @@ def open_account_resolution_dialog(
                 final_value = ui.input(
                     label="Valor final confirmado",
                     placeholder="Ex.: 10526,00",
+                    value=confirmed_final_value_prefill or "",
                 ).props("outlined dense").classes("w-full")
 
                 notes = ui.textarea(
