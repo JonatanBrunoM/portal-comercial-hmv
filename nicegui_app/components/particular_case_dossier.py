@@ -355,6 +355,8 @@ def open_particular_case_dossier(
                             budget_id=budget_id,
                             attendance_number=str(row.get("attendance_number") or "") or None,
                             notice_number=str(row.get("notice_number") or "") or None,
+                            review_reason=review_reason or None,
+                            closure_mode=closure_mode,
                             on_saved=after_mv,
                         ),
                     ).props("unelevated no-caps")
