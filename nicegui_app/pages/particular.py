@@ -31,6 +31,7 @@ from nicegui_app.components.particular_home_dashboard import (
 )
 from nicegui_app.components.particular_import import render_particular_import
 from nicegui_app.services.particular_competence import (
+    get_particular_closing_breakdown,
     get_particular_closing_snapshot,
     get_particular_competence_sources,
     resolve_active_competence,
@@ -444,6 +445,7 @@ def render_particular(user: dict) -> None:
         active_competence, competences = resolve_active_competence(access)
         competence_sources = get_particular_competence_sources(access, active_competence)
         closing_snapshot = get_particular_closing_snapshot(access, active_competence)
+        closing_breakdown = get_particular_closing_breakdown(access, active_competence)
     except ParticularAccessDenied:
         _render_access_denied(user)
         return
@@ -635,6 +637,45 @@ def render_particular(user: dict) -> None:
                                     with ui.column().classes("gap-0"):
                                         ui.label(_money(closing_snapshot.comparable_difference)).classes("text-h6 text-weight-bold")
                                         ui.label("diferença").classes("text-caption text-grey-7")
+
+
+                            with ui.expansion("Diagnóstico técnico do fechamento", icon="analytics").classes("w-full bg-white shadow-sm"):
+                                ui.label(
+                                    "Decomposição temporária para validar as regras de Agosto antes de consolidar o fechamento."
+                                ).classes("text-caption text-grey-7 mb-3")
+                                with ui.row().classes("w-full gap-6 flex-wrap"):
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_breakdown.closed_with_value)).classes("text-h6 text-weight-bold")
+                                        ui.label("fechadas com valor final").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_breakdown.closed_without_value)).classes("text-h6 text-weight-bold")
+                                        ui.label("fechadas sem valor final").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_breakdown.future_without_financial_state)).classes("text-h6 text-weight-bold")
+                                        ui.label("futuras sem estado financeiro").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_breakdown.human_action_without_financial_state)).classes("text-h6 text-weight-bold")
+                                        ui.label("ação humana sem estado financeiro").classes("text-caption text-grey-7")
+
+                                ui.separator()
+                                ui.label("Distribuição por grupo de trabalho").classes("text-subtitle2 text-weight-bold")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in closing_breakdown.work_groups:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(
+                                                str(item["stage"]) + " · " + str(item["work_group"]) + " · " + str(item["work_action"])
+                                            ).classes("text-body2")
+                                            ui.badge(str(item["count"])).props("outline")
+
+                                ui.separator()
+                                ui.label("Financeiro × estágio operacional").classes("text-subtitle2 text-weight-bold")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in closing_breakdown.financial_by_operational_stage:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(
+                                                str(item["stage"]) + " · " + str(item["financial_state"])
+                                            ).classes("text-body2")
+                                            ui.badge(str(item["count"])).props("outline")
                         with ui.element("section").classes("w-full pt-3"):
                             ui.label("CONFERÊNCIAS").classes(
                                 "text-caption text-weight-bold text-primary"
