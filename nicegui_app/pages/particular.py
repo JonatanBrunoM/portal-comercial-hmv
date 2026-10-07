@@ -681,6 +681,14 @@ def render_particular(user: dict) -> None:
                                             ui.badge(str(item["count"])).props("outline")
 
                                 ui.separator()
+                                ui.label("Combinações de evidências operacionais").classes("text-subtitle2 text-weight-bold")
+                                ui.label("Sinais 'ok' presentes na mesma ocorrência; não comprovam realização. Um orçamento pode integrar mais de uma combinação.").classes("text-caption text-grey-7")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in occurrence_signals.evidence_combinations:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(str(item["work_group"]) + " · " + str(item["combination"])).classes("text-body2")
+                                            ui.badge(str(item["budgets"]) + " orç.").props("outline")
+                                ui.separator()
                                 ui.label("Sinais por grupo operacional").classes("text-subtitle2 text-weight-bold")
                                 ui.label("Contagem de orçamentos por sinal, sem inferência de realização ou cancelamento.").classes("text-caption text-grey-7")
                                 with ui.column().classes("w-full gap-1"):
