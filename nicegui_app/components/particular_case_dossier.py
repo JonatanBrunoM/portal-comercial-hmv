@@ -320,6 +320,51 @@ def open_particular_case_dossier(
                                 _text(item.get("description_raw"))
                             ).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
+            if group == "INVESTIGACAO_CONCLUIDA":
+                outcome_labels = {
+                    "REBUDGET": "Orçamento substituído / reorçado",
+                    "DISTINCT": "Sem relação com o indício",
+                    "CANCELLED": "Cancelamento confirmado",
+                    "OTHER": "Outro desfecho",
+                }
+                dimension_labels = {
+                    "PROCEDURE": "Procedimento",
+                    "DOCTOR": "Médico",
+                    "VALUE": "Valor",
+                    "DATE": "Data",
+                }
+                outcome = str(row.get("investigation_outcome") or "").upper()
+                related_number = _text(row.get("investigation_related_budget_number"))
+                dimensions = row.get("investigation_change_dimensions") or []
+                with ui.element("div").classes("w-full rounded-lg bg-green-50 px-4 py-3"):
+                    ui.label("Investigação concluída").classes(
+                        "text-caption text-weight-bold text-positive"
+                    )
+                    ui.label(outcome_labels.get(outcome, outcome or "Conclusão registrada")).classes(
+                        "text-body1 text-weight-bold"
+                    )
+                    if related_number != "—":
+                        ui.label(f"Orçamento relacionado: #{related_number}").classes(
+                            "text-body2 text-grey-8"
+                        )
+                    if dimensions:
+                        changed = ", ".join(
+                            dimension_labels.get(str(item).upper(), str(item))
+                            for item in dimensions
+                        )
+                        ui.label(f"Alterações confirmadas: {changed}").classes(
+                            "text-body2 text-grey-8"
+                        )
+                    notes = _text(row.get("investigation_resolution_notes"))
+                    if notes != "—":
+                        ui.label("Justificativa").classes("text-caption text-grey-6 mt-2")
+                        ui.label(notes).classes("text-body2 text-grey-9 whitespace-pre-wrap")
+                    resolved_at = row.get("investigation_resolved_at")
+                    if resolved_at:
+                        ui.label(f"Concluída em {_date(resolved_at)}").classes(
+                            "text-caption text-grey-6 mt-2"
+                        )
+
             if investigation_candidates:
                 with ui.element("div").classes("w-full rounded-lg bg-amber-50 px-4 py-3"):
                     ui.label("Indícios encontrados nas grades").classes(
