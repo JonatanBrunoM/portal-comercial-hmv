@@ -461,7 +461,67 @@ def render_particular(user: dict) -> None:
                     return
                 ui.navigate.to("/particular")
 
-            with ui.element("section").classes("portal-particular-hero"):
+            # Calendário operacional: sempre mostra dois meses anteriores,
+            # a competência ativa e dois meses seguintes, mesmo que ainda não exista
+            # registro em particular_competencies.
+            competence_by_reference = {item.reference_date: item for item in competences}
+
+            def shift_month(reference: str, offset: int) -> str:
+                base = date.fromisoformat(reference[:10])
+                absolute = base.year * 12 + (base.month - 1) + offset
+                year, month_zero = divmod(absolute, 12)
+                return date(year, month_zero + 1, 1).isoformat()
+
+            calendar_references = [
+                shift_month(active_competence.reference_date, offset)
+                for offset in (-2, -1, 0, 1, 2)
+            ]
+            month_names = (
+                "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+                "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
+            )
+
+            with ui.element("section").classes("portal-particular-hero pt-[58px]"):
+                with ui.element("div").classes(
+                    "absolute top-0 left-0 right-0 h-[58px] z-20 border-b border-white/20"
+                ):
+                    with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
+                        for reference in calendar_references:
+                            month = date.fromisoformat(reference)
+                            item = competence_by_reference.get(reference)
+                            is_active = reference == active_competence.reference_date
+                            label = f"{month_names[month.month - 1]}/{month.year}"
+
+                            def select_calendar_month(
+                                selected_reference: str = reference,
+                                selected_item=item,
+                            ) -> None:
+                                if selected_item is None:
+                                    ui.notify(
+                                        f"{label.title()} ainda não possui competência cadastrada.",
+                                        type="info",
+                                        position="top",
+                                    )
+                                    return
+                                change_active_competence(selected_reference)
+
+                            button = ui.button(
+                                label,
+                                on_click=select_calendar_month,
+                            ).props("flat no-caps").classes(
+                                "flex-1 min-w-0 h-full rounded-none border-r border-white/20 "
+                                + (
+                                    "bg-white/18 text-white text-weight-bold text-subtitle1 "
+                                    "border-b-[4px] border-b-white"
+                                    if is_active
+                                    else "text-white/70 text-weight-medium"
+                                )
+                            )
+                            if item is not None:
+                                button.tooltip(f"{item.label} · {item.status_label}")
+                            else:
+                                button.tooltip("Competência ainda não cadastrada")
+
                 with ui.column().classes("portal-particular-hero-copy"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
                     ui.label("Da proposta à jornada operacional.").classes(
@@ -489,31 +549,6 @@ def render_particular(user: dict) -> None:
                                 ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
 
                 render_hero_art(variant="particular", icon="insights")
-
-                # Navegação mensal compacta no topo do hero. O mês ativo ocupa o
-                # centro visual; meses anteriores e posteriores permanecem acessíveis
-                # como uma faixa contínua. O status será usado depois para representar
-                # visualmente a evolução das competências fechadas.
-                ordered_competences = list(reversed(competences))
-                with ui.element("div").classes(
-                    "absolute top-0 left-0 right-0 h-[58px] z-20 border-b border-white/20"
-                ):
-                    with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap overflow-x-auto"):
-                        for item in ordered_competences:
-                            is_active = item.reference_date == active_competence.reference_date
-                            button = ui.button(
-                                item.label.upper(),
-                                on_click=lambda _=None, reference=item.reference_date: change_active_competence(reference),
-                            ).props("flat no-caps").classes(
-                                "flex-1 min-w-[150px] h-full rounded-none border-r border-white/20 "
-                                + (
-                                    "bg-white/18 text-white text-weight-bold text-subtitle1 "
-                                    "border-b-[4px] border-b-white"
-                                    if is_active
-                                    else "text-white/75 text-weight-medium"
-                                )
-                            )
-                            button.tooltip(f"{item.label} · {item.status_label}")
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
