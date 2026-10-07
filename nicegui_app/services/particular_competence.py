@@ -423,6 +423,7 @@ class ParticularOccurrenceSignalInventory:
     total_occurrences: int
     budgets_with_occurrences: int
     signals: list[dict[str, Any]]
+    by_work_group: list[dict[str, Any]]
 
 
 def get_particular_occurrence_signal_inventory(
@@ -440,7 +441,7 @@ def get_particular_occurrence_signal_inventory(
         if row.get("budget_id")
     })
     if not budget_ids:
-        return ParticularOccurrenceSignalInventory(0, 0, [])
+        return ParticularOccurrenceSignalInventory(0, 0, [], [])
 
     occurrences: list[dict[str, Any]] = []
     for start in range(0, len(budget_ids), 80):
@@ -452,6 +453,8 @@ def get_particular_occurrence_signal_inventory(
             timeout=30.0,
         ))
 
+    budget_groups = {str(row.get('budget_id')): str(row.get('work_group') or 'SEM_GRUPO') for row in queue_rows if row.get('budget_id')}
+    group_budgets: dict[tuple[str, str, str], set[str]] = {}
     occurrence_counts: dict[tuple[str, str], int] = {}
     budget_sets: dict[tuple[str, str], set[str]] = {}
     signal_fields = (
@@ -467,6 +470,8 @@ def get_particular_occurrence_signal_inventory(
             key = (field, value)
             occurrence_counts[key] = occurrence_counts.get(key, 0) + 1
             budget_sets.setdefault(key, set()).add(budget_id)
+            if field != 'notes_original':
+                group_budgets.setdefault((budget_groups.get(budget_id, 'SEM_GRUPO'), field, value), set()).add(budget_id)
 
     signals = [
         {
@@ -488,4 +493,8 @@ def get_particular_occurrence_signal_inventory(
             if row.get("budget_id")
         }),
         signals=signals,
+        by_work_group=[
+            {'work_group': group, 'field': field, 'value': value, 'budgets': len(ids)}
+            for (group, field, value), ids in sorted(group_budgets.items(), key=lambda item: (-len(item[1]), item[0]))
+        ],
     )
