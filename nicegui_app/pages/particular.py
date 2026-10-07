@@ -536,17 +536,34 @@ def render_particular(user: dict) -> None:
                                     return
                                 change_active_competence(selected_reference)
 
+                            status = item.status if item is not None else ""
+                            status_icon = {
+                                "CLOSED": "check_circle",
+                                "IN_CLOSING": "pending",
+                                "OPEN": "radio_button_unchecked",
+                            }.get(status)
+
                             button = ui.button(
-                                label,
                                 on_click=select_calendar_month,
                             ).props("flat no-caps").classes(
-                                "flex-1 min-w-0 h-full rounded-none border-r border-white/20 "
+                                "flex-1 min-w-0 h-full rounded-none border-r border-white/15 "
+                                "transition-all duration-150 "
                                 + (
-                                    "bg-white/18 text-white text-weight-bold border-b-[3px] border-b-white"
+                                    "bg-white text-primary shadow-sm border-b-[3px] border-b-white"
                                     if is_active
-                                    else "text-white/70 text-weight-medium"
+                                    else "bg-white/5 text-white/85 hover:bg-white/12"
                                 )
                             )
+                            with button:
+                                with ui.row().classes("items-center justify-center gap-2 no-wrap"):
+                                    if status_icon:
+                                        ui.icon(status_icon, size="14px").classes(
+                                            "text-primary" if is_active else "text-white/65"
+                                        )
+                                    ui.label(label).classes(
+                                        "text-caption tracking-wide "
+                                        + ("text-weight-bold" if is_active else "text-weight-medium")
+                                    )
                             if item is not None:
                                 button.tooltip(f"{item.label} · {item.status_label}")
                             else:
