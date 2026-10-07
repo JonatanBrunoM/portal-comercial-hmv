@@ -481,10 +481,11 @@ def render_particular(user: dict) -> None:
                 "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
             )
 
-            with ui.element("section").classes("portal-particular-hero pt-[58px]"):
-                with ui.element("div").classes(
-                    "absolute top-0 left-0 right-0 h-[58px] z-20 border-b border-white/20"
-                ):
+            with ui.element("section").classes("portal-particular-hero"):
+                # A faixa mensal participa do fluxo normal do hero. Não usamos
+                # posicionamento absoluto: ela reserva altura própria e não invade
+                # o conteúdo original do card.
+                with ui.element("div").classes("w-full h-[58px] border-b border-white/20"):
                     with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
                         for reference in calendar_references:
                             month = date.fromisoformat(reference)
@@ -495,10 +496,11 @@ def render_particular(user: dict) -> None:
                             def select_calendar_month(
                                 selected_reference: str = reference,
                                 selected_item=item,
+                                selected_label: str = label,
                             ) -> None:
                                 if selected_item is None:
                                     ui.notify(
-                                        f"{label.title()} ainda não possui competência cadastrada.",
+                                        f"{selected_label.title()} ainda não possui competência cadastrada.",
                                         type="info",
                                         position="top",
                                     )
@@ -521,7 +523,6 @@ def render_particular(user: dict) -> None:
                                 button.tooltip(f"{item.label} · {item.status_label}")
                             else:
                                 button.tooltip("Competência ainda não cadastrada")
-
                 with ui.column().classes("portal-particular-hero-copy"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
                     ui.label("Da proposta à jornada operacional.").classes(
