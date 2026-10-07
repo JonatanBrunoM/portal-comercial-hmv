@@ -304,6 +304,7 @@ def get_particular_closing_snapshot(
 class ParticularClosingBreakdown:
     work_groups: list[dict[str, Any]]
     financial_by_operational_stage: list[dict[str, Any]]
+    group_financial_matrix: list[dict[str, Any]]
     closed_with_value: int
     closed_without_value: int
     future_without_financial_state: int
@@ -344,6 +345,7 @@ def get_particular_closing_breakdown(
 
     group_counts: dict[tuple[str, str, str], int] = {}
     cross_counts: dict[tuple[str, str], int] = {}
+    group_financial_counts: dict[tuple[str, str, str, str], int] = {}
     closed_with_value = 0
     closed_without_value = 0
     future_without_financial_state = 0
@@ -374,6 +376,8 @@ def get_particular_closing_breakdown(
 
         cross_key = (current_stage, financial_state)
         cross_counts[cross_key] = cross_counts.get(cross_key, 0) + 1
+        matrix_key = (current_stage, group, action, financial_state)
+        group_financial_counts[matrix_key] = group_financial_counts.get(matrix_key, 0) + 1
         if current_stage == "FUTURE" and financial_state == "UNKNOWN":
             future_without_financial_state += 1
         if current_stage == "HUMAN_ACTION" and financial_state == "UNKNOWN":
@@ -391,9 +395,22 @@ def get_particular_closing_breakdown(
             cross_counts.items(), key=lambda item: (item[0][0], -item[1], item[0][1])
         )
     ]
+    group_financial_matrix = [
+        {
+            "stage": stage_name,
+            "work_group": group,
+            "work_action": action,
+            "financial_state": financial_state,
+            "count": count,
+        }
+        for (stage_name, group, action, financial_state), count in sorted(
+            group_financial_counts.items(), key=lambda item: (-item[1], item[0])
+        )
+    ]
     return ParticularClosingBreakdown(
         work_groups=work_groups,
         financial_by_operational_stage=financial_by_operational_stage,
+        group_financial_matrix=group_financial_matrix,
         closed_with_value=closed_with_value,
         closed_without_value=closed_without_value,
         future_without_financial_state=future_without_financial_state,
