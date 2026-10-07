@@ -34,6 +34,7 @@ from nicegui_app.services.particular_competence import (
     get_particular_closing_breakdown,
     get_particular_closing_snapshot,
     get_particular_competence_sources,
+    get_particular_occurrence_signal_inventory,
     resolve_active_competence,
     set_active_competence,
 )
@@ -446,6 +447,7 @@ def render_particular(user: dict) -> None:
         competence_sources = get_particular_competence_sources(access, active_competence)
         closing_snapshot = get_particular_closing_snapshot(access, active_competence)
         closing_breakdown = get_particular_closing_breakdown(access, active_competence)
+        occurrence_signals = get_particular_occurrence_signal_inventory(access, active_competence)
     except ParticularAccessDenied:
         _render_access_denied(user)
         return
@@ -677,6 +679,23 @@ def render_particular(user: dict) -> None:
                                                 + str(item["work_action"]) + " · " + str(item["financial_state"])
                                             ).classes("text-body2")
                                             ui.badge(str(item["count"])).props("outline")
+
+                                ui.separator()
+                                ui.label("Sinais reais das grades").classes("text-subtitle2 text-weight-bold")
+                                ui.label(
+                                    str(occurrence_signals.budgets_with_occurrences) + " orçamentos · "
+                                    + str(occurrence_signals.total_occurrences) + " ocorrências. "
+                                    + "Valores exibidos sem interpretação automática."
+                                ).classes("text-caption text-grey-7")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in occurrence_signals.signals[:80]:
+                                        with ui.row().classes("w-full items-start justify-between gap-3 py-1"):
+                                            ui.label(
+                                                str(item["field"]) + " · " + str(item["value"])
+                                            ).classes("text-body2").style("max-width: 85%; overflow-wrap: anywhere;")
+                                            ui.badge(
+                                                str(item["budgets"]) + " orç. / " + str(item["occurrences"]) + " ocorr."
+                                            ).props("outline")
 
                                 ui.separator()
                                 ui.label("Financeiro × estágio operacional").classes("text-subtitle2 text-weight-bold")
