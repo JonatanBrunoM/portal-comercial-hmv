@@ -490,30 +490,30 @@ def render_particular(user: dict) -> None:
 
                 render_hero_art(variant="particular", icon="insights")
 
-                # A competência é a porta de entrada do Particular: a linha do tempo
-                # fica dentro do próprio hero e deixa evidente o mês em análise.
-                with ui.element("div").classes("w-full px-7 pt-1 pb-4 relative z-10"):
-                    with ui.row().classes("w-full items-center gap-0 no-wrap overflow-x-auto"):
-                        for index, item in enumerate(reversed(competences)):
+                # Navegação mensal compacta no topo do hero. O mês ativo ocupa o
+                # centro visual; meses anteriores e posteriores permanecem acessíveis
+                # como uma faixa contínua. O status será usado depois para representar
+                # visualmente a evolução das competências fechadas.
+                ordered_competences = list(reversed(competences))
+                with ui.element("div").classes(
+                    "absolute top-0 left-0 right-0 h-[58px] z-20 border-b border-white/20"
+                ):
+                    with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap overflow-x-auto"):
+                        for item in ordered_competences:
                             is_active = item.reference_date == active_competence.reference_date
-                            if index:
-                                with ui.element("div").classes(
-                                    "h-[2px] min-w-[28px] flex-1 bg-white/30"
-                                ):
-                                    pass
                             button = ui.button(
-                                item.label.replace("/", " / "),
+                                item.label.upper(),
                                 on_click=lambda _=None, reference=item.reference_date: change_active_competence(reference),
-                            ).props(
-                                "unelevated no-caps"
-                                if is_active
-                                else "flat no-caps"
-                            ).classes(
-                                "min-w-[118px] rounded-lg px-4 py-2 text-weight-bold "
-                                + ("bg-white text-primary shadow-md" if is_active else "text-white")
+                            ).props("flat no-caps").classes(
+                                "flex-1 min-w-[150px] h-full rounded-none border-r border-white/20 "
+                                + (
+                                    "bg-white/18 text-white text-weight-bold text-subtitle1 "
+                                    "border-b-[4px] border-b-white"
+                                    if is_active
+                                    else "text-white/75 text-weight-medium"
+                                )
                             )
-                            if is_active:
-                                button.tooltip(f"{item.label} · {item.status_label}")
+                            button.tooltip(f"{item.label} · {item.status_label}")
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
