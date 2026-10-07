@@ -270,6 +270,45 @@ def open_particular_case_dossier(
                     ui.label("Motivo registrado").classes("text-caption text-grey-6 mt-2")
                     ui.label(composition_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
+            ambiguous_reasons = {"MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}
+            if str(row.get("account_review_reason") or "") in ambiguous_reasons:
+                event_evidence_ids = {
+                    str(event.get("evidence_id") or "")
+                    for event in events
+                    if event.get("evidence_id")
+                }
+                related_evolutions = [
+                    item for item in evolutions
+                    if str(item.get("id") or "") in event_evidence_ids
+                ]
+                if not related_evolutions:
+                    related_evolutions = evolutions
+
+                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
+                    ui.label("Eventos que precisam ser comparados").classes(
+                        "text-caption text-grey-6"
+                    )
+                    ui.label(
+                        "O sistema encontrou eventos cuja ordem não pode ser definida com segurança pela fonte."
+                    ).classes("text-body2 text-grey-8 mb-2")
+                    for item in related_evolutions:
+                        with ui.element("div").classes(
+                            "w-full bg-white rounded border px-3 py-2 mb-2"
+                        ):
+                            with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                                ui.label(
+                                    _date(item.get("evolution_recorded_at"))
+                                ).classes("text-caption text-weight-bold text-primary")
+                                evolution_type = _text(item.get("evolution_type"))
+                                if evolution_type != "—":
+                                    ui.badge(evolution_type).props("outline")
+                                user_name = _text(item.get("user_name"))
+                                if user_name != "—":
+                                    ui.label(user_name).classes("text-caption text-grey-6")
+                            ui.label(
+                                _text(item.get("description_raw"))
+                            ).classes("text-body2 text-grey-9 whitespace-pre-wrap")
+
             with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
                     ui.label("Valor de referência").classes("text-caption text-grey-6")
