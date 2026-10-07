@@ -668,6 +668,17 @@ def render_particular(user: dict) -> None:
                                             ui.badge(str(item["count"])).props("outline")
 
                                 ui.separator()
+                                ui.label("Grupo de trabalho × financeiro").classes("text-subtitle2 text-weight-bold")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in closing_breakdown.group_financial_matrix:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(
+                                                str(item["stage"]) + " · " + str(item["work_group"]) + " · "
+                                                + str(item["work_action"]) + " · " + str(item["financial_state"])
+                                            ).classes("text-body2")
+                                            ui.badge(str(item["count"])).props("outline")
+
+                                ui.separator()
                                 ui.label("Financeiro × estágio operacional").classes("text-subtitle2 text-weight-bold")
                                 with ui.column().classes("w-full gap-1"):
                                     for item in closing_breakdown.financial_by_operational_stage:
