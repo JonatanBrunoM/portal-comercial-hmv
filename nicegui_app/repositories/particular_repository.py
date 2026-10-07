@@ -1422,6 +1422,15 @@ def commit_admin_evolution_import(*, actor_profile_id: str, source_filename: str
 
 
 
+def resolve_investigation(*, actor_profile_id: str, budget_id: str, related_budget_id: str | None, related_budget_number: int | None, outcome: str, change_dimensions: list[str] | None, resolution_notes: str, evidence: dict[str, Any] | None = None) -> str:
+    """Persiste a conclusão operacional, inclusive com referência ainda não importada."""
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    budget_id = _require_uuid(budget_id, field="budget_id")
+    result = rest_rpc("particular_resolve_investigation", {"p_actor_profile_id": actor_profile_id, "p_budget_id": budget_id, "p_related_budget_id": str(related_budget_id).strip() if related_budget_id else None, "p_related_budget_number": int(related_budget_number) if related_budget_number is not None else None, "p_outcome": str(outcome or "").strip().upper(), "p_change_dimensions": change_dimensions or [], "p_resolution_notes": str(resolution_notes or "").strip(), "p_evidence": evidence or {}}, timeout=30.0)
+    if not isinstance(result, str) or not result.strip():
+        raise RuntimeError("particular_resolve_investigation não retornou um identificador válido.")
+    return result.strip()
+
 def register_investigation_relation(
     *,
     actor_profile_id: str,
