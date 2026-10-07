@@ -69,15 +69,6 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         if patient_name:
             budget_date = str(row.get("budget_date") or "").strip()
             budget_year = budget_date[:4] if len(budget_date) >= 4 and budget_date[:4].isdigit() else None
-            candidate_params = {
-                "patient_name": f"ilike.{patient_name}",
-                "order": "procedure_date.asc",
-                "limit": "50",
-            }
-            if budget_year:
-                candidate_params["procedure_date"] = (
-                    f"gte.{budget_year}-01-01&procedure_date=lte.{budget_year}-12-31"
-                )
             investigation_candidates = rest_select(
                 "particular_occurrences",
                 select=(
@@ -86,9 +77,18 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
                     "occurrence_status,source_row_number,source_row_key,patient_name,doctor_name,"
                     "differential,negative_type_value,budget_reference_raw,budget_reference_status"
                 ),
-                params=candidate_params,
+                params={
+                    "patient_name": f"ilike.{patient_name}",
+                    "order": "procedure_date.asc",
+                    "limit": "50",
+                },
                 timeout=20.0,
             )
+            if budget_year:
+                investigation_candidates = [
+                    item for item in investigation_candidates
+                    if str(item.get("procedure_date") or "").startswith(f"{budget_year}-")
+                ]
 
     candidate_budget_cache: dict[str, dict[str, Any]] = {}
     for item in investigation_candidates:
