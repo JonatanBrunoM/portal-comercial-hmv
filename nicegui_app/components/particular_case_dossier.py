@@ -9,6 +9,7 @@ from nicegui import run, ui
 
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
 from nicegui_app.components.particular_account_resolution_dialog import open_account_resolution_dialog
+from nicegui_app.components.particular_investigation_dialog import open_particular_investigation_dialog
 from nicegui_app.components.particular_sheet_budget_dialog import open_particular_sheet_budget_dialog
 from nicegui_app.services.particular_service import ParticularAccess, resolve_particular_account_review
 from nicegui_app.services.particular_work_queue import get_particular_case_dossier
@@ -434,6 +435,23 @@ def open_particular_case_dossier(
                             confirmed_final_value_prefill=str(saved.get("account_value") or "") or None,
                             on_resolved=finish_case,
                         )
+
+                if (
+                    group in {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}
+                    and investigation_candidates
+                    and access.can_write
+                ):
+                    ui.button(
+                        "Concluir investigação",
+                        icon="task_alt",
+                        on_click=lambda: open_particular_investigation_dialog(
+                            access=access,
+                            budget_id=budget_id,
+                            budget_number=number,
+                            candidates=investigation_candidates,
+                            on_resolved=finish_case,
+                        ),
+                    ).props("unelevated no-caps")
 
                 if needs_review and access.can_write:
                     def handle_resolution() -> None:
