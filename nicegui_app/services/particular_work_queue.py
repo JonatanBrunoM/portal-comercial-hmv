@@ -57,6 +57,32 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         timeout=20.0,
     )
 
+    investigation_candidates: list[dict[str, Any]] = []
+    if not occurrences and str(row.get("work_group") or "") in {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}:
+        identity = rest_select(
+            "particular_budget_identity",
+            select="patient_name,patient_name_normalized",
+            params={"budget_id": f"eq.{budget_id}", "limit": "1"},
+            timeout=20.0,
+        )
+        patient_name = str((identity[0] if identity else {}).get("patient_name") or "").strip()
+        if patient_name:
+            investigation_candidates = rest_select(
+                "particular_occurrences",
+                select=(
+                    "id,budget_id,notice_number,procedure_date,location,operational_value,"
+                    "contact_status,patient_confirmation,evolution_status,notes_original,"
+                    "occurrence_status,source_row_number,source_row_key,patient_name,doctor_name,"
+                    "differential,negative_type_value"
+                ),
+                params={
+                    "patient_name": f"ilike.{patient_name}",
+                    "order": "procedure_date.asc",
+                    "limit": "50",
+                },
+                timeout=20.0,
+            )
+
     events = rest_select(
         "particular_account_events",
         select=(
@@ -88,4 +114,5 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         "occurrences": occurrences,
         "events": events,
         "evolutions": evolutions,
+        "investigation_candidates": investigation_candidates,
     }
