@@ -344,34 +344,24 @@ def open_particular_case_dossier(
                             on_resolved=finish_case,
                         )
 
-                ui.button(
-                    "Verificar no MV", icon="fact_check",
-                    on_click=lambda: open_particular_mv_dialog(
-                        access=access,
-                        budget_id=budget_id,
-                        attendance_number=str(row.get("attendance_number") or "") or None,
-                        notice_number=str(row.get("notice_number") or "") or None,
-                        on_saved=after_mv,
-                    ),
-                ).props("unelevated no-caps")
-                ui.button(
-                    "Consultar grades", icon="table_view",
-                    on_click=lambda: open_particular_sheet_budget_dialog(access=access, budget_number=number),
-                ).props("outline no-caps")
                 if needs_review and access.can_write:
                     def handle_resolution() -> None:
                         finish_case()
 
                     ui.button(
                         "Registrar conclusão", icon="task_alt",
-                        on_click=lambda: open_account_resolution_dialog(
+                        on_click=lambda: open_particular_mv_dialog(
                             access=access,
                             budget_id=budget_id,
-                            budget_number=number,
-                            review_reason=str(row.get("account_review_reason") or "") or None,
-                            on_resolved=handle_resolution,
+                            attendance_number=str(row.get("attendance_number") or "") or None,
+                            notice_number=str(row.get("notice_number") or "") or None,
+                            on_saved=after_mv,
                         ),
-                    ).props("outline no-caps")
+                    ).props("unelevated no-caps")
+                ui.button(
+                    "Consultar grades", icon="table_view",
+                    on_click=lambda: open_particular_sheet_budget_dialog(access=access, budget_number=number),
+                ).props("outline no-caps")
 
             ui.label(
                 "O histórico detalhado e as evidências técnicas ficarão disponíveis na área de auditoria."
