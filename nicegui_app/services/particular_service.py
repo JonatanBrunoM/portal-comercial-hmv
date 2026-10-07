@@ -20,6 +20,7 @@ from nicegui_app.repositories.particular_repository import (
     commit_admin_evolution_import,
     resolve_account_review,
     register_investigation_relation,
+    resolve_investigation,
 )
 
 class ParticularAccessDenied(PermissionError):
@@ -188,19 +189,18 @@ def conclude_particular_investigation_relation(
     *,
     access: ParticularAccess,
     budget_id: str,
-    related_budget_id: str,
+    related_budget_id: str | None,
+    related_budget_number: int | None,
     decision: str,
     review_reason: str,
     change_dimensions: list[str] | None = None,
 ) -> str:
-    """Cria a relação descoberta na investigação e registra a decisão humana."""
+    """Registra a conclusão humana da investigação operacional."""
     if not access.can_write:
-        raise ParticularAccessDenied(
-            "Seu perfil não possui permissão para concluir investigações no módulo Particular."
-        )
+        raise ParticularAccessDenied("Sem permissão para concluir investigações.")
 
     normalized_decision = str(decision or "").strip().upper()
-    if normalized_decision not in {"REBUDGET", "DISTINCT"}:
+    if normalized_decision not in {"REBUDGET", "DISTINCT", "CANCELLED", "OTHER"}:
         raise ValueError("Conclusão de investigação inválida.")
 
     normalized_reason = str(review_reason or "").strip()
@@ -215,23 +215,18 @@ def conclude_particular_investigation_relation(
         for value in (change_dimensions or [])
         if str(value or "").strip().upper() in allowed_dimensions
     })
+    if normalized_decision == "REBUDGET" and not dimensions:
+        raise ValueError("Informe pelo menos uma alteração confirmada no reorçamento.")
 
-    relation_id = register_investigation_relation(
+    return resolve_investigation(
         actor_profile_id=access.profile_id,
         budget_id=budget_id,
-        related_budget_id=related_budget_id,
-        evidence={
-            "investigation_outcome": normalized_decision,
-            "change_dimensions": dimensions,
-        },
-    )
-
-    return decide_budget_relation(
-        actor_profile_id=access.profile_id,
-        relation_id=relation_id,
-        decision=normalized_decision,
-        review_reason=normalized_reason,
-        retained_budget_id=related_budget_id if normalized_decision == "REBUDGET" else None,
+        related_budget_id=str(related_budget_id or "").strip() or None,
+        related_budget_number=related_budget_number,
+        outcome=normalized_decision,
+        change_dimensions=dimensions,
+        resolution_notes=normalized_reason,
+        evidence={"origin": "GRADE_INVESTIGATION"},
     )
 
 def rectify_particular_relation(
