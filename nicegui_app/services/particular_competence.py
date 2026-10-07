@@ -298,3 +298,104 @@ def get_particular_closing_snapshot(
         comparable_original_value=comparable_original_value,
         comparable_difference=realized_value_total - comparable_original_value,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularClosingBreakdown:
+    work_groups: list[dict[str, Any]]
+    financial_by_operational_stage: list[dict[str, Any]]
+    closed_with_value: int
+    closed_without_value: int
+    future_without_financial_state: int
+    human_action_without_financial_state: int
+
+
+def get_particular_closing_breakdown(
+    access: ParticularAccess,
+    competence: ParticularCompetence,
+) -> ParticularClosingBreakdown:
+    """Decompõe o diagnóstico mensal para validar as regras antes do fechamento definitivo."""
+    _check_access(access)
+    from nicegui_app.services.particular_work_queue import list_particular_work_queue
+
+    rows = list_particular_work_queue(competence=competence.reference_date)
+    next_reference = date(
+        competence.year + (1 if competence.month == 12 else 0),
+        1 if competence.month == 12 else competence.month + 1,
+        1,
+    ).isoformat()
+    closed_statuses = {"CLOSED", "FECHADA", "FECHADO"}
+
+    def stage(row: dict[str, Any]) -> str:
+        operational_date = str(
+            row.get("first_operational_date")
+            or row.get("last_observed_operational_date")
+            or ""
+        )[:10]
+        group = str(row.get("work_group") or "").strip().upper()
+        action = str(row.get("work_action") or "").strip().upper()
+        if operational_date and operational_date >= next_reference:
+            return "FUTURE"
+        if action in {"RESOLVIDO", "RESOLVED"} or group in {
+            "RESOLVIDO", "INVESTIGACAO_CONCLUIDA"
+        }:
+            return "RESOLVED"
+        return "HUMAN_ACTION"
+
+    group_counts: dict[tuple[str, str, str], int] = {}
+    cross_counts: dict[tuple[str, str], int] = {}
+    closed_with_value = 0
+    closed_without_value = 0
+    future_without_financial_state = 0
+    human_action_without_financial_state = 0
+
+    for row in rows:
+        current_stage = stage(row)
+        group = str(row.get("work_group") or "SEM_GRUPO").strip().upper()
+        action = str(row.get("work_action") or "SEM_ACAO").strip().upper()
+        reason = str(row.get("work_reason") or "").strip()
+        group_key = (current_stage, group, action)
+        group_counts[group_key] = group_counts.get(group_key, 0) + 1
+
+        account_status = str(row.get("account_status") or "").strip().upper()
+        final_raw = row.get("confirmed_final_value")
+        if final_raw is None:
+            final_raw = row.get("mv_account_value")
+        if account_status in closed_statuses:
+            financial_state = "CLOSED_WITH_VALUE" if final_raw not in (None, "") else "CLOSED_WITHOUT_VALUE"
+            if final_raw not in (None, ""):
+                closed_with_value += 1
+            else:
+                closed_without_value += 1
+        elif account_status:
+            financial_state = account_status
+        else:
+            financial_state = "UNKNOWN"
+
+        cross_key = (current_stage, financial_state)
+        cross_counts[cross_key] = cross_counts.get(cross_key, 0) + 1
+        if current_stage == "FUTURE" and financial_state == "UNKNOWN":
+            future_without_financial_state += 1
+        if current_stage == "HUMAN_ACTION" and financial_state == "UNKNOWN":
+            human_action_without_financial_state += 1
+
+    work_groups = [
+        {"stage": stage_name, "work_group": group, "work_action": action, "count": count}
+        for (stage_name, group, action), count in sorted(
+            group_counts.items(), key=lambda item: (-item[1], item[0])
+        )
+    ]
+    financial_by_operational_stage = [
+        {"stage": stage_name, "financial_state": financial_state, "count": count}
+        for (stage_name, financial_state), count in sorted(
+            cross_counts.items(), key=lambda item: (item[0][0], -item[1], item[0][1])
+        )
+    ]
+    return ParticularClosingBreakdown(
+        work_groups=work_groups,
+        financial_by_operational_stage=financial_by_operational_stage,
+        closed_with_value=closed_with_value,
+        closed_without_value=closed_without_value,
+        future_without_financial_state=future_without_financial_state,
+        human_action_without_financial_state=human_action_without_financial_state,
+    )
