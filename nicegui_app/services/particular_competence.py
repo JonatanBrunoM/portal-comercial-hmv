@@ -507,3 +507,55 @@ def get_particular_occurrence_signal_inventory(
             for (group, field, value), ids in sorted(group_budgets.items(), key=lambda item: (-len(item[1]), item[0]))
         ],
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularFinancialEvidenceLevels:
+    closed_confirmed_value: int
+    closed_without_confirmed_value: int
+    special_or_inconclusive: int
+    no_financial_evidence: int
+    other_financial_state: int
+    review_required: int
+    auto_resolved: int
+    manually_resolved: int
+
+
+def get_particular_financial_evidence_levels(
+    access: ParticularAccess,
+    competence: ParticularCompetence,
+) -> ParticularFinancialEvidenceLevels:
+    """Classificação financeira diagnóstica da coorte; não infere realização assistencial."""
+    _check_access(access)
+    from nicegui_app.services.particular_work_queue import list_particular_work_queue
+
+    counts = {
+        "closed_confirmed_value": 0,
+        "closed_without_confirmed_value": 0,
+        "special_or_inconclusive": 0,
+        "no_financial_evidence": 0,
+        "other_financial_state": 0,
+        "review_required": 0,
+        "auto_resolved": 0,
+        "manually_resolved": 0,
+    }
+    for row in list_particular_work_queue(competence=competence.reference_date):
+        status = str(row.get("account_status") or "").strip().upper()
+        automation = str(row.get("account_automation_status") or "").strip().upper()
+        confirmed = row.get("confirmed_final_value")
+        if status == "CLOSED":
+            key = "closed_confirmed_value" if confirmed is not None else "closed_without_confirmed_value"
+        elif status in {"SPECIAL_OUTCOME", "INCONCLUSIVE"}:
+            key = "special_or_inconclusive"
+        elif not status:
+            key = "no_financial_evidence"
+        else:
+            key = "other_financial_state"
+        counts[key] += 1
+        if automation == "REVIEW_REQUIRED":
+            counts["review_required"] += 1
+        elif automation == "AUTO_RESOLVED":
+            counts["auto_resolved"] += 1
+        elif automation == "MANUALLY_RESOLVED":
+            counts["manually_resolved"] += 1
+    return ParticularFinancialEvidenceLevels(**counts)
