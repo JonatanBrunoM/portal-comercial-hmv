@@ -424,6 +424,7 @@ class ParticularOccurrenceSignalInventory:
     budgets_with_occurrences: int
     signals: list[dict[str, Any]]
     by_work_group: list[dict[str, Any]]
+    evidence_combinations: list[dict[str, Any]]
 
 
 def get_particular_occurrence_signal_inventory(
@@ -441,7 +442,7 @@ def get_particular_occurrence_signal_inventory(
         if row.get("budget_id")
     })
     if not budget_ids:
-        return ParticularOccurrenceSignalInventory(0, 0, [], [])
+        return ParticularOccurrenceSignalInventory(0, 0, [], [], [])
 
     occurrences: list[dict[str, Any]] = []
     for start in range(0, len(budget_ids), 80):
@@ -455,6 +456,7 @@ def get_particular_occurrence_signal_inventory(
 
     budget_groups = {str(row.get('budget_id')): str(row.get('work_group') or 'SEM_GRUPO') for row in queue_rows if row.get('budget_id')}
     group_budgets: dict[tuple[str, str, str], set[str]] = {}
+    combinations: dict[tuple[str, str], set[str]] = {}
     occurrence_counts: dict[tuple[str, str], int] = {}
     budget_sets: dict[tuple[str, str], set[str]] = {}
     signal_fields = (
@@ -463,6 +465,9 @@ def get_particular_occurrence_signal_inventory(
     )
     for occurrence in occurrences:
         budget_id = str(occurrence.get("budget_id") or "")
+        flags = [field for field in ('contact_status', 'patient_confirmation', 'evolution_status') if str(occurrence.get(field) or '').strip().lower() == 'ok']
+        combo = ' + '.join(flags) if flags else 'SEM_OK_REGISTRADO'
+        combinations.setdefault((budget_groups.get(budget_id, 'SEM_GRUPO'), combo), set()).add(budget_id)
         for field in signal_fields:
             value = str(occurrence.get(field) or "").strip()
             if not value:
@@ -493,6 +498,10 @@ def get_particular_occurrence_signal_inventory(
             if row.get("budget_id")
         }),
         signals=signals,
+        evidence_combinations=[
+            {'work_group': group, 'combination': combo, 'budgets': len(ids)}
+            for (group, combo), ids in sorted(combinations.items(), key=lambda item: (-len(item[1]), item[0]))
+        ],
         by_work_group=[
             {'work_group': group, 'field': field, 'value': value, 'budgets': len(ids)}
             for (group, field, value), ids in sorted(group_budgets.items(), key=lambda item: (-len(item[1]), item[0]))
