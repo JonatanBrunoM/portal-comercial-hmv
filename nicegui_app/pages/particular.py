@@ -30,6 +30,10 @@ from nicegui_app.components.particular_home_dashboard import (
     render_particular_home_dashboard,
 )
 from nicegui_app.components.particular_import import render_particular_import
+from nicegui_app.services.particular_competence import (
+    resolve_active_competence,
+    set_active_competence,
+)
 
 
 def _text(value: Any, fallback: str = "—") -> str:
@@ -435,6 +439,7 @@ def render_particular(user: dict) -> None:
     try:
         access = resolve_particular_access(user)
         context = get_particular_context(access=access)
+        active_competence, competences = resolve_active_competence(access)
     except ParticularAccessDenied:
         _render_access_denied(user)
         return
@@ -448,6 +453,31 @@ def render_particular(user: dict) -> None:
 
     with portal_layout(user=user, active="particular"):
         with ui.column().classes("w-full gap-3"):
+            with ui.card().classes("w-full px-4 py-3 shadow-sm border border-grey-3"):
+                with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
+                    with ui.row().classes("items-center gap-3"):
+                        ui.icon("calendar_month", size="24px").classes("text-primary")
+                        with ui.column().classes("gap-0"):
+                            ui.label("COMPETÊNCIA ATIVA").classes("text-caption text-weight-bold text-primary")
+                            ui.label(
+                                f"{active_competence.label} · {active_competence.status_label}"
+                            ).classes("text-subtitle1 text-weight-bold")
+                    competence_select = ui.select(
+                        options={item.reference_date: item.label for item in competences},
+                        value=active_competence.reference_date,
+                        label="Mês de referência",
+                    ).props("outlined dense options-dense").classes("w-[220px]")
+
+                    def change_active_competence(event) -> None:
+                        try:
+                            set_active_competence(str(event.value or ""), competences)
+                        except ValueError as exc:
+                            ui.notify(str(exc), type="warning", position="top")
+                            return
+                        ui.navigate.to("/particular")
+
+                    competence_select.on_value_change(change_active_competence)
+
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
@@ -492,7 +522,7 @@ def render_particular(user: dict) -> None:
             with ui.tab_panels(tabs, value=overview_tab).classes("w-full bg-transparent p-0"):
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
-                        render_particular_home_dashboard(access)
+                        render_particular_home_dashboard(access, competence=active_competence.reference_date)
                         with ui.element("section").classes("w-full pt-3"):
                             ui.label("CONFERÊNCIAS").classes(
                                 "text-caption text-weight-bold text-primary"
@@ -594,7 +624,7 @@ def render_particular(user: dict) -> None:
 
 
                 with ui.tab_panel(operation_tab).classes("px-0 py-2"):
-                    render_particular_work_queue(access=access)
+                    render_particular_work_queue(access=access, competence=active_competence.reference_date)
 
                 with ui.tab_panel(import_tab).classes("px-0 py-2"):
                     render_particular_import(access=access)
