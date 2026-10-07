@@ -280,15 +280,6 @@ def open_particular_case_dossier(
                     ui.label(composition_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
             ambiguous_reasons = {"MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}
-            if ambiguity_with_explicit_closure:
-                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
-                    ui.label("Fechamento conclusivo identificado").classes("text-caption text-grey-6")
-                    ui.label(closure_label or "Conta fechada").classes("text-body1 text-weight-bold")
-                    ui.label(
-                        "A ordem dos demais eventos permanece ambígua, mas não invalida o fechamento explícito. "
-                        "Confirme no MV apenas o valor final da conta."
-                    ).classes("text-body2 text-grey-8")
-
             if raw_review_reason in ambiguous_reasons:
                 event_evidence_ids = {
                     str(event.get("evidence_id") or "")
