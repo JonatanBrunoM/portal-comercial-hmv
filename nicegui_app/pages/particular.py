@@ -550,20 +550,20 @@ def render_particular(user: dict) -> None:
                                 "flex-1 min-w-0 h-full rounded-none border-r border-slate-200 "
                                 "transition-all duration-150 "
                                 + (
-                                    "bg-white/18 text-white text-weight-bold "
-                                    "border-b-[4px] border-b-white"
+                                    "bg-white/22 text-white text-weight-bold "
+                                    "border-b-[4px] border-b-white shadow-lg ring-1 ring-inset ring-white/25"
                                     if is_active
-                                    else "bg-[#0B6FA4] text-white/75 hover:bg-white/10 hover:text-white"
+                                    else "bg-[#0B6FA4] text-white hover:bg-white/10"
                                 )
                             )
                             with button:
                                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                                     if status_icon:
                                         ui.icon(status_icon, size="14px").classes(
-                                            "text-white" if is_active else "text-white/55"
+                                            "text-white" if is_active else "text-white/80"
                                         )
                                     ui.label(label).classes(
-                                        "text-caption tracking-wide "
+                                        "text-[13px] tracking-wide text-white "
                                         + ("text-weight-bold" if is_active else "text-weight-medium")
                                     )
                             if item is not None:
