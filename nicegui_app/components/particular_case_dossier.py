@@ -348,9 +348,24 @@ def open_particular_case_dossier(
                     def handle_resolution() -> None:
                         finish_case()
 
-                    ui.button(
-                        "Registrar conclusão", icon="task_alt",
-                        on_click=lambda: open_particular_mv_dialog(
+                    def open_conclusion() -> None:
+                        # Se a própria evolução já comprova o fechamento e a pendência é
+                        # somente de composição, não perguntamos novamente se houve realização.
+                        # Vamos direto ao desfecho da composição, preservando a evidência original.
+                        if review_reason == "COMPOSICAO_DIVERGENTE" and composition_reason:
+                            open_account_resolution_dialog(
+                                access=access,
+                                budget_id=budget_id,
+                                budget_number=number,
+                                review_reason=review_reason,
+                                confirmed_final_value_prefill=(
+                                    str(row.get("mv_account_value") or "") or None
+                                ),
+                                on_resolved=finish_case,
+                            )
+                            return
+
+                        open_particular_mv_dialog(
                             access=access,
                             budget_id=budget_id,
                             attendance_number=str(row.get("attendance_number") or "") or None,
@@ -358,7 +373,11 @@ def open_particular_case_dossier(
                             review_reason=review_reason or None,
                             closure_mode=closure_mode,
                             on_saved=after_mv,
-                        ),
+                        )
+
+                    ui.button(
+                        "Registrar conclusão", icon="task_alt",
+                        on_click=open_conclusion,
                     ).props("unelevated no-caps")
                 ui.button(
                     "Consultar grades", icon="table_view",
