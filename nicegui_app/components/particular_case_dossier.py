@@ -213,6 +213,7 @@ def open_particular_case_dossier(
         occurrences = data["occurrences"]
         events = data["events"]
         evolutions = data["evolutions"]
+        investigation_candidates = data.get("investigation_candidates") or []
         number = str(row.get("budget_number") or "")
         title, why, next_action = _decision_for(row)
         group = str(row.get("work_group") or "")
@@ -317,6 +318,48 @@ def open_particular_case_dossier(
                             ui.label(
                                 _text(item.get("description_raw"))
                             ).classes("text-body2 text-grey-9 whitespace-pre-wrap")
+
+            if investigation_candidates:
+                with ui.element("div").classes("w-full rounded-lg bg-amber-50 px-4 py-3"):
+                    ui.label("Indícios encontrados nas grades").classes(
+                        "text-caption text-weight-bold text-orange-9"
+                    )
+                    ui.label(
+                        "O orçamento não possui vínculo operacional direto, mas o mesmo paciente foi localizado em outras ocorrências. "
+                        "Os registros abaixo são pistas para investigação e não representam vínculo automático."
+                    ).classes("text-body2 text-grey-8 mb-3")
+
+                    for candidate in investigation_candidates:
+                        related = candidate.get("related_budget") or {}
+                        related_number = _text(related.get("budget_number"))
+                        with ui.element("div").classes("w-full bg-white rounded border px-3 py-3 mb-2"):
+                            with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                                ui.label(_text(candidate.get("patient_name"))).classes(
+                                    "text-body2 text-weight-bold"
+                                )
+                                if related_number != "—":
+                                    ui.badge(f"Orçamento #{related_number}").classes("bg-primary")
+                                ui.space()
+                                ui.label(_date(candidate.get("procedure_date"))).classes(
+                                    "text-caption text-grey-6"
+                                )
+                            with ui.row().classes("w-full gap-5 mt-2 flex-wrap"):
+                                _metric("Médico na grade", _text(candidate.get("doctor_name")))
+                                _metric("Atendimento / aviso", _text(
+                                    candidate.get("notice_number") or related.get("attendance_number")
+                                ))
+                                _metric("Valor operacional", _money(candidate.get("operational_value")))
+                            if related:
+                                with ui.row().classes("w-full gap-5 mt-2 flex-wrap"):
+                                    _metric("Médico do orçamento relacionado", _text(related.get("doctor_name")))
+                                    _metric("Valor do orçamento relacionado", _money(related.get("original_value")))
+                                    _metric("Data do orçamento relacionado", _date(related.get("budget_date")))
+                            differential = _text(candidate.get("differential"))
+                            notes = _text(candidate.get("notes_original"))
+                            if differential != "—":
+                                ui.label(f"Diferencial: {differential}").classes("text-caption text-grey-8 mt-2")
+                            if notes != "—":
+                                ui.label(notes).classes("text-caption text-grey-7 whitespace-pre-wrap")
 
             with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
