@@ -41,6 +41,8 @@ def open_particular_mv_dialog(
     budget_id: str,
     attendance_number: str | None = None,
     notice_number: str | None = None,
+    review_reason: str | None = None,
+    closure_mode: str | None = None,
     on_saved: Callable[[dict[str, Any]], None] | None = None,
 ) -> None:
     """Registro operacional da conclusão; a evidência técnica do MV permanece auditável."""
@@ -59,6 +61,9 @@ def open_particular_mv_dialog(
         attendance_number or latest.get("attendance_number") or ""
     ).strip()
     prefill_notice = str(notice_number or latest.get("notice_number") or "").strip()
+    normalized_reason = str(review_reason or "").strip().upper()
+    normalized_closure_mode = str(closure_mode or "").strip().upper()
+    inferred_closure = normalized_reason == "VALIDAR_VALOR_FINAL" and normalized_closure_mode in {"HIGHER", "LOWER"}
 
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-[650px] p-0"):
         with ui.row().classes("w-full items-start justify-between px-5 py-4"):
@@ -87,15 +92,23 @@ def open_particular_mv_dialog(
                 dialog.open()
                 return
 
-            ui.label("Qual foi o desfecho confirmado no MV?").classes("text-subtitle1 text-weight-bold")
-            outcome = ui.select(
-                options=OUTCOME_OPTIONS,
-                label="Desfecho confirmado",
-                value="PENDING",
-            ).props("outlined dense").classes("w-full")
+            if inferred_closure:
+                closure_label = "Fechamento a maior" if normalized_closure_mode == "HIGHER" else "Fechamento a menor"
+                ui.label("Confirme somente a informação que falta").classes("text-subtitle1 text-weight-bold")
+                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
+                    ui.label("Desfecho já identificado pelo sistema").classes("text-caption text-grey-6")
+                    ui.label(closure_label).classes("text-body1 text-weight-bold")
+                outcome = None
+            else:
+                ui.label("Qual foi o desfecho confirmado no MV?").classes("text-subtitle1 text-weight-bold")
+                outcome = ui.select(
+                    options=OUTCOME_OPTIONS,
+                    label="Desfecho confirmado",
+                    value="PENDING",
+                ).props("outlined dense").classes("w-full")
 
             account_value = ui.input(
-                label="Valor da conta",
+                label="Valor final confirmado no MV" if inferred_closure else "Valor da conta",
                 placeholder="Ex.: 4989,60",
             ).props("outlined dense prefix=R$").classes("w-full")
 
@@ -135,6 +148,12 @@ def open_particular_mv_dialog(
                         return
                     normalized_amount = str(amount)
 
+                if inferred_closure and normalized_amount is None:
+                    ui.notify("Informe o valor final confirmado no MV.", type="warning")
+                    return
+
+                resolved_outcome = "REALIZED" if inferred_closure else str(outcome.value or "PENDING")
+
                 saving = True
                 save_button.disable()
                 try:
@@ -142,7 +161,7 @@ def open_particular_mv_dialog(
                         register_particular_mv_check,
                         access=access,
                         budget_id=budget_id,
-                        outcome=str(outcome.value or "PENDING"),
+                        outcome=resolved_outcome,
                         notice_number=str(notice.value or "").strip() or None,
                         attendance_number=str(attendance.value or "").strip() or None,
                         account_value=normalized_amount,
@@ -160,7 +179,7 @@ def open_particular_mv_dialog(
                 if on_saved:
                     on_saved({
                         "check_id": check_id,
-                        "outcome": str(outcome.value or "PENDING"),
+                        "outcome": resolved_outcome,
                         "account_value": normalized_amount,
                         "attendance_number": str(attendance.value or "").strip() or None,
                         "notice_number": str(notice.value or "").strip() or None,
