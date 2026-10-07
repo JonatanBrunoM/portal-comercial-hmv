@@ -73,7 +73,7 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
                     "id,budget_id,notice_number,procedure_date,location,operational_value,"
                     "contact_status,patient_confirmation,evolution_status,notes_original,"
                     "occurrence_status,source_row_number,source_row_key,patient_name,doctor_name,"
-                    "differential,negative_type_value"
+                    "differential,negative_type_value,budget_reference_raw,budget_reference_status"
                 ),
                 params={
                     "patient_name": f"ilike.{patient_name}",
@@ -102,6 +102,27 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         related = candidate_budget_cache.get(candidate_budget_id)
         if related:
             item["related_budget"] = related
+
+    # Algumas linhas de grade preservam o número do orçamento na referência bruta
+    # mesmo quando o vínculo por budget_id não pôde ser materializado.
+    for item in investigation_candidates:
+        if item.get("related_budget"):
+            continue
+        raw_reference = str(item.get("budget_reference_raw") or "").strip()
+        digits = "".join(ch for ch in raw_reference if ch.isdigit())
+        if not digits:
+            continue
+        related_rows = rest_select(
+            "particular_work_queue_v1",
+            select=(
+                "budget_id,budget_number,budget_date,doctor_name,original_value,"
+                "portfolio_origin,operational_state,attendance_number"
+            ),
+            params={"budget_number": f"eq.{int(digits)}", "limit": "1"},
+            timeout=20.0,
+        )
+        if related_rows:
+            item["related_budget"] = related_rows[0]
 
     events = rest_select(
         "particular_account_events",
