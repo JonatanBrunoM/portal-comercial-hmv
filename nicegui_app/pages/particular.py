@@ -453,30 +453,13 @@ def render_particular(user: dict) -> None:
 
     with portal_layout(user=user, active="particular"):
         with ui.column().classes("w-full gap-3"):
-            with ui.card().classes("w-full px-4 py-3 shadow-sm border border-grey-3"):
-                with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
-                    with ui.row().classes("items-center gap-3"):
-                        ui.icon("calendar_month", size="24px").classes("text-primary")
-                        with ui.column().classes("gap-0"):
-                            ui.label("COMPETÊNCIA ATIVA").classes("text-caption text-weight-bold text-primary")
-                            ui.label(
-                                f"{active_competence.label} · {active_competence.status_label}"
-                            ).classes("text-subtitle1 text-weight-bold")
-                    competence_select = ui.select(
-                        options={item.reference_date: item.label for item in competences},
-                        value=active_competence.reference_date,
-                        label="Mês de referência",
-                    ).props("outlined dense options-dense").classes("w-[220px]")
-
-                    def change_active_competence(event) -> None:
-                        try:
-                            set_active_competence(str(event.value or ""), competences)
-                        except ValueError as exc:
-                            ui.notify(str(exc), type="warning", position="top")
-                            return
-                        ui.navigate.to("/particular")
-
-                    competence_select.on_value_change(change_active_competence)
+            def change_active_competence(reference_date: str) -> None:
+                try:
+                    set_active_competence(reference_date, competences)
+                except ValueError as exc:
+                    ui.notify(str(exc), type="warning", position="top")
+                    return
+                ui.navigate.to("/particular")
 
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy"):
@@ -506,6 +489,31 @@ def render_particular(user: dict) -> None:
                                 ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
 
                 render_hero_art(variant="particular", icon="insights")
+
+                # A competência é a porta de entrada do Particular: a linha do tempo
+                # fica dentro do próprio hero e deixa evidente o mês em análise.
+                with ui.element("div").classes("w-full px-7 pt-1 pb-4 relative z-10"):
+                    with ui.row().classes("w-full items-center gap-0 no-wrap overflow-x-auto"):
+                        for index, item in enumerate(reversed(competences)):
+                            is_active = item.reference_date == active_competence.reference_date
+                            if index:
+                                with ui.element("div").classes(
+                                    "h-[2px] min-w-[28px] flex-1 bg-white/30"
+                                ):
+                                    pass
+                            button = ui.button(
+                                item.label.replace("/", " / "),
+                                on_click=lambda _=None, reference=item.reference_date: change_active_competence(reference),
+                            ).props(
+                                "unelevated no-caps"
+                                if is_active
+                                else "flat no-caps"
+                            ).classes(
+                                "min-w-[118px] rounded-lg px-4 py-2 text-weight-bold "
+                                + ("bg-white text-primary shadow-md" if is_active else "text-white")
+                            )
+                            if is_active:
+                                button.tooltip(f"{item.label} · {item.status_label}")
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
