@@ -482,10 +482,39 @@ def render_particular(user: dict) -> None:
             )
 
             with ui.element("section").classes("portal-particular-hero"):
-                # A faixa mensal participa do fluxo normal do hero. Não usamos
-                # posicionamento absoluto: ela reserva altura própria e não invade
-                # o conteúdo original do card.
-                with ui.element("div").classes("w-full h-[58px] border-b border-white/20"):
+                with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
+                    ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
+                    ui.label("Da proposta à jornada operacional.").classes(
+                        "portal-particular-hero-title"
+                    )
+                    ui.label(
+                        "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
+                    ).classes("portal-particular-hero-description")
+
+                with ui.element("div").classes("portal-particular-hero-side mt-[56px]"):
+                    for icon, title, subtitle in (
+                        ("account_balance_wallet", "Carteira", "visão consolidada"),
+                        ("timeline", "Operação", "evidências rastreáveis"),
+                        (
+                            "fact_check",
+                            "Revisões",
+                            f"{pending_count} pendente(s)" if pending_count else "sem pendências",
+                        ),
+                    ):
+                        with ui.element("div").classes("portal-particular-hero-point"):
+                            with ui.element("div").classes("portal-particular-hero-point-icon"):
+                                ui.icon(icon)
+                            with ui.column().classes("portal-particular-hero-point-copy"):
+                                ui.label(title).classes("portal-particular-hero-point-title")
+                                ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
+
+                render_hero_art(variant="particular", icon="insights")
+
+                # Faixa mensal encaixada na largura reservada ao conteúdo principal
+                # do hero, sem alterar o grid original de título, cards e abas.
+                with ui.element("div").classes(
+                    "absolute left-7 right-7 top-3 h-[52px] z-20 border-b border-white/20"
+                ):
                     with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
                         for reference in calendar_references:
                             month = date.fromisoformat(reference)
@@ -513,8 +542,7 @@ def render_particular(user: dict) -> None:
                             ).props("flat no-caps").classes(
                                 "flex-1 min-w-0 h-full rounded-none border-r border-white/20 "
                                 + (
-                                    "bg-white/18 text-white text-weight-bold text-subtitle1 "
-                                    "border-b-[4px] border-b-white"
+                                    "bg-white/18 text-white text-weight-bold border-b-[3px] border-b-white"
                                     if is_active
                                     else "text-white/70 text-weight-medium"
                                 )
@@ -523,33 +551,6 @@ def render_particular(user: dict) -> None:
                                 button.tooltip(f"{item.label} · {item.status_label}")
                             else:
                                 button.tooltip("Competência ainda não cadastrada")
-                with ui.column().classes("portal-particular-hero-copy"):
-                    ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
-                    ui.label("Da proposta à jornada operacional.").classes(
-                        "portal-particular-hero-title"
-                    )
-                    ui.label(
-                        "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
-                    ).classes("portal-particular-hero-description")
-
-                with ui.element("div").classes("portal-particular-hero-side"):
-                    for icon, title, subtitle in (
-                        ("account_balance_wallet", "Carteira", "visão consolidada"),
-                        ("timeline", "Operação", "evidências rastreáveis"),
-                        (
-                            "fact_check",
-                            "Revisões",
-                            f"{pending_count} pendente(s)" if pending_count else "sem pendências",
-                        ),
-                    ):
-                        with ui.element("div").classes("portal-particular-hero-point"):
-                            with ui.element("div").classes("portal-particular-hero-point-icon"):
-                                ui.icon(icon)
-                            with ui.column().classes("portal-particular-hero-point-copy"):
-                                ui.label(title).classes("portal-particular-hero-point-title")
-                                ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
-
-                render_hero_art(variant="particular", icon="insights")
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
