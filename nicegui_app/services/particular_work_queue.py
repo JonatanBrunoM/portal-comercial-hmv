@@ -131,9 +131,26 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         if related_rows:
             item["related_budget"] = related_rows[0]
         else:
-            # A referência da grade é o número do orçamento, mesmo quando esse
-            # orçamento não está presente na view da fila inteligente.
-            item["related_budget"] = {"budget_number": int(digits)}
+            # A referência da grade é o número do orçamento. Mesmo quando ele não
+            # aparece na fila inteligente, recuperamos o UUID canônico para que a
+            # investigação possa persistir uma relação auditável.
+            budget_rows = rest_select(
+                "particular_budgets",
+                select="id,budget_number,budget_date,doctor_name,original_requester",
+                params={"budget_number": f"eq.{int(digits)}", "limit": "1"},
+                timeout=20.0,
+            )
+            if budget_rows:
+                budget_row = budget_rows[0]
+                item["related_budget"] = {
+                    "budget_id": budget_row.get("id"),
+                    "budget_number": budget_row.get("budget_number"),
+                    "budget_date": budget_row.get("budget_date"),
+                    "doctor_name": budget_row.get("doctor_name"),
+                    "original_requester": budget_row.get("original_requester"),
+                }
+            else:
+                item["related_budget"] = {"budget_number": int(digits)}
 
     events = rest_select(
         "particular_account_events",
