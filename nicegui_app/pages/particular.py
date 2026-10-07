@@ -31,6 +31,7 @@ from nicegui_app.components.particular_home_dashboard import (
 )
 from nicegui_app.components.particular_import import render_particular_import
 from nicegui_app.services.particular_competence import (
+    get_particular_closing_snapshot,
     get_particular_competence_sources,
     resolve_active_competence,
     set_active_competence,
@@ -442,6 +443,7 @@ def render_particular(user: dict) -> None:
         context = get_particular_context(access=access)
         active_competence, competences = resolve_active_competence(access)
         competence_sources = get_particular_competence_sources(access, active_competence)
+        closing_snapshot = get_particular_closing_snapshot(access, active_competence)
     except ParticularAccessDenied:
         _render_access_denied(user)
         return
@@ -589,6 +591,50 @@ def render_particular(user: dict) -> None:
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
                         render_particular_home_dashboard(access, competence=active_competence.reference_date)
+                        with ui.element("section").classes("w-full pt-1"):
+                            ui.label("FECHAMENTO DA COMPETÊNCIA").classes("text-caption text-weight-bold text-primary")
+                            ui.label("Maturidade de " + active_competence.label).classes("text-h5 text-weight-bold")
+                            ui.label("Leitura diagnóstica da coorte. Ainda não altera a classificação dos casos.").classes("text-body2 text-grey-7")
+
+                            with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
+                                closing_cards = [
+                                    ("check_circle", "Resolvidos na operação", closing_snapshot.operational_resolved),
+                                    ("event", "Maturação futura", closing_snapshot.future_maturation),
+                                    ("priority_high", "Exigem ação humana", closing_snapshot.human_action),
+                                    ("paid", "Contas fechadas", closing_snapshot.financially_closed),
+                                ]
+                                for icon, label, value in closing_cards:
+                                    with ui.card().classes("flex-1 min-w-[190px] p-4 gap-1 shadow-sm"):
+                                        with ui.row().classes("items-center gap-2"):
+                                            ui.icon(icon, size="20px").classes("text-primary")
+                                            ui.label(label).classes("text-caption text-grey-7")
+                                        ui.label(str(value)).classes("text-h5 text-weight-bold")
+
+                            with ui.card().classes("w-full p-5 gap-3 shadow-sm"):
+                                with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
+                                    with ui.column().classes("gap-0"):
+                                        ui.label("Maturidade financeira").classes("text-subtitle1 text-weight-bold")
+                                        ui.label("Somente contas com valor final conhecido entram no comparativo.").classes("text-caption text-grey-7")
+                                    ui.badge(
+                                        str(closing_snapshot.financially_closed_with_value) + " comparáveis",
+                                        color="primary",
+                                    )
+                                with ui.row().classes("w-full gap-8 flex-wrap"):
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_snapshot.financially_open)).classes("text-h6 text-weight-bold")
+                                        ui.label("contas abertas").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(str(closing_snapshot.financially_unknown)).classes("text-h6 text-weight-bold")
+                                        ui.label("situação financeira desconhecida").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(_money(closing_snapshot.comparable_original_value)).classes("text-h6 text-weight-bold")
+                                        ui.label("orçado comparável").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(_money(closing_snapshot.realized_value_total)).classes("text-h6 text-weight-bold")
+                                        ui.label("realizado conhecido").classes("text-caption text-grey-7")
+                                    with ui.column().classes("gap-0"):
+                                        ui.label(_money(closing_snapshot.comparable_difference)).classes("text-h6 text-weight-bold")
+                                        ui.label("diferença").classes("text-caption text-grey-7")
                         with ui.element("section").classes("w-full pt-3"):
                             ui.label("CONFERÊNCIAS").classes(
                                 "text-caption text-weight-bold text-primary"
