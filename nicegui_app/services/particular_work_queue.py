@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
+
+
+def _next_month(reference: str) -> str:
+    month = date.fromisoformat(str(reference)[:10])
+    if month.day != 1:
+        raise ValueError("Competência inválida.")
+    if month.month == 12:
+        return date(month.year + 1, 1, 1).isoformat()
+    return date(month.year, month.month + 1, 1).isoformat()
 
 from nicegui_app.data.supabase_client import rest_select
 
 
-def list_particular_work_queue() -> list[dict[str, Any]]:
+def list_particular_work_queue(*, competence: str | None = None) -> list[dict[str, Any]]:
     """Carrega a fila inteligente consolidada do Particular.
 
     A view já concentra as regras de interpretação. Esta camada não reclassifica
@@ -28,7 +38,10 @@ def list_particular_work_queue() -> list[dict[str, Any]]:
             "investigation_change_dimensions,investigation_resolution_notes,"
             "investigation_resolved_by,investigation_resolved_at,investigation_reconciled_at"
         ),
-        params={"order": "work_priority.asc,budget_date.asc,budget_number.asc"},
+        params={
+            **({"budget_date": f"gte.{competence}", "and": f"(budget_date.lt.{_next_month(competence)})"} if competence else {}),
+            "order": "work_priority.asc,budget_date.asc,budget_number.asc",
+        },
         timeout=30.0,
     )
     if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
