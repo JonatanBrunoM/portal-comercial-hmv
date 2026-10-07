@@ -513,7 +513,8 @@ def render_particular(user: dict) -> None:
                 # Faixa mensal encaixada na largura reservada ao conteúdo principal
                 # do hero, sem alterar o grid original de título, cards e abas.
                 with ui.element("div").classes(
-                    "absolute left-7 right-7 top-3 h-[52px] z-20 border-b border-white/20"
+                    "absolute left-0 right-0 top-0 h-[58px] z-20 overflow-hidden "
+                    "rounded-t-[20px] bg-white/95 border-b border-white/25 shadow-sm"
                 ):
                     with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
                         for reference in calendar_references:
@@ -546,19 +547,20 @@ def render_particular(user: dict) -> None:
                             button = ui.button(
                                 on_click=select_calendar_month,
                             ).props("flat no-caps").classes(
-                                "flex-1 min-w-0 h-full rounded-none border-r border-white/15 "
+                                "flex-1 min-w-0 h-full rounded-none border-r border-slate-200 "
                                 "transition-all duration-150 "
                                 + (
-                                    "bg-white text-primary shadow-sm border-b-[3px] border-b-white"
+                                    "bg-[#EAF4FB] text-[#005691] text-weight-bold "
+                                    "border-b-[4px] border-b-[#005691]"
                                     if is_active
-                                    else "bg-white/5 text-white/85 hover:bg-white/12"
+                                    else "bg-white/95 text-slate-500 hover:bg-[#F2F8FC] hover:text-[#005691]"
                                 )
                             )
                             with button:
                                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                                     if status_icon:
                                         ui.icon(status_icon, size="14px").classes(
-                                            "text-primary" if is_active else "text-white/65"
+                                            "text-[#005691]" if is_active else "text-slate-400"
                                         )
                                     ui.label(label).classes(
                                         "text-caption tracking-wide "
