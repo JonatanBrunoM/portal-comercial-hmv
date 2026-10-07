@@ -25,13 +25,14 @@ GROUPS = {
     "COTACAO": ("Cotação", "grey", "request_quote"),
     "TRANSCRICAO": ("Transcrição", "grey", "description"),
     "ANULADO_CONFIRMADO": ("Anulado", "grey", "block"),
+    "INVESTIGACAO_CONCLUIDA": ("Investigação concluída", "positive", "task_alt"),
 }
 REVIEW_GROUPS = {"REVISAR_FECHAMENTO", "REVISAR_TRAJETORIA"}
 INVESTIGATE_GROUPS = {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}
 FOLLOW_GROUPS = {"OPERACAO_COMPETENCIA", "OPERACAO_FUTURA"}
 ARCHIVE_GROUPS = {
     "FECHAMENTO_IDENTIFICADO", "CONSULTORIO_SEM_OPERACAO",
-    "COTACAO", "TRANSCRICAO", "ANULADO_CONFIRMADO",
+    "COTACAO", "TRANSCRICAO", "ANULADO_CONFIRMADO", "INVESTIGACAO_CONCLUIDA",
 }
 
 
@@ -82,6 +83,10 @@ def _action(row: dict[str, Any]) -> tuple[str, str]:
         "ORCAMENTO_VALOR_APROXIMADO": ("Validar valor e fechamento", "O fechamento referencia orçamento de valor aproximado."),
         "ORIGEM_GRADE_SEM_EVIDENCIA_OPERACIONAL": ("Investigar ausência na grade", "Origem Grade sem ocorrência operacional encontrada."),
         "ORIGEM_NEGATIVA_SEM_EVIDENCIA_OPERACIONAL": ("Investigar ausência de evidência", "Origem Negativa sem ocorrência operacional encontrada."),
+        "INVESTIGACAO_CONCLUIDA_REORCAMENTO": ("Investigação concluída", f'Orçamento relacionado: #{row.get("investigation_related_budget_number") or "—"} · Reorçamento confirmado.'),
+        "INVESTIGACAO_CONCLUIDA_SEM_RELACAO": ("Investigação concluída", "O indício foi analisado e não possui relação com o orçamento."),
+        "INVESTIGACAO_CONCLUIDA_CANCELAMENTO": ("Investigação concluída", "Cancelamento confirmado durante a investigação."),
+        "INVESTIGACAO_CONCLUIDA_OUTRO": ("Investigação concluída", "Desfecho operacional registrado durante a investigação."),
     }
     if code in actions:
         return actions[code]
@@ -113,7 +118,7 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
                 ui.label(
                     "A fila mostra primeiro o que exige decisão. Evidências e carteira completa continuam disponíveis sem poluir o trabalho diário."
                 ).classes("text-body2 text-grey-7")
-            ui.badge("Motor operacional V1").props("outline").classes("text-primary")
+            ui.badge("Motor operacional V2").props("outline").classes("text-primary")
 
         summary = ui.row().classes("w-full gap-3 flex-wrap")
         scope_row = ui.row().classes("w-full gap-2 flex-wrap")
