@@ -1421,6 +1421,38 @@ def commit_admin_evolution_import(*, actor_profile_id: str, source_filename: str
     return result
 
 
+
+def register_investigation_relation(
+    *,
+    actor_profile_id: str,
+    budget_id: str,
+    related_budget_id: str,
+    evidence: dict[str, Any] | None = None,
+) -> str:
+    """Registra ou recupera uma relação descoberta durante investigação operacional."""
+    actor_profile_id = _require_uuid(actor_profile_id, field="actor_profile_id")
+    budget_id = _require_uuid(budget_id, field="budget_id")
+    related_budget_id = _require_uuid(related_budget_id, field="related_budget_id")
+
+    if budget_id == related_budget_id:
+        raise ValueError("O orçamento relacionado deve ser diferente do orçamento investigado.")
+
+    result = rest_rpc(
+        "particular_register_investigation_relation",
+        {
+            "p_actor_profile_id": actor_profile_id,
+            "p_budget_id": budget_id,
+            "p_related_budget_id": related_budget_id,
+            "p_evidence": evidence or {},
+        },
+        timeout=30.0,
+    )
+    if not isinstance(result, str) or not result.strip():
+        raise RuntimeError(
+            "particular_register_investigation_relation não retornou um identificador válido."
+        )
+    return result.strip()
+
 def resolve_account_review(
     *,
     actor_profile_id: str,
