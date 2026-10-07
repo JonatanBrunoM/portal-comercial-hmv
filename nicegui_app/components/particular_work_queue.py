@@ -102,7 +102,7 @@ def _action(row: dict[str, Any]) -> tuple[str, str]:
     return ("Consultar caso", code.replace("_", " ").title() if code else "Consulte as evidências disponíveis.")
 
 
-def render_particular_work_queue(*, access: ParticularAccess) -> None:
+def render_particular_work_queue(*, access: ParticularAccess, competence: str | None = None) -> None:
     if not access.can_read:
         ui.label("Você não possui acesso à carteira operacional.")
         return
@@ -270,7 +270,7 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
         """Recarrega a fotografia da fila depois de uma decisão humana."""
         result_label.set_text("Atualizando prioridades...")
         try:
-            rows = await run.io_bound(list_particular_work_queue)
+            rows = await run.io_bound(list_particular_work_queue, competence=competence)
         except Exception:
             logger.exception("Falha ao atualizar particular_work_queue_v1")
             ui.notify(
@@ -312,7 +312,7 @@ def render_particular_work_queue(*, access: ParticularAccess) -> None:
     async def load() -> None:
         result_label.set_text("Carregando prioridades...")
         try:
-            rows = await run.io_bound(list_particular_work_queue)
+            rows = await run.io_bound(list_particular_work_queue, competence=competence)
         except Exception:
             logger.exception("Falha ao carregar particular_work_queue_v1")
             result_label.set_text("Não foi possível carregar a Central de Trabalho.")
