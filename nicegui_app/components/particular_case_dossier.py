@@ -251,7 +251,16 @@ def open_particular_case_dossier(
                         ui.label(next_action).classes("text-body1")
 
             closure_label, closure_reason, closure_mode = _closure_review_context(events, evolutions)
-            if str(row.get("account_review_reason") or "") == "VALIDAR_VALOR_FINAL" and closure_label:
+            raw_review_reason = str(row.get("account_review_reason") or "")
+            ambiguity_with_explicit_closure = (
+                raw_review_reason in {"MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}
+                and closure_mode in {"HIGHER", "LOWER"}
+            )
+            effective_review_reason = (
+                "VALIDAR_VALOR_FINAL" if ambiguity_with_explicit_closure else raw_review_reason
+            )
+
+            if effective_review_reason == "VALIDAR_VALOR_FINAL" and closure_label:
                 with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
                     with ui.row().classes("w-full items-start gap-4 flex-wrap"):
                         with ui.column().classes("gap-0 min-w-[150px]"):
@@ -271,7 +280,16 @@ def open_particular_case_dossier(
                     ui.label(composition_reason).classes("text-body2 text-grey-9 whitespace-pre-wrap")
 
             ambiguous_reasons = {"MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}
-            if str(row.get("account_review_reason") or "") in ambiguous_reasons:
+            if ambiguity_with_explicit_closure:
+                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
+                    ui.label("Fechamento conclusivo identificado").classes("text-caption text-grey-6")
+                    ui.label(closure_label or "Conta fechada").classes("text-body1 text-weight-bold")
+                    ui.label(
+                        "A ordem dos demais eventos permanece ambígua, mas não invalida o fechamento explícito. "
+                        "Confirme no MV apenas o valor final da conta."
+                    ).classes("text-body2 text-grey-8")
+
+            if raw_review_reason in ambiguous_reasons:
                 event_evidence_ids = {
                     str(event.get("evidence_id") or "")
                     for event in events
@@ -321,7 +339,7 @@ def open_particular_case_dossier(
                     ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
             with ui.row().classes("w-full gap-2 flex-wrap"):
-                review_reason = str(row.get("account_review_reason") or "")
+                review_reason = effective_review_reason
 
                 def finish_case() -> None:
                     dialog.close()
