@@ -196,3 +196,105 @@ def get_particular_competence_sources(
             detail=f"Cobertura identificada até {max(months_found)}" if months_found else f"Competência {reference}",
         ),
     ]
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularClosingSnapshot:
+    competence: str
+    budgets_total: int
+    operational_resolved: int
+    future_maturation: int
+    human_action: int
+    financially_closed: int
+    financially_closed_with_value: int
+    financially_open: int
+    financially_unknown: int
+    original_value_total: float
+    realized_value_total: float
+    comparable_original_value: float
+    comparable_difference: float
+
+
+def get_particular_closing_snapshot(
+    access: ParticularAccess,
+    competence: ParticularCompetence,
+) -> ParticularClosingSnapshot:
+    """Raio-X factual da maturidade da coorte, sem persistir nem reclassificar casos."""
+    _check_access(access)
+    from nicegui_app.services.particular_work_queue import list_particular_work_queue
+
+    rows = list_particular_work_queue(competence=competence.reference_date)
+    next_reference = date(
+        competence.year + (1 if competence.month == 12 else 0),
+        1 if competence.month == 12 else competence.month + 1,
+        1,
+    ).isoformat()
+
+    operational_resolved = 0
+    future_maturation = 0
+    human_action = 0
+    financially_closed = 0
+    financially_closed_with_value = 0
+    financially_open = 0
+    financially_unknown = 0
+    original_value_total = 0.0
+    realized_value_total = 0.0
+    comparable_original_value = 0.0
+
+    closed_statuses = {"CLOSED", "FECHADA", "FECHADO"}
+    open_statuses = {"OPEN", "ABERTA", "ABERTO", "IN_PROGRESS", "PROCESSING"}
+
+    for row in rows:
+        original = float(row.get("original_value") or 0)
+        original_value_total += original
+
+        operational_date = str(
+            row.get("first_operational_date")
+            or row.get("last_observed_operational_date")
+            or ""
+        )[:10]
+        group = str(row.get("work_group") or "").strip().upper()
+        action = str(row.get("work_action") or "").strip().upper()
+
+        if operational_date and operational_date >= next_reference:
+            future_maturation += 1
+        elif action in {"RESOLVIDO", "RESOLVED"} or group in {
+            "RESOLVIDO", "INVESTIGACAO_CONCLUIDA"
+        }:
+            operational_resolved += 1
+        else:
+            human_action += 1
+
+        account_status = str(row.get("account_status") or "").strip().upper()
+        final_raw = row.get("confirmed_final_value")
+        if final_raw is None:
+            final_raw = row.get("mv_account_value")
+        has_final = final_raw not in (None, "")
+
+        if account_status in closed_statuses:
+            financially_closed += 1
+            if has_final:
+                final_value = float(final_raw)
+                financially_closed_with_value += 1
+                realized_value_total += final_value
+                comparable_original_value += original
+        elif account_status in open_statuses:
+            financially_open += 1
+        else:
+            financially_unknown += 1
+
+    return ParticularClosingSnapshot(
+        competence=competence.reference_date,
+        budgets_total=len(rows),
+        operational_resolved=operational_resolved,
+        future_maturation=future_maturation,
+        human_action=human_action,
+        financially_closed=financially_closed,
+        financially_closed_with_value=financially_closed_with_value,
+        financially_open=financially_open,
+        financially_unknown=financially_unknown,
+        original_value_total=original_value_total,
+        realized_value_total=realized_value_total,
+        comparable_original_value=comparable_original_value,
+        comparable_difference=realized_value_total - comparable_original_value,
+    )
