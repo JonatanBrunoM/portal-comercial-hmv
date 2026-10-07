@@ -416,3 +416,76 @@ def get_particular_closing_breakdown(
         future_without_financial_state=future_without_financial_state,
         human_action_without_financial_state=human_action_without_financial_state,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularOccurrenceSignalInventory:
+    total_occurrences: int
+    budgets_with_occurrences: int
+    signals: list[dict[str, Any]]
+
+
+def get_particular_occurrence_signal_inventory(
+    access: ParticularAccess,
+    competence: ParticularCompetence,
+) -> ParticularOccurrenceSignalInventory:
+    """Inventaria sinais textuais das grades sem inferir conclusão de negócio."""
+    _check_access(access)
+    from nicegui_app.services.particular_work_queue import list_particular_work_queue
+
+    queue_rows = list_particular_work_queue(competence=competence.reference_date)
+    budget_ids = sorted({
+        str(row.get("budget_id"))
+        for row in queue_rows
+        if row.get("budget_id")
+    })
+    if not budget_ids:
+        return ParticularOccurrenceSignalInventory(0, 0, [])
+
+    occurrences: list[dict[str, Any]] = []
+    for start in range(0, len(budget_ids), 80):
+        chunk = budget_ids[start:start + 80]
+        occurrences.extend(rest_select(
+            "particular_occurrences",
+            select="budget_id,contact_status,patient_confirmation,evolution_status,occurrence_status,negative_type_value,notes_original",
+            params={"budget_id": "in.(" + ",".join(chunk) + ")", "limit": "10000"},
+            timeout=30.0,
+        ))
+
+    occurrence_counts: dict[tuple[str, str], int] = {}
+    budget_sets: dict[tuple[str, str], set[str]] = {}
+    signal_fields = (
+        "contact_status", "patient_confirmation", "evolution_status",
+        "occurrence_status", "negative_type_value", "notes_original",
+    )
+    for occurrence in occurrences:
+        budget_id = str(occurrence.get("budget_id") or "")
+        for field in signal_fields:
+            value = str(occurrence.get(field) or "").strip()
+            if not value:
+                continue
+            key = (field, value)
+            occurrence_counts[key] = occurrence_counts.get(key, 0) + 1
+            budget_sets.setdefault(key, set()).add(budget_id)
+
+    signals = [
+        {
+            "field": field,
+            "value": value,
+            "occurrences": occurrence_counts[(field, value)],
+            "budgets": len(budget_set),
+        }
+        for (field, value), budget_set in sorted(
+            budget_sets.items(),
+            key=lambda item: (-len(item[1]), item[0][0], item[0][1]),
+        )
+    ]
+    return ParticularOccurrenceSignalInventory(
+        total_occurrences=len(occurrences),
+        budgets_with_occurrences=len({
+            str(row.get("budget_id"))
+            for row in occurrences
+            if row.get("budget_id")
+        }),
+        signals=signals,
+    )
