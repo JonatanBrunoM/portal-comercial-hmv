@@ -22,12 +22,19 @@ def open_particular_investigation_dialog(
     on_resolved: Callable[[], None] | None = None,
 ) -> None:
     related_options: dict[str, str] = {}
+    related_payloads: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
         related = candidate.get("related_budget") or {}
-        related_id = str(related.get("budget_id") or "").strip()
+        related_id = str(related.get("budget_id") or "").strip() or None
         related_number = str(related.get("budget_number") or "").strip()
-        if related_id and related_number:
-            related_options[related_id] = f"Orçamento #{related_number}"
+        if not related_number:
+            continue
+        option_key = related_id or f"number:{related_number}"
+        related_options[option_key] = f"Orçamento #{related_number}"
+        related_payloads[option_key] = {
+            "budget_id": related_id,
+            "budget_number": int(related_number),
+        }
 
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-[650px] p-0"):
         with ui.row().classes("w-full items-center justify-between px-5 py-4"):
@@ -108,11 +115,14 @@ def open_particular_investigation_dialog(
                 if saving:
                     return
 
-                related_id = str(related_budget.value or "").strip()
+                related_key = str(related_budget.value or "").strip()
+                related = related_payloads.get(related_key) or {}
+                related_id = str(related.get("budget_id") or "").strip() or None
+                related_number = related.get("budget_number")
                 decision = str(outcome.value or "").strip().upper()
                 reason = str(notes.value or "").strip()
 
-                if not related_id:
+                if not related_key or related_number is None:
                     ui.notify("Selecione o orçamento relacionado.", type="warning")
                     return
                 if decision not in {"REBUDGET", "DISTINCT"}:
@@ -147,6 +157,7 @@ def open_particular_investigation_dialog(
                         access=access,
                         budget_id=budget_id,
                         related_budget_id=related_id,
+                        related_budget_number=related_number,
                         decision=decision,
                         review_reason=reason,
                         change_dimensions=dimensions,
