@@ -33,6 +33,7 @@ from nicegui_app.components.particular_import import render_particular_import
 from nicegui_app.services.particular_competence import (
     get_particular_closing_breakdown,
     get_particular_closing_snapshot,
+    get_particular_financial_evidence_levels,
     get_particular_competence_sources,
     get_particular_occurrence_signal_inventory,
     resolve_active_competence,
@@ -446,6 +447,7 @@ def render_particular(user: dict) -> None:
         active_competence, competences = resolve_active_competence(access)
         competence_sources = get_particular_competence_sources(access, active_competence)
         closing_snapshot = get_particular_closing_snapshot(access, active_competence)
+        financial_levels = get_particular_financial_evidence_levels(access, active_competence)
         closing_breakdown = get_particular_closing_breakdown(access, active_competence)
         occurrence_signals = get_particular_occurrence_signal_inventory(access, active_competence)
     except ParticularAccessDenied:
@@ -659,6 +661,26 @@ def render_particular(user: dict) -> None:
                                         ui.label(str(closing_breakdown.human_action_without_financial_state)).classes("text-h6 text-weight-bold")
                                         ui.label("ação humana sem estado financeiro").classes("text-caption text-grey-7")
 
+                                ui.separator()
+                                ui.label("Maturidade da evidência financeira").classes("text-subtitle2 text-weight-bold")
+                                ui.label("Contagem por orçamento da competência. Fechamento de conta não comprova realização assistencial.").classes("text-caption text-grey-7")
+                                financial_items = [
+                                    ("Fechada com valor confirmado", financial_levels.closed_confirmed_value),
+                                    ("Fechada sem valor confirmado", financial_levels.closed_without_confirmed_value),
+                                    ("Especial ou inconclusiva", financial_levels.special_or_inconclusive),
+                                    ("Sem estado financeiro conhecido", financial_levels.no_financial_evidence),
+                                    ("Outro estado financeiro", financial_levels.other_financial_state),
+                                ]
+                                with ui.column().classes("w-full gap-1"):
+                                    for label, count in financial_items:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(label).classes("text-body2")
+                                            ui.badge(str(count)).props("outline")
+                                ui.label(
+                                    f"Automação: {financial_levels.auto_resolved} automáticos · "
+                                    f"{financial_levels.manually_resolved} manuais · "
+                                    f"{financial_levels.review_required} em revisão"
+                                ).classes("text-caption text-grey-7")
                                 ui.separator()
                                 ui.label("Distribuição por grupo de trabalho").classes("text-subtitle2 text-weight-bold")
                                 with ui.column().classes("w-full gap-1"):
