@@ -60,7 +60,7 @@ def _metric_card(
         ui.label(subtitle).classes("text-caption text-grey-7")
 
 
-def render_particular_home_dashboard(access: ParticularAccess) -> None:
+def render_particular_home_dashboard(access: ParticularAccess, competence: str | None = None) -> None:
     """Home executiva do Particular; análises legadas permanecem disponíveis abaixo."""
     management_by_month: dict[str, dict[str, Any]] = {}
     competence_cache: dict[str, list[dict[str, Any]]] = {}
@@ -72,6 +72,7 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                 "Da criação do orçamento à primeira evidência operacional identificada."
             ).classes("text-body2 text-grey-7")
         month_select = ui.select(options={}, label="Competência de criação").props("dense outlined").classes("w-[210px]")
+    # A competência agora é controlada pelo contexto global do módulo Particular.
     month_select.set_visibility(False)
 
     executive = ui.column().classes("w-full gap-4")
@@ -300,7 +301,9 @@ def render_particular_home_dashboard(access: ParticularAccess) -> None:
                 return
 
             current = (
-                month_select.value
+                competence
+                if competence in management_by_month
+                else month_select.value
                 if month_select.value in management_by_month
                 else next(iter(management_by_month))
             )
