@@ -12,7 +12,7 @@ def list_particular_work_queue() -> list[dict[str, Any]]:
     eventos nem infere desfechos: apenas entrega a fotografia para a interface.
     """
     rows = rest_select(
-        "particular_work_queue_v1",
+        "particular_work_queue_v2",
         select=(
             "budget_id,budget_number,budget_date,doctor_name,original_requester,"
             "original_value,currency_code,portfolio_origin,has_operational_evidence,"
@@ -22,7 +22,11 @@ def list_particular_work_queue() -> list[dict[str, Any]]:
             "operational_date_count,attendance_number,account_status,closure_mode,"
             "account_automation_status,account_review_reason,reference_budget_value,"
             "confirmed_final_value,mv_outcome,mv_account_value,mv_checked_at,"
-            "annulment_status,work_group,work_priority,work_action,work_reason"
+            "annulment_status,work_group,work_priority,work_action,work_reason,"
+            "investigation_resolution_id,investigation_outcome,"
+            "investigation_related_budget_id,investigation_related_budget_number,"
+            "investigation_change_dimensions,investigation_resolution_notes,"
+            "investigation_resolved_by,investigation_resolved_at,investigation_reconciled_at"
         ),
         params={"order": "work_priority.asc,budget_date.asc,budget_number.asc"},
         timeout=30.0,
@@ -36,7 +40,7 @@ def list_particular_work_queue() -> list[dict[str, Any]]:
 def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
     """Monta o dossiê factual de um orçamento sem inferir novos desfechos."""
     queue = rest_select(
-        "particular_work_queue_v1",
+        "particular_work_queue_v2",
         select="*",
         params={"budget_id": f"eq.{budget_id}", "limit": "1"},
         timeout=20.0,
@@ -97,7 +101,7 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
             continue
         if candidate_budget_id not in candidate_budget_cache:
             related_rows = rest_select(
-                "particular_work_queue_v1",
+                "particular_work_queue_v2",
                 select=(
                     "budget_id,budget_number,budget_date,doctor_name,original_value,"
                     "portfolio_origin,operational_state,attendance_number"
@@ -120,7 +124,7 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         if not digits:
             continue
         related_rows = rest_select(
-            "particular_work_queue_v1",
+            "particular_work_queue_v2",
             select=(
                 "budget_id,budget_number,budget_date,doctor_name,original_value,"
                 "portfolio_origin,operational_state,attendance_number"
