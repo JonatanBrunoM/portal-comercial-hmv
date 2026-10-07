@@ -514,7 +514,7 @@ def render_particular(user: dict) -> None:
                 # do hero, sem alterar o grid original de título, cards e abas.
                 with ui.element("div").classes(
                     "absolute left-0 right-0 top-0 h-[58px] z-20 overflow-hidden "
-                    "rounded-t-[20px] bg-white/95 border-b border-white/25 shadow-sm"
+                    "rounded-t-[20px] bg-[#0B6FA4] border-b border-white/20 shadow-sm"
                 ):
                     with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
                         for reference in calendar_references:
@@ -550,17 +550,17 @@ def render_particular(user: dict) -> None:
                                 "flex-1 min-w-0 h-full rounded-none border-r border-slate-200 "
                                 "transition-all duration-150 "
                                 + (
-                                    "bg-[#EAF4FB] text-[#005691] text-weight-bold "
-                                    "border-b-[4px] border-b-[#005691]"
+                                    "bg-white/18 text-white text-weight-bold "
+                                    "border-b-[4px] border-b-white"
                                     if is_active
-                                    else "bg-white/95 text-slate-500 hover:bg-[#F2F8FC] hover:text-[#005691]"
+                                    else "bg-[#0B6FA4] text-white/75 hover:bg-white/10 hover:text-white"
                                 )
                             )
                             with button:
                                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                                     if status_icon:
                                         ui.icon(status_icon, size="14px").classes(
-                                            "text-[#005691]" if is_active else "text-slate-400"
+                                            "text-white" if is_active else "text-white/55"
                                         )
                                     ui.label(label).classes(
                                         "text-caption tracking-wide "
