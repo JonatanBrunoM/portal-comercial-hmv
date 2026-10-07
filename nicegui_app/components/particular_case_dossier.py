@@ -166,6 +166,12 @@ def _decision_for(row: dict[str, Any]) -> tuple[str, str, str]:
             "A origem sugere fluxo operacional, mas nenhuma ocorrência correspondente foi encontrada.",
             "Verifique a grade e confirme se existe referência operacional ainda não identificada.",
         )
+    if group == "INVESTIGACAO_CONCLUIDA":
+        return (
+            "Investigação concluída",
+            "O desfecho da investigação foi registrado e retirado da fila de pendências.",
+            "A conclusão e as evidências permanecem disponíveis para consulta e auditoria.",
+        )
     if group == "FECHAMENTO_IDENTIFICADO":
         return (
             "Fechamento identificado",
