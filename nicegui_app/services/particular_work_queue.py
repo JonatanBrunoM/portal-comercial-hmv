@@ -123,6 +123,10 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
         )
         if related_rows:
             item["related_budget"] = related_rows[0]
+        else:
+            # A referência da grade é o número do orçamento, mesmo quando esse
+            # orçamento não está presente na view da fila inteligente.
+            item["related_budget"] = {"budget_number": int(digits)}
 
     events = rest_select(
         "particular_account_events",
