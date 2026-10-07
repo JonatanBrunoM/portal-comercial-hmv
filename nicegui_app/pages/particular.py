@@ -589,30 +589,6 @@ def render_particular(user: dict) -> None:
                 with ui.tab_panel(overview_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
                         render_particular_home_dashboard(access, competence=active_competence.reference_date)
-                        with ui.element("section").classes("w-full pt-1"):
-                            ui.label("FONTES DA COMPETÊNCIA").classes("text-caption text-weight-bold text-primary")
-                            ui.label("Base informacional do mês").classes("text-h5 text-weight-bold")
-                            ui.label("Últimas fontes concluídas que sustentam a leitura desta competência.").classes("text-body2 text-grey-7")
-                            with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
-                                source_icons = {"XML": "description", "GRADES": "table_view", "EVOLUTION": "history_edu"}
-                                for source in competence_sources:
-                                    available = source.status == "AVAILABLE"
-                                    with ui.card().classes("flex-1 min-w-[260px] p-4 gap-2 shadow-sm"):
-                                        with ui.row().classes("w-full items-center justify-between gap-3"):
-                                            with ui.row().classes("items-center gap-3"):
-                                                ui.icon(source_icons.get(source.source, "database"), size="24px").classes("text-primary" if available else "text-grey-5")
-                                                ui.label(source.label).classes("text-subtitle1 text-weight-bold")
-                                            ui.icon("check_circle" if available else "warning", size="20px").classes("text-positive" if available else "text-warning")
-                                        ui.label("Disponível" if available else "Não identificada").classes("text-caption text-positive" if available else "text-caption text-warning")
-                                        ui.label(source.detail).classes("text-body2 text-grey-7")
-                                        if source.filename:
-                                            ui.label(source.filename).classes("text-caption text-grey-7 ellipsis")
-                                        if source.processed_at:
-                                            ui.label("Último processamento: " + _date(source.processed_at)).classes("text-caption text-grey-7")
-                                        if available:
-                                            source_summary = str(source.records_processed) + " registros processados"
-                                            source_summary += (" · " + str(source.records_error) + " erro(s)") if source.records_error else " · sem erros"
-                                            ui.label(source_summary).classes("text-caption text-grey-7")
                         with ui.element("section").classes("w-full pt-3"):
                             ui.label("CONFERÊNCIAS").classes(
                                 "text-caption text-weight-bold text-primary"
@@ -717,7 +693,32 @@ def render_particular(user: dict) -> None:
                     render_particular_work_queue(access=access, competence=active_competence.reference_date)
 
                 with ui.tab_panel(import_tab).classes("px-0 py-2"):
-                    render_particular_import(access=access)
+                    with ui.column().classes("w-full gap-5"):
+                            with ui.element("section").classes("w-full pt-1"):
+                                ui.label("FONTES DA COMPETÊNCIA").classes("text-caption text-weight-bold text-primary")
+                                ui.label("Base informacional do mês").classes("text-h5 text-weight-bold")
+                                ui.label("Últimas fontes concluídas que sustentam a leitura desta competência.").classes("text-body2 text-grey-7")
+                                with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
+                                    source_icons = {"XML": "description", "GRADES": "table_view", "EVOLUTION": "history_edu"}
+                                    for source in competence_sources:
+                                        available = source.status == "AVAILABLE"
+                                        with ui.card().classes("flex-1 min-w-[260px] p-4 gap-2 shadow-sm"):
+                                            with ui.row().classes("w-full items-center justify-between gap-3"):
+                                                with ui.row().classes("items-center gap-3"):
+                                                    ui.icon(source_icons.get(source.source, "database"), size="24px").classes("text-primary" if available else "text-grey-5")
+                                                    ui.label(source.label).classes("text-subtitle1 text-weight-bold")
+                                                ui.icon("check_circle" if available else "warning", size="20px").classes("text-positive" if available else "text-warning")
+                                            ui.label("Disponível" if available else "Não identificada").classes("text-caption text-positive" if available else "text-caption text-warning")
+                                            ui.label(source.detail).classes("text-body2 text-grey-7")
+                                            if source.filename:
+                                                ui.label(source.filename).classes("text-caption text-grey-7 ellipsis")
+                                            if source.processed_at:
+                                                ui.label("Último processamento: " + _date(source.processed_at)).classes("text-caption text-grey-7")
+                                            if available:
+                                                source_summary = str(source.records_processed) + " registros processados"
+                                                source_summary += (" · " + str(source.records_error) + " erro(s)") if source.records_error else " · sem erros"
+                                                ui.label(source_summary).classes("text-caption text-grey-7")
+                            render_particular_import(access=access)
 
                 with ui.tab_panel(review_tab).classes("px-0 py-2"):
                     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
