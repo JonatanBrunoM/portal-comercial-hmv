@@ -83,6 +83,26 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
                 timeout=20.0,
             )
 
+    candidate_budget_cache: dict[str, dict[str, Any]] = {}
+    for item in investigation_candidates:
+        candidate_budget_id = str(item.get("budget_id") or "").strip()
+        if not candidate_budget_id or candidate_budget_id == str(budget_id):
+            continue
+        if candidate_budget_id not in candidate_budget_cache:
+            related_rows = rest_select(
+                "particular_work_queue_v1",
+                select=(
+                    "budget_id,budget_number,budget_date,doctor_name,original_value,"
+                    "portfolio_origin,operational_state,attendance_number"
+                ),
+                params={"budget_id": f"eq.{candidate_budget_id}", "limit": "1"},
+                timeout=20.0,
+            )
+            candidate_budget_cache[candidate_budget_id] = related_rows[0] if related_rows else {}
+        related = candidate_budget_cache.get(candidate_budget_id)
+        if related:
+            item["related_budget"] = related
+
     events = rest_select(
         "particular_account_events",
         select=(
