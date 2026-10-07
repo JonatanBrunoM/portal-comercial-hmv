@@ -43,7 +43,7 @@ def open_particular_mv_dialog(
     notice_number: str | None = None,
     on_saved: Callable[[dict[str, Any]], None] | None = None,
 ) -> None:
-    """Conferência operacional compacta no MV; detalhes técnicos ficam na auditoria."""
+    """Registro operacional da conclusão; a evidência técnica do MV permanece auditável."""
     try:
         context = get_particular_mv_check_context(access=access, budget_id=budget_id)
     except Exception:
@@ -63,7 +63,7 @@ def open_particular_mv_dialog(
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-[650px] p-0"):
         with ui.row().classes("w-full items-start justify-between px-5 py-4"):
             with ui.column().classes("gap-0"):
-                ui.label("CONFERÊNCIA MV").classes("text-caption text-weight-bold text-primary")
+                ui.label("REGISTRAR CONCLUSÃO").classes("text-caption text-weight-bold text-primary")
                 ui.label(f'Orçamento #{_text(budget.get("budget_number"))}').classes("text-h6 text-weight-bold")
                 if prefill_attendance:
                     ui.label(f"Atendimento {prefill_attendance}").classes("text-body2 text-grey-7")
@@ -73,7 +73,7 @@ def open_particular_mv_dialog(
         with ui.column().classes("w-full p-5 gap-4"):
             if latest:
                 with ui.element("div").classes("w-full bg-grey-2 rounded p-3"):
-                    ui.label("Última conferência").classes("text-caption text-grey-6")
+                    ui.label("Último registro").classes("text-caption text-grey-6")
                     ui.label(OUTCOME_OPTIONS.get(str(latest.get("outcome")), _text(latest.get("outcome")))).classes(
                         "text-body2 text-weight-bold"
                     )
@@ -81,16 +81,16 @@ def open_particular_mv_dialog(
                         ui.label(f'Valor registrado: {_money(latest.get("account_value"))}').classes("text-caption text-grey-7")
 
             if not can_register:
-                ui.label("O registro de conferências é restrito aos gestores.").classes("text-body2 text-grey-7")
+                ui.label("O registro da conclusão é restrito aos gestores.").classes("text-body2 text-grey-7")
                 with ui.row().classes("w-full justify-end"):
                     ui.button("Fechar", on_click=dialog.close).props("flat no-caps")
                 dialog.open()
                 return
 
-            ui.label("O que foi encontrado no MV?").classes("text-subtitle1 text-weight-bold")
+            ui.label("Qual foi o desfecho confirmado no MV?").classes("text-subtitle1 text-weight-bold")
             outcome = ui.select(
                 options=OUTCOME_OPTIONS,
-                label="Resultado da conferência",
+                label="Desfecho confirmado",
                 value="PENDING",
             ).props("outlined dense").classes("w-full")
 
@@ -101,7 +101,7 @@ def open_particular_mv_dialog(
 
             notes = ui.textarea(
                 label="Observação",
-                placeholder="Registre somente o necessário para sustentar a conferência.",
+                placeholder="Registre somente o necessário para sustentar a conclusão.",
             ).props("outlined autogrow").classes("w-full")
 
             with ui.expansion("Identificação", icon="tag").classes("w-full border rounded-lg"):
@@ -152,10 +152,10 @@ def open_particular_mv_dialog(
                     logger.exception("Falha ao registrar conferência MV.")
                     saving = False
                     save_button.enable()
-                    ui.notify("Não foi possível registrar a conferência.", type="negative")
+                    ui.notify("Não foi possível registrar a conclusão.", type="negative")
                     return
 
-                ui.notify("Conferência registrada.", type="positive")
+                ui.notify("Conclusão registrada.", type="positive")
                 dialog.close()
                 if on_saved:
                     on_saved({
@@ -168,10 +168,10 @@ def open_particular_mv_dialog(
                     })
 
             with ui.row().classes("w-full items-center justify-between gap-2"):
-                ui.label("Registre uma vez; o motor reutiliza esta conferência na decisão do caso.").classes(
+                ui.label("Um único registro alimenta a decisão do caso e mantém a trilha de auditoria.").classes(
                     "text-caption text-grey-6"
                 )
                 save_button = ui.button(
-                    "Salvar conferência", icon="save", on_click=save_check
+                    "Registrar conclusão", icon="task_alt", on_click=save_check
                 ).props("unelevated no-caps")
     dialog.open()
