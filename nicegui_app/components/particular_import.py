@@ -8,6 +8,7 @@ from nicegui import run, ui
 
 from nicegui_app.services.particular_import_validation import inspect_hmv2670
 from nicegui_app.services.particular_admin_evolution import inspect_admin_evolution
+from nicegui_app.services.particular_mv_account import inspect_mv_accounts
 from nicegui_app.services.particular_sheets_service import (
     cross_particular_budgets_with_sheets,
     get_particular_occurrences_preview,
@@ -1053,6 +1054,76 @@ def render_particular_import(access: ParticularAccess) -> None:
                                 ui.label(
                                     "Reenvio do mesmo arquivo concluído é bloqueado pela assinatura SHA-256."
                                 ).classes("text-caption text-grey-7")
+
+            ui.separator().classes("my-2")
+            ui.label("Contas financeiras MV · relatório de contas").classes("text-h6 text-weight-bold")
+            ui.label(
+                "Pré-validação do XLSX financeiro: nenhuma conta, aviso ou decisão é gravada nesta etapa."
+            ).classes("text-body2 text-grey-7")
+            mv_result_area = ui.column().classes("w-full gap-3")
+
+            async def handle_mv_account_upload(event) -> None:
+                mv_result_area.clear()
+                try:
+                    content = await event.file.read()
+                    preview = await run.io_bound(inspect_mv_accounts, content, event.file.name)
+                except Exception as exc:
+                    with mv_result_area:
+                        ui.label(f"Arquivo MV rejeitado: {exc}").classes("text-negative text-weight-bold")
+                    return
+
+                with mv_result_area:
+                    if preview["valid_for_import"]:
+                        ui.label("Relatório MV aprovado na pré-validação").classes(
+                            "text-positive text-weight-bold"
+                        )
+                    else:
+                        ui.label("Relatório MV com inconsistências — importação bloqueada").classes(
+                            "text-negative text-weight-bold"
+                        )
+
+                    with ui.row().classes("w-full gap-3 flex-wrap"):
+                        for title, value in (
+                            ("Contas válidas", preview["records_valid"]),
+                            ("Atendimentos distintos", preview["distinct_attendances"]),
+                            ("Contas fechadas", preview["closed_accounts"]),
+                            ("Contas abertas", preview["open_accounts"]),
+                            ("Avisos identificados", preview["notices_total"]),
+                        ):
+                            with ui.card().classes("p-3 gap-1"):
+                                ui.label(title).classes("text-caption text-grey-7")
+                                ui.label(str(value)).classes("text-h6 text-weight-bold")
+
+                    ui.label(
+                        f'Valor total das contas: {_money_br(preview["account_total_sum"])}'
+                    ).classes("text-body1 text-weight-bold")
+                    ui.label(
+                        f'SHA-256: {preview["file_sha256"]}'
+                    ).classes("text-caption text-grey-7 break-all")
+                    ui.label(
+                        "O total financeiro refere-se às contas do arquivo, não aos orçamentos "
+                        "da competência selecionada. Avisos não multiplicam valores."
+                    ).classes("text-caption text-grey-7")
+
+                    if preview["errors"]:
+                        for message in preview["errors"][:20]:
+                            ui.label(message).classes("text-negative text-body2")
+                        if len(preview["errors"]) > 20:
+                            ui.label(
+                                f'Mais {len(preview["errors"]) - 20} inconsistência(s) não exibida(s).'
+                            ).classes("text-caption text-negative")
+
+                    ui.label(
+                        "Somente leitura e validação: a gravação no Supabase será liberada "
+                        "após conferência do relatório real."
+                    ).classes("text-caption text-grey-7")
+
+            ui.upload(
+                label="Selecionar relatório financeiro MV (.xlsx)",
+                on_upload=handle_mv_account_upload,
+                auto_upload=True,
+                max_files=1,
+            ).props('accept=".xlsx,.XLSX"').classes("w-full")
 
             ui.separator().classes("my-2")
             ui.label("Evolução administrativa · fechamento de contas").classes("text-h6 text-weight-bold")
