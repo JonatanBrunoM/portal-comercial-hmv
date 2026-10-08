@@ -1494,3 +1494,20 @@ def resolve_account_review(
     if not isinstance(result, dict) or result.get("ok") is not True:
         raise RuntimeError("A revisão da conta não foi concluída corretamente.")
     return result
+
+def commit_mv_account_import(*, source_filename: str, file_sha256: str, records: list[dict[str, Any]], metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Grava um lote MV completo via RPC atomica, sem alterar estados de contas."""
+    result = rest_rpc(
+        "particular_commit_mv_account_import",
+        {
+            "p_source_filename": source_filename,
+            "p_file_sha256": file_sha256,
+            "p_records": records,
+            "p_metadata": metadata or {},
+        },
+        timeout=180.0,
+    )
+    if not isinstance(result, dict):
+        raise RuntimeError("Resposta inesperada da importacao MV.")
+    return result
+
