@@ -20,6 +20,7 @@ from nicegui_app.services.particular_service import (
     preflight_particular_import,
     commit_particular_xml_import,
     commit_particular_admin_evolution_import,
+    commit_particular_mv_account_import,
 )
 
 
@@ -1115,9 +1116,67 @@ def render_particular_import(access: ParticularAccess) -> None:
                             ).classes("text-caption text-negative")
 
                     ui.label(
-                        "Somente leitura e validação: a gravação no Supabase será liberada "
-                        "após conferência do relatório real."
+                        "A importação preserva o histórico e não altera conclusões financeiras "
+                        "ou decisões humanas."
                     ).classes("text-caption text-grey-7")
+                    if preview["valid_for_import"] and access.can_write:
+                        mv_status_area = ui.column().classes("w-full gap-2")
+                        with ui.dialog() as mv_confirm_dialog, ui.card().classes("w-full max-w-lg gap-3"):
+                            ui.label("Confirmar importação das contas MV?").classes("text-h6 text-weight-bold")
+                            ui.label(
+                                f'{preview["records_valid"]} contas serão gravadas. '
+                                "Nenhum fechamento ou vínculo existente será modificado."
+                            ).classes("text-body2")
+                            async def execute_mv_import() -> None:
+                                mv_confirm_dialog.close()
+                                mv_import_button.disable()
+                                mv_status_area.clear()
+                                try:
+                                    result = await run.io_bound(
+                                        commit_particular_mv_account_import,
+                                        access=access,
+                                        preview=preview,
+                                    )
+                                except Exception as exc:
+                                    with mv_status_area:
+                                        ui.label(f"Importação MV não concluída: {exc}").classes(
+                                            "text-negative text-weight-bold"
+                                        )
+                                    mv_import_button.enable()
+                                    return
+                                with mv_status_area:
+                                    if result.get("status") == "ALREADY_IMPORTED":
+                                        ui.label("Este arquivo já foi importado anteriormente.").classes(
+                                            "text-warning text-weight-bold"
+                                        )
+                                    elif result.get("status") == "COMPLETED":
+                                        ui.label("Contas MV importadas com sucesso.").classes(
+                                            "text-positive text-weight-bold"
+                                        )
+                                        ui.label(
+                                            f'Lote: {result.get("import_id", "—")} · '
+                                            f'Contas: {result.get("records_processed", 0)} · '
+                                            f'Avisos: {result.get("notices_processed", 0)}'
+                                        ).classes("text-body2")
+                                    else:
+                                        ui.label(f'Retorno inesperado: {result.get("status", "—")}').classes(
+                                            "text-warning text-weight-bold"
+                                        )
+                                if result.get("status") not in ("COMPLETED", "ALREADY_IMPORTED"):
+                                    mv_import_button.enable()
+
+                            with ui.row().classes("w-full justify-end gap-2"):
+                                ui.button("Cancelar", on_click=mv_confirm_dialog.close).props("flat")
+                                ui.button(
+                                    "Confirmar gravação",
+                                    icon="save",
+                                    on_click=execute_mv_import,
+                                ).props("color=primary")
+                        mv_import_button = ui.button(
+                            "Importar contas MV no Supabase",
+                            icon="cloud_upload",
+                            on_click=mv_confirm_dialog.open,
+                        ).props("color=primary")
 
             ui.upload(
                 label="Selecionar relatório financeiro MV (.xlsx)",
