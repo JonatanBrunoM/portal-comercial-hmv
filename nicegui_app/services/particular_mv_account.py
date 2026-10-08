@@ -60,7 +60,7 @@ def _date(value: Any, label: str, row: int) -> str | None:
     if isinstance(value, (datetime, date)):
         return value.date().isoformat() if isinstance(value, datetime) else value.isoformat()
     raw = str(value).strip()
-    for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%Y-%m-%d %H:%M:%S"):
+    for fmt in ("%d.%m.%Y %H:%M:%S", "%d.%m.%Y %H:%M", "%d.%m.%Y", "%d.%m.%y %H:%M:%S", "%d.%m.%y", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
         try:
             return datetime.strptime(raw, fmt).date().isoformat()
         except ValueError:
