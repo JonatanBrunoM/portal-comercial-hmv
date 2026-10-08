@@ -79,9 +79,10 @@ def _closed(value: Any, row: int) -> bool:
     raise ValueError(f"Linha {row}: situação de conta não reconhecida: {value!r}.")
 
 
-def _money(value: Any, row: int) -> str:
+def _money(value: Any, row: int) -> str | None:
+    # Valor em branco é ausência de informação, não zero financeiro.
     if value is None or str(value).strip() == "":
-        raise ValueError(f"Linha {row}: valor da conta ausente.")
+        return None
     raw = str(value).strip().replace("R$", "").replace("\u00a0", "").replace(" ", "")
     if "," in raw:
         raw = raw.replace(".", "").replace(",", ".")
@@ -141,6 +142,7 @@ def inspect_mv_accounts(content: bytes, filename: str) -> dict[str, Any]:
         account_counts: Counter[int] = Counter()
         attendance_set: set[int] = set()
         closed_count = 0
+        missing_amount_count = 0
         notices_count = 0
         total = Decimal("0.00")
         for row_number, cells in enumerate(iterator, start=2):
@@ -175,8 +177,10 @@ def inspect_mv_accounts(content: bytes, filename: str) -> dict[str, Any]:
                 account_counts[account] += 1
                 attendance_set.add(attendance)
                 closed_count += int(closed)
+                missing_amount_count += int(amount is None)
                 notices_count += len(notices)
-                total += Decimal(amount)
+                if amount is not None:
+                    total += Decimal(amount)
             except ValueError as exc:
                 errors.append(str(exc))
         duplicates = [number for number, count in account_counts.items() if count > 1]
@@ -192,6 +196,7 @@ def inspect_mv_accounts(content: bytes, filename: str) -> dict[str, Any]:
             "distinct_attendances": len(attendance_set),
             "closed_accounts": closed_count,
             "open_accounts": len(records) - closed_count,
+            "accounts_without_amount": missing_amount_count,
             "notices_total": notices_count,
             "account_total_sum": format(total, ".2f"),
             "errors": errors,
