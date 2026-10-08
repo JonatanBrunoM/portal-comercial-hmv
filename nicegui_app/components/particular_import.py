@@ -1089,6 +1089,7 @@ def render_particular_import(access: ParticularAccess) -> None:
                             ("Contas fechadas", preview["closed_accounts"]),
                             ("Contas abertas", preview["open_accounts"]),
                             ("Avisos identificados", preview["notices_total"]),
+                            ("Contas sem valor informado", preview["accounts_without_amount"]),
                         ):
                             with ui.card().classes("p-3 gap-1"):
                                 ui.label(title).classes("text-caption text-grey-7")
