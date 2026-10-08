@@ -971,3 +971,37 @@ def resolve_particular_account_review(
         confirmed_final_value=normalized_value,
         resolution_notes=normalized_notes,
     )
+
+def commit_particular_mv_account_import(
+    *,
+    access: ParticularAccess,
+    preview: dict[str, Any],
+) -> dict[str, Any]:
+    """Confirma somente dados MV pre-validados, sem alterar decisoes existentes."""
+    if not access.can_write:
+        raise ParticularAccessDenied(
+            "Seu perfil nao possui permissao para importar contas MV."
+        )
+    if preview.get("valid_for_import") is not True:
+        raise ValueError("O relatorio MV nao passou pela pre-validacao.")
+    records = preview.get("records")
+    if not isinstance(records, list) or not records:
+        raise ValueError("Nenhuma conta MV valida foi encontrada.")
+    if len(records) != int(preview.get("records_valid") or 0):
+        raise ValueError("A contagem das contas MV nao confere com a pre-validacao.")
+
+    from nicegui_app.repositories.particular_repository import commit_mv_account_import
+    return commit_mv_account_import(
+        source_filename=str(preview.get("source_filename") or ""),
+        file_sha256=str(preview.get("file_sha256") or ""),
+        records=records,
+        metadata={
+            "protocol": "MV_ACCOUNT_IMPORT_V1",
+            "distinct_attendances": preview.get("distinct_attendances"),
+            "closed_accounts": preview.get("closed_accounts"),
+            "open_accounts": preview.get("open_accounts"),
+            "accounts_without_amount": preview.get("accounts_without_amount"),
+            "notices_total": preview.get("notices_total"),
+        },
+    )
+
