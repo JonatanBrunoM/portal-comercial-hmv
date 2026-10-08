@@ -34,6 +34,7 @@ from nicegui_app.services.particular_competence import (
     get_particular_closing_breakdown,
     get_particular_closing_snapshot,
     get_particular_financial_evidence_levels,
+    get_particular_financial_operational_cross,
     get_particular_competence_sources,
     get_particular_occurrence_signal_inventory,
     resolve_active_competence,
@@ -448,6 +449,7 @@ def render_particular(user: dict) -> None:
         competence_sources = get_particular_competence_sources(access, active_competence)
         closing_snapshot = get_particular_closing_snapshot(access, active_competence)
         financial_levels = get_particular_financial_evidence_levels(access, active_competence)
+        financial_cross = get_particular_financial_operational_cross(access, active_competence)
         closing_breakdown = get_particular_closing_breakdown(access, active_competence)
         occurrence_signals = get_particular_occurrence_signal_inventory(access, active_competence)
     except ParticularAccessDenied:
@@ -681,6 +683,28 @@ def render_particular(user: dict) -> None:
                                     f"{financial_levels.manually_resolved} manuais · "
                                     f"{financial_levels.review_required} em revisão"
                                 ).classes("text-caption text-grey-7")
+                                ui.separator()
+                                ui.label("Conta fechada × evidência operacional").classes("text-subtitle2 text-weight-bold")
+                                ui.label("Cruzamento diagnóstico da competência. Evidência na grade não comprova realização do procedimento.").classes("text-caption text-grey-7")
+                                cross_items = [
+                                    ("Contas fechadas", financial_cross.closed_budgets),
+                                    ("Com evidência operacional", financial_cross.with_operational_evidence),
+                                    ("Sem evidência operacional", financial_cross.without_operational_evidence),
+                                    ("Com número de atendimento", financial_cross.with_attendance_number),
+                                    ("Sem número de atendimento", financial_cross.without_attendance_number),
+                                    ("Trajetória exige revisão", financial_cross.trajectory_review),
+                                ]
+                                with ui.column().classes("w-full gap-1"):
+                                    for label, count in cross_items:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(label).classes("text-body2")
+                                            ui.badge(str(count)).props("outline")
+                                ui.label("Distribuição por situação operacional").classes("text-subtitle2 text-weight-bold")
+                                with ui.column().classes("w-full gap-1"):
+                                    for item in financial_cross.by_group:
+                                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                            ui.label(str(item["work_group"]) + " · " + str(item["operational_state"])).classes("text-body2")
+                                            ui.badge(str(item["budgets"])).props("outline")
                                 ui.separator()
                                 ui.label("Distribuição por grupo de trabalho").classes("text-subtitle2 text-weight-bold")
                                 with ui.column().classes("w-full gap-1"):
