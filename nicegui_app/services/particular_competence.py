@@ -559,3 +559,53 @@ def get_particular_financial_evidence_levels(
         elif automation == "MANUALLY_RESOLVED":
             counts["manually_resolved"] += 1
     return ParticularFinancialEvidenceLevels(**counts)
+
+
+@dataclass(frozen=True, slots=True)
+class ParticularFinancialOperationalCross:
+    closed_budgets: int
+    with_operational_evidence: int
+    without_operational_evidence: int
+    with_attendance_number: int
+    without_attendance_number: int
+    trajectory_review: int
+    by_group: list[dict[str, Any]]
+
+
+def get_particular_financial_operational_cross(
+    access: ParticularAccess,
+    competence: ParticularCompetence,
+) -> ParticularFinancialOperationalCross:
+    """Cruza conta fechada com sinais operacionais já consolidados na fila.
+
+    Evidência operacional não equivale a procedimento realizado. Não grava dados.
+    """
+    _check_access(access)
+    from nicegui_app.services.particular_work_queue import list_particular_work_queue
+
+    closed = [
+        row for row in list_particular_work_queue(competence=competence.reference_date)
+        if str(row.get("account_status") or "").strip().upper() == "CLOSED"
+    ]
+    with_evidence = sum(1 for row in closed if row.get("has_operational_evidence") is True)
+    with_attendance = sum(1 for row in closed if row.get("attendance_number") is not None)
+    review = sum(1 for row in closed if row.get("trajectory_requires_review") is True)
+    groups: dict[tuple[str, str], int] = {}
+    for row in closed:
+        key = (
+            str(row.get("work_group") or "SEM_GRUPO"),
+            str(row.get("operational_state") or "SEM_ESTADO_OPERACIONAL"),
+        )
+        groups[key] = groups.get(key, 0) + 1
+    return ParticularFinancialOperationalCross(
+        closed_budgets=len(closed),
+        with_operational_evidence=with_evidence,
+        without_operational_evidence=len(closed) - with_evidence,
+        with_attendance_number=with_attendance,
+        without_attendance_number=len(closed) - with_attendance,
+        trajectory_review=review,
+        by_group=[
+            {"work_group": group, "operational_state": state, "budgets": count}
+            for (group, state), count in sorted(groups.items(), key=lambda item: (-item[1], item[0]))
+        ],
+    )
