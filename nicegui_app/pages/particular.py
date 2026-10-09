@@ -491,8 +491,8 @@ def render_particular(user: dict) -> None:
             )
             competence_by_reference = {item.reference_date: item for item in competences}
 
-            with ui.element("section").classes("portal-particular-hero").style("height: 228px; min-height: 228px"):
-                with ui.column().classes("portal-particular-hero-copy pt-[24px]"):
+            with ui.element("section").classes("portal-particular-hero"):
+                with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
                     ui.label("Da proposta à jornada operacional.").classes(
                         "portal-particular-hero-title"
@@ -503,19 +503,19 @@ def render_particular(user: dict) -> None:
 
                 # Calendário anual integrado, ocupando toda a lateral do hero.
                 with ui.element("div").classes(
-                    "portal-particular-hero-side self-stretch"
-                ).style("width: 38%; max-width: 420px; flex: 0 0 38%"):
+                    "portal-particular-hero-side w-full self-stretch"
+                ).style("width: 340px; max-width: 100%; flex: 0 0 340px"):
                     with ui.element("div").classes(
-                        "w-full h-full rounded-xl border border-white/25 p-3 flex flex-col justify-center"
+                        "w-full h-full rounded-xl border border-white/25 p-4 flex flex-col justify-center"
                     ).style("background: rgba(255,255,255,0.10); color: white"):
-                        with ui.row().classes("w-full items-center justify-between mb-2"):
+                        with ui.row().classes("w-full items-center justify-between mb-3"):
                             ui.label("MÊS DE REFERÊNCIA").classes(
                                 "text-[11px] tracking-widest text-white font-bold"
                             )
                             ui.label(str(active_competence.year)).classes(
                                 "text-base text-white font-bold"
                             )
-                        with ui.element("div").classes("grid grid-cols-4 gap-[5px] w-full"):
+                        with ui.element("div").classes("grid grid-cols-4 gap-2 w-full"):
                             for month_number, name in enumerate(month_names, start=1):
                                 reference = date(active_competence.year, month_number, 1).isoformat()
                                 item = competence_by_reference.get(reference)
@@ -533,7 +533,7 @@ def render_particular(user: dict) -> None:
                                     name[:3].upper(),
                                     on_click=lambda ref=reference: change_active_competence(ref),
                                 ).props("no-caps unelevated dense").classes(
-                                    "w-full min-h-[32px] rounded-md text-[12px] font-bold"
+                                    "w-full min-h-[40px] rounded-md text-[12px] font-bold"
                                 ).style(
                                     f"background: {background} !important; "
                                     f"color: {foreground} !important; "
@@ -548,7 +548,7 @@ def render_particular(user: dict) -> None:
                                 )
                         ui.label(
                             f"Selecionado: {month_names[active_competence.month - 1]} de {active_competence.year}"
-                        ).classes("text-[11px] text-white mt-2")
+                        ).classes("text-[12px] text-white mt-3")
 
                 render_hero_art(variant="particular", icon="insights")
 
