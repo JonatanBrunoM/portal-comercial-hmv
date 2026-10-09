@@ -484,12 +484,14 @@ def render_particular(user: dict) -> None:
                 year, month_zero = divmod(absolute, 12)
                 return date(year, month_zero + 1, 1).isoformat()
 
+            # Exibe o ano inteiro, sem uma janela móvel de cinco meses.
+            # Ao navegar para outro ano, a faixa acompanha o ano ativo.
             calendar_references = [
-                shift_month(active_competence.reference_date, offset)
-                for offset in (-2, -1, 0, 1, 2)
+                date(active_competence.year, month, 1).isoformat()
+                for month in range(1, 13)
             ]
-            # Setas percorrem apenas competências cadastradas; meses sem
-            # cadastro continuam visíveis, mas não são selecionáveis.
+            # Setas percorrem as competências disponíveis entre os anos;
+            # todos os meses do ano ativo ficam visíveis simultaneamente.
             registered_references = sorted(competence_by_reference)
             active_index = registered_references.index(active_competence.reference_date)
             previous_reference = (
@@ -551,7 +553,7 @@ def render_particular(user: dict) -> None:
                             month = date.fromisoformat(reference)
                             item = competence_by_reference.get(reference)
                             is_active = reference == active_competence.reference_date
-                            label = f"{month_names[month.month - 1]}/{month.year}"
+                            label = month_names[month.month - 1][:3]
 
                             def select_calendar_month(
                                 selected_reference: str = reference,
@@ -587,13 +589,13 @@ def render_particular(user: dict) -> None:
                                 )
                             )
                             with button:
-                                with ui.row().classes("items-center justify-center gap-2 no-wrap"):
+                                with ui.row().classes("items-center justify-center gap-1 no-wrap"):
                                     if status_icon:
                                         ui.icon(status_icon, size="14px").classes(
                                             "text-white" if is_active else "text-white/80"
                                         )
                                     ui.label(label).classes(
-                                        "text-[13px] tracking-wide text-white "
+                                        "text-[11px] tracking-wide text-white "
                                         + ("text-weight-bold" if is_active else "text-weight-medium")
                                     )
                             if item is not None:
