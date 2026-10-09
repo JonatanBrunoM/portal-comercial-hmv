@@ -35,6 +35,7 @@ class ParticularCompetence:
             "OPEN": "Aberta",
             "IN_CLOSING": "Em fechamento",
             "CLOSED": "Fechada",
+            "NOT_CONFIGURED": "Sem dados cadastrados",
         }.get(self.status, self.status.replace("_", " ").title())
 
 
@@ -68,7 +69,16 @@ def list_particular_competences(access: ParticularAccess) -> list[ParticularComp
                 status=str(row.get("status") or "OPEN").strip().upper(),
             )
         )
-    return result
+    # Disponibiliza o calendário completo de 2026 sem criar linhas artificiais
+    # no banco. Meses não cadastrados ficam vazios e não são considerados fechados.
+    existing = {(item.year, item.month) for item in result}
+    for month in range(1, 13):
+        if (2026, month) not in existing:
+            result.append(ParticularCompetence(
+                id="", reference_date=date(2026, month, 1).isoformat(),
+                year=2026, month=month, status="NOT_CONFIGURED",
+            ))
+    return sorted(result, key=lambda item: item.reference_date, reverse=True)
 
 
 def resolve_active_competence(access: ParticularAccess) -> tuple[ParticularCompetence, list[ParticularCompetence]]:
@@ -79,7 +89,7 @@ def resolve_active_competence(access: ParticularAccess) -> tuple[ParticularCompe
     stored = str(ui.context.client.storage.get(_STORAGE_KEY) or "").strip()
     active = next((item for item in competences if item.reference_date == stored), None)
     if active is None:
-        active = next((item for item in competences if item.status == "IN_CLOSING"), competences[0])
+        active = next((item for item in competences if item.status == "IN_CLOSING"), next((item for item in competences if item.id), competences[0]))
         ui.context.client.storage[_STORAGE_KEY] = active.reference_date
     return active, competences
 
