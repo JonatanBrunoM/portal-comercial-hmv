@@ -155,15 +155,11 @@ def get_particular_competence_sources(
         select="id,source_filename,reference_month,status,records_processed,records_error,completed_at,metadata",
         order_field="completed_at",
     )
+    # Meses encontrados nas linhas não comprovam a competência do arquivo.
+    # Exigimos a competência declarada para evitar associação indevida.
     evolution = next((
         row for row in evolution_rows
-        if (
-            str(row.get("reference_month") or "")[:7] == reference
-            or reference in {
-                str(value)[:7]
-                for value in ((row.get("metadata") or {}).get("months_found") or [])
-            }
-        )
+        if str(row.get("reference_month") or "")[:7] == reference
     ), None)
 
     def health(*, source: str, label: str, row: dict[str, Any] | None,
