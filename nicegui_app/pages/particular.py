@@ -484,11 +484,12 @@ def render_particular(user: dict) -> None:
                 year, month_zero = divmod(absolute, 12)
                 return date(year, month_zero + 1, 1).isoformat()
 
-            # Exibe o ano inteiro, sem uma janela móvel de cinco meses.
-            # Ao navegar para outro ano, a faixa acompanha o ano ativo.
+            # Janela móvel de cinco meses em torno da competência ativa.
+            # A lista de competências permanece com os 12 meses de 2026;
+            # as setas percorrem todos eles, atualizando esta janela.
             calendar_references = [
-                date(active_competence.year, month, 1).isoformat()
-                for month in range(1, 13)
+                shift_month(active_competence.reference_date, offset)
+                for offset in (-2, -1, 0, 1, 2)
             ]
             # Setas percorrem as competências disponíveis entre os anos;
             # todos os meses do ano ativo ficam visíveis simultaneamente.
@@ -553,7 +554,7 @@ def render_particular(user: dict) -> None:
                             month = date.fromisoformat(reference)
                             item = competence_by_reference.get(reference)
                             is_active = reference == active_competence.reference_date
-                            label = month_names[month.month - 1][:3]
+                            label = f"{month_names[month.month - 1]}/{month.year}"
 
                             def select_calendar_month(
                                 selected_reference: str = reference,
@@ -595,7 +596,7 @@ def render_particular(user: dict) -> None:
                                             "text-white" if is_active else "text-white/80"
                                         )
                                     ui.label(label).classes(
-                                        "text-[11px] tracking-wide text-white "
+                                        "text-[13px] tracking-wide text-white "
                                         + ("text-weight-bold" if is_active else "text-weight-medium")
                                     )
                             if item is not None:
