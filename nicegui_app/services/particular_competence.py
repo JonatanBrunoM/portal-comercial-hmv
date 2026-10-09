@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from nicegui import ui
+from nicegui import app
 
 from nicegui_app.data.supabase_client import rest_select
 from nicegui_app.services.particular_service import ParticularAccess, ParticularAccessDenied
@@ -86,11 +86,11 @@ def resolve_active_competence(access: ParticularAccess) -> tuple[ParticularCompe
     if not competences:
         raise RuntimeError("Nenhuma competência do Particular foi cadastrada.")
 
-    stored = str(ui.context.client.storage.get(_STORAGE_KEY) or "").strip()
+    stored = str(app.storage.user.get(_STORAGE_KEY) or "").strip()
     active = next((item for item in competences if item.reference_date == stored), None)
     if active is None:
         active = next((item for item in competences if item.status == "IN_CLOSING"), next((item for item in competences if item.id), competences[0]))
-        ui.context.client.storage[_STORAGE_KEY] = active.reference_date
+        app.storage.user[_STORAGE_KEY] = active.reference_date
     return active, competences
 
 
