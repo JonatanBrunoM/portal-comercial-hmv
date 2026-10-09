@@ -489,37 +489,44 @@ def render_particular(user: dict) -> None:
                         "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
                     ).classes("portal-particular-hero-description")
 
-                # Calendário integrado ao lado direito do hero, sem modal.
-                # O mês ativo é visível e qualquer mês de 2026 pode ser escolhido.
-                with ui.element("div").classes("portal-particular-hero-side"):
+                # Calendário anual integrado, ocupando toda a lateral do hero.
+                with ui.element("div").classes(
+                    "portal-particular-hero-side w-full self-stretch"
+                ).style("width: 340px; max-width: 100%; flex: 0 0 340px"):
                     with ui.element("div").classes(
-                        "w-full rounded-xl border border-white/25 p-3"
+                        "w-full h-full rounded-xl border border-white/25 p-4 flex flex-col justify-center"
                     ).style("background: rgba(255,255,255,0.10); color: white"):
-                        with ui.row().classes("w-full items-center justify-between mb-2"):
+                        with ui.row().classes("w-full items-center justify-between mb-3"):
                             ui.label("MÊS DE REFERÊNCIA").classes(
-                                "text-[10px] tracking-widest text-white font-bold"
+                                "text-[11px] tracking-widest text-white font-bold"
                             )
                             ui.label(str(active_competence.year)).classes(
-                                "text-sm text-white font-bold"
+                                "text-base text-white font-bold"
                             )
-                        with ui.element("div").classes("grid grid-cols-4 gap-[5px] w-full"):
+                        with ui.element("div").classes("grid grid-cols-4 gap-2 w-full"):
                             for month_number, name in enumerate(month_names, start=1):
                                 reference = date(active_competence.year, month_number, 1).isoformat()
                                 item = competence_by_reference.get(reference)
                                 is_active = reference == active_competence.reference_date
                                 has_data = bool(item and item.id)
+                                # Estilo explícito evita que o tema global deixe
+                                # o texto branco invisível sobre o botão selecionado.
+                                background = (
+                                    "#FFFFFF" if is_active else
+                                    "rgba(255,255,255,0.23)" if has_data else
+                                    "rgba(0,27,54,0.22)"
+                                )
+                                foreground = "#005691" if is_active else "#FFFFFF"
                                 button = ui.button(
                                     name[:3].upper(),
                                     on_click=lambda ref=reference: change_active_competence(ref),
                                 ).props("no-caps unelevated dense").classes(
-                                    "w-full min-h-[32px] rounded-md text-[11px] font-semibold "
-                                    + (
-                                        "bg-white text-[#005691] ring-2 ring-white/60"
-                                        if is_active else
-                                        "bg-white/20 text-white hover:bg-white/35"
-                                        if has_data else
-                                        "bg-black/15 text-white/65 hover:bg-white/20"
-                                    )
+                                    "w-full min-h-[40px] rounded-md text-[12px] font-bold"
+                                ).style(
+                                    f"background: {background} !important; "
+                                    f"color: {foreground} !important; "
+                                    + ("outline: 2px solid #FFFFFF; outline-offset: 1px;"
+                                       if is_active else "")
                                 )
                                 button.tooltip(
                                     f"{name}/{active_competence.year} · "
@@ -529,7 +536,7 @@ def render_particular(user: dict) -> None:
                                 )
                         ui.label(
                             f"Selecionado: {month_names[active_competence.month - 1]} de {active_competence.year}"
-                        ).classes("text-[11px] text-white mt-2")
+                        ).classes("text-[12px] text-white mt-3")
 
                 render_hero_art(variant="particular", icon="insights")
 
