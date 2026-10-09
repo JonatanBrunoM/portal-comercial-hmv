@@ -99,7 +99,7 @@ def set_active_competence(reference_date: str, competences: list[ParticularCompe
     active = next((item for item in competences if item.reference_date == normalized), None)
     if active is None:
         raise ValueError("Competência selecionada não está disponível.")
-    ui.context.client.storage[_STORAGE_KEY] = active.reference_date
+    app.storage.user[_STORAGE_KEY] = active.reference_date
     return active
 
 
