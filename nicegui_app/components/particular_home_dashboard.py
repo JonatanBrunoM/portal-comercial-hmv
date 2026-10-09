@@ -9,6 +9,7 @@ from nicegui_app.components.particular_monthly_dashboard import render_particula
 from nicegui_app.services.particular_monthly_dashboard import (
     format_brl,
     list_home_management,
+    list_monthly_validation,
     list_home_operational_competence,
     month_label,
 )
@@ -64,6 +65,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     """Home executiva do Particular; análises legadas permanecem disponíveis abaixo."""
     management_by_month: dict[str, dict[str, Any]] = {}
     competence_cache: dict[str, list[dict[str, Any]]] = {}
+    validation_by_month: dict[str, dict[str, Any]] = {}
 
     with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
         with ui.column().classes("gap-0"):
@@ -83,171 +85,91 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
         if not row:
             return
 
+        validation = validation_by_month.get(month, {})
+        total = _int(row.get("budgets_total"))
         with executive:
-            with ui.card().classes("w-full p-0 gap-0 overflow-hidden shadow-sm"):
-                with ui.row().classes("w-full gap-0 flex-wrap"):
-                    _metric_card(
-                        "Orçamentos",
-                        f'{_int(row.get("budgets_total")):,}'.replace(",", "."),
-                        f"Carteira criada em {month_label(month)}",
-                        "receipt_long",
+            with ui.column().classes("w-full gap-1 mb-2"):
+                ui.label("RESUMO EXECUTIVO").classes("text-caption text-weight-bold text-primary")
+                ui.label("O que aconteceu com a carteira deste mês?").classes("text-h5 text-weight-bold")
+                ui.label("Produção original, elegibilidade gerencial e rastreabilidade são leituras distintas.").classes("text-body2 text-grey-7")
+            with ui.row().classes("w-full gap-3 flex-wrap"):
+                for title, value, detail, icon in (
+                    ("Orçamentos criados", str(total), "Total original preservado", "receipt_long"),
+                    ("Valor original", _compact_brl(row.get("original_value_total")), "Procedimentos e materiais", "payments"),
+                    ("Liberados gerencialmente", str(_int(validation.get("orcamentos_liberados"))) if validation else "—",
+                     _compact_brl(validation.get("valor_liberado_duplicidade")) if validation else "Validação não disponível", "verified"),
+                    ("Aguardando análise", str(_int(validation.get("orcamentos_aguardando_analise"))) if validation else "—",
+                     "Pendências da validação financeira" if validation else "Validação não disponível", "pending_actions"),
+                ):
+                    with ui.card().classes("flex-1 min-w-[205px] p-5 gap-2 shadow-sm rounded-xl"):
+                        with ui.row().classes("w-full items-center justify-between"):
+                            ui.label(title).classes("text-caption text-grey-7")
+                            ui.icon(icon, size="22px").classes("text-primary")
+                        ui.label(value).classes("text-h5 text-weight-bold")
+                        ui.label(detail).classes("text-caption text-grey-7")
+
+            with ui.card().classes("w-full p-5 gap-4 shadow-sm rounded-xl"):
+                ui.label("Composição da carteira").classes("text-h6 text-weight-bold")
+                ui.label("Classificação gerencial dos orçamentos criados na competência. Não representa execução ou faturamento.").classes("text-body2 text-grey-7")
+                if validation and total:
+                    categories = (
+                        ("Liberados", _int(validation.get("orcamentos_liberados")), "#087C86"),
+                        ("Transcrições", _int(validation.get("orcamentos_transcricao")), "#D79B36"),
+                        ("Em análise", _int(validation.get("orcamentos_aguardando_analise")), "#D65D54"),
+                        ("Duplicidades", _int(validation.get("orcamentos_excluidos")), "#8792A2"),
+                        ("Anulados", _int(validation.get("orcamentos_anulados")), "#64748B"),
+                        ("Outros", max(0, total - sum(_int(validation.get(key)) for key in (
+                            "orcamentos_liberados", "orcamentos_transcricao",
+                            "orcamentos_aguardando_analise", "orcamentos_excluidos",
+                            "orcamentos_anulados"))), "#B7C0CB"),
                     )
-                    _metric_card(
-                        "Valor ORIGINAL",
-                        _compact_brl(row.get("original_value_total")),
-                        (
-                            f'Procedimentos {_compact_brl(row.get("procedure_value_total"))} · '
-                            f'Materiais {_compact_brl(row.get("material_value_total"))}'
-                        ),
-                        "payments",
-                        emphasis=True,
-                    )
-                    _metric_card(
-                        "Com data operacional",
-                        f'{_int(row.get("budgets_with_operational_date"))} · '
-                        f'{_pct(row.get("pct_budgets_with_operational_date"))}',
-                        f'{_compact_brl(row.get("value_with_operational_date"))} do valor ORIGINAL',
-                        "event_available",
-                    )
-                    _metric_card(
-                        "Sem data operacional",
-                        f'{_int(row.get("budgets_without_operational_date"))} · '
-                        f'{_pct(row.get("pct_budgets_without_operational_date"))}',
-                        f'{_compact_brl(row.get("value_without_operational_date"))} do valor ORIGINAL',
-                        "event_busy",
-                    )
+                    with ui.row().classes("w-full h-4 gap-0 rounded-full overflow-hidden"):
+                        for _, count, color in categories:
+                            if count:
+                                ui.element("div").style(f"flex: {count}; background: {color}; min-width: 2px")
+                    with ui.row().classes("w-full gap-4 flex-wrap"):
+                        for label, count, color in categories:
+                            if count:
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.element("span").style(f"width: 9px; height: 9px; border-radius: 50%; background: {color}")
+                                    ui.label(f"{label}: {count}").classes("text-caption")
+                else:
+                    ui.label("Classificação mensal indisponível para esta competência.").classes("text-body2 text-grey-7")
 
-            with ui.row().classes("w-full gap-4 items-start flex-wrap"):
-                with ui.card().classes("flex-[2] min-w-[520px] p-5 gap-3 shadow-sm"):
-                    with ui.row().classes("w-full items-start justify-between gap-3 flex-wrap"):
-                        with ui.column().classes("gap-1"):
-                            ui.label("Carteira → operação").classes("text-h6 text-weight-bold")
-                            ui.label(
-                                "Primeira competência operacional observada para a carteira criada no período."
-                            ).classes("text-body2 text-grey-7")
-                        with ui.column().classes("items-end gap-0"):
-                            ui.label(
-                                f'{_int(row.get("budgets_with_operational_date"))} com data identificada'
-                            ).classes("text-subtitle2 text-weight-bold text-primary")
-                            ui.label(
-                                f'{_pct(row.get("pct_budgets_with_operational_date"))} da carteira'
-                            ).classes("text-caption text-grey-7")
+            with ui.row().classes("w-full gap-4 items-stretch flex-wrap"):
+                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
+                    ui.label("Rastreabilidade operacional").classes("text-h6 text-weight-bold")
+                    with_date = _int(row.get("budgets_with_operational_date"))
+                    without_date = _int(row.get("budgets_without_operational_date"))
+                    ui.label(f"{with_date} de {total} com data operacional").classes("text-h6 text-weight-bold")
+                    ui.linear_progress(value=with_date / total if total else 0, color="primary").classes("w-full")
+                    ui.label(f"{without_date} sem data identificada · {_pct(row.get('pct_budgets_with_operational_date'))} com data").classes("text-body2 text-grey-7")
+                    ui.label("Data operacional é evidência de rastreabilidade; não comprova realização.").classes("text-caption text-grey-7")
+                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
+                    ui.label("Pontos de atenção").classes("text-h6 text-weight-bold")
+                    for label, key in (
+                        ("Revisão operacional", "budgets_review"),
+                        ("Sinais de cancelamento", "budgets_cancellation_signal"),
+                        ("Sinais de transferência", "budgets_transfer_signal"),
+                    ):
+                        with ui.row().classes("w-full items-center justify-between"):
+                            ui.label(label).classes("text-body2")
+                            ui.badge(str(_int(row.get(key))), color="primary").props("outline")
+                    ui.label("Sinais não são decisões confirmadas.").classes("text-caption text-grey-7")
 
-                    if competence_rows:
-                        chart_rows = [
-                            item for item in competence_rows
-                            if item.get("first_operational_competence")
-                        ]
-                        if chart_rows:
-                            ui.echart({
-                                "tooltip": {"trigger": "axis"},
-                                "grid": {"left": 45, "right": 20, "bottom": 40, "top": 20},
-                                "xAxis": {
-                                    "type": "category",
-                                    "data": [
-                                        month_label(str(item["first_operational_competence"]))[:3]
-                                        for item in chart_rows
-                                    ],
-                                },
-                                "yAxis": {"type": "value", "name": "Orçamentos"},
-                                "series": [{
-                                    "type": "bar",
-                                    "data": [_int(item.get("budgets")) for item in chart_rows],
-                                    "itemStyle": {"color": "#005691", "borderRadius": [5, 5, 0, 0]},
-                                }],
-                            }).classes("w-full h-56")
-
-                        with ui.row().classes("w-full gap-2 flex-wrap"):
-                            for item in competence_rows:
-                                competence = item.get("first_operational_competence")
-                                label = (
-                                    month_label(str(competence))
-                                    if competence
-                                    else "Sem data"
-                                )
-                                with ui.card().classes("w-[145px] min-w-[145px] p-3 gap-0 bg-grey-1"):
-                                    ui.label(label).classes("text-caption text-grey-7")
-                                    ui.label(
-                                        f'{_int(item.get("budgets"))} · {_pct(item.get("pct_budgets"))}'
-                                    ).classes("text-subtitle1 text-weight-bold")
-                                    ui.label(
-                                        _compact_brl(item.get("original_value"))
-                                    ).classes("text-caption")
-                    else:
-                        ui.label("Não há distribuição operacional para esta competência.").classes(
-                            "text-body2 text-grey-7"
-                        )
-
-                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm"):
-                    ui.label("Atenção operacional").classes("text-h6 text-weight-bold")
-                    ui.label(
-                        "Sinais que merecem acompanhamento sem presumir cancelamento, transferência ou realização."
-                    ).classes("text-body2 text-grey-7")
-
-                    attention = (
-                        ("Revisão humana", row.get("budgets_review"), "fact_check"),
-                        ("Mudança de data identificada", row.get("budgets_date_change"), "event_repeat"),
-                        ("Sinal de cancelamento", row.get("budgets_cancellation_signal"), "warning_amber"),
-                        ("Múltiplos avisos", row.get("budgets_multiple_notice"), "content_copy"),
-                        ("Sinal de transferência", row.get("budgets_transfer_signal"), "swap_horiz"),
-                    )
-                    for label, value, icon in attention:
-                        with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
-                            with ui.row().classes("items-center gap-2"):
-                                ui.icon(icon, size="20px").classes("text-primary")
-                                ui.label(label).classes("text-body2")
-                            ui.label(str(_int(value))).classes("text-subtitle1 text-weight-bold")
-
-                    ui.separator()
-                    ui.label(
-                        f'Revisões abertas representam {_compact_brl(row.get("value_review"))} '
-                        "da carteira ORIGINAL."
-                    ).classes("text-caption text-grey-7")
-
-            with ui.card().classes("w-full p-5 gap-3 shadow-sm"):
-                with ui.column().classes("gap-0"):
-                    ui.label("Leitura operacional da carteira").classes("text-h6 text-weight-bold")
-                    ui.label(
-                        "Onde a primeira evidência operacional foi observada e como ela se relaciona com a competência de criação."
-                    ).classes("text-body2 text-grey-7")
-
-                with ui.row().classes("w-full gap-5 items-center flex-wrap"):
-                    ui.echart({
-                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
-                        "legend": {"orient": "vertical", "right": 10, "top": "center"},
-                        "series": [{
-                            "type": "pie",
-                            "radius": ["48%", "72%"],
-                            "center": ["35%", "50%"],
-                            "avoidLabelOverlap": True,
-                            "label": {"show": False},
-                            "data": [
-                                {"value": _int(row.get("budgets_sede")), "name": "SEDE"},
-                                {"value": _int(row.get("budgets_pontal")), "name": "Pontal"},
-                                {"value": _int(row.get("budgets_location_unidentified")), "name": "Unidade não identificada"},
-                            ],
-                        }],
-                    }).classes("flex-[2] min-w-[420px] h-52")
-
-                    with ui.column().classes("flex-1 min-w-[280px] gap-2"):
-                        for label, value, detail, icon in (
-                            ("Mesma competência", row.get("budgets_same_competence"), _compact_brl(row.get("value_same_competence")), "calendar_month"),
-                            ("Competência futura", row.get("budgets_future_competence"), _compact_brl(row.get("value_future_competence")), "event_upcoming"),
-                        ):
-                            with ui.row().classes("w-full items-center justify-between gap-3 p-3 border border-grey-3 rounded-lg"):
-                                with ui.row().classes("items-center gap-3"):
-                                    ui.icon(icon, size="22px").classes("text-primary")
-                                    with ui.column().classes("gap-0"):
-                                        ui.label(label).classes("text-body2 text-weight-medium")
-                                        ui.label(str(detail)).classes("text-caption text-grey-7")
-                                ui.label(str(_int(value))).classes("text-h6 text-weight-bold")
-
-                with ui.row().classes("w-full items-start gap-2"):
-                    ui.icon("info", size="16px").classes("text-grey-6 mt-0.5")
-                    ui.label(
-                        "Evidência operacional indica presença nas fontes persistidas. "
-                        "Não equivale, por si só, a realização, faturamento, cancelamento ou conversão."
-                    ).classes("text-caption text-grey-7")
+            with ui.expansion("Explorar trajetória operacional e distribuição por competência", icon="timeline").classes("w-full bg-white shadow-sm"):
+                ui.label("Primeira competência operacional observada para os orçamentos criados neste mês.").classes("text-body2 text-grey-7")
+                if competence_rows:
+                    with ui.row().classes("w-full gap-3 flex-wrap"):
+                        for item in competence_rows:
+                            observed = item.get("first_operational_competence")
+                            label = month_label(str(observed)) if observed else "Sem data"
+                            with ui.card().classes("min-w-[160px] flex-1 p-3 gap-1"):
+                                ui.label(label).classes("text-caption text-grey-7")
+                                ui.label(str(_int(item.get("budgets")))).classes("text-h6 text-weight-bold")
+                                ui.label(_compact_brl(item.get("original_value"))).classes("text-caption")
+                else:
+                    ui.label("Sem distribuição operacional disponível.").classes("text-body2 text-grey-7")
 
     async def load_competence(month: str) -> None:
         executive.clear()
@@ -280,6 +202,9 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             ui.label("Carregando visão gerencial...").classes("text-body2 text-grey-7")
         try:
             rows = await run.io_bound(list_home_management, access)
+            monthly_rows = await run.io_bound(list_monthly_validation, access)
+            validation_by_month.clear()
+            validation_by_month.update({str(item["mes_referencia"])[:10]: item for item in monthly_rows if item.get("mes_referencia")})
             management_by_month.clear()
             management_by_month.update({
                 str(row["budget_competence"])[:10]: row
@@ -326,7 +251,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             on_click=refresh,
         ).props("flat no-caps")
 
-    with ui.element("section").classes("w-full pt-3"):
+    with ui.expansion("Análises detalhadas: financeiro, médicos, itens e evolução", icon="analytics").classes("w-full bg-white shadow-sm"):
         with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap mb-3"):
             with ui.column().classes("gap-0"):
                 ui.label("EXPLORAR").classes("text-caption text-weight-bold text-primary")
