@@ -488,20 +488,21 @@ def render_particular(user: dict) -> None:
                 shift_month(active_competence.reference_date, offset)
                 for offset in (-2, -1, 0, 1, 2)
             ]
+            # Setas percorrem apenas competências cadastradas; meses sem
+            # cadastro continuam visíveis, mas não são selecionáveis.
+            registered_references = sorted(competence_by_reference)
+            active_index = registered_references.index(active_competence.reference_date)
+            previous_reference = (
+                registered_references[active_index - 1] if active_index > 0 else None
+            )
+            next_reference = (
+                registered_references[active_index + 1]
+                if active_index + 1 < len(registered_references) else None
+            )
             month_names = (
                 "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
                 "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
             )
-
-            with ui.row().classes("w-full items-center justify-end gap-3"):
-                ui.label("MÊS DE REFERÊNCIA").classes("text-caption text-weight-bold text-primary")
-                ui.select(
-                    options={item.reference_date: item.label for item in competences},
-                    value=active_competence.reference_date,
-                    on_change=lambda event: change_active_competence(event.value)
-                    if event.value and event.value != active_competence.reference_date else None,
-                    label="Selecionar competência",
-                ).props("dense outlined options-dense").classes("w-[230px]")
 
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
@@ -539,6 +540,13 @@ def render_particular(user: dict) -> None:
                     "rounded-t-[20px] bg-[#0B6FA4] border-b border-white/20 shadow-sm"
                 ):
                     with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
+                        ui.button(
+                            icon="chevron_left",
+                            on_click=lambda: change_active_competence(previous_reference)
+                            if previous_reference else None,
+                        ).props("flat dense").classes(
+                            "h-full w-[42px] shrink-0 rounded-none text-white bg-[#075C8D]"
+                        ).set_enabled(previous_reference is not None)
                         for reference in calendar_references:
                             month = date.fromisoformat(reference)
                             item = competence_by_reference.get(reference)
@@ -592,6 +600,13 @@ def render_particular(user: dict) -> None:
                                 button.tooltip(f"{item.label} · {item.status_label}")
                             else:
                                 button.tooltip("Competência ainda não cadastrada")
+                        ui.button(
+                            icon="chevron_right",
+                            on_click=lambda: change_active_competence(next_reference)
+                            if next_reference else None,
+                        ).props("flat dense").classes(
+                            "h-full w-[42px] shrink-0 rounded-none text-white bg-[#075C8D]"
+                        ).set_enabled(next_reference is not None)
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
