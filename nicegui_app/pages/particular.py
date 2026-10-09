@@ -471,41 +471,47 @@ def render_particular(user: dict) -> None:
                 except ValueError as exc:
                     ui.notify(str(exc), type="warning", position="top")
                     return
-                ui.navigate.to("/particular")
+                ui.navigate.to(f"/particular?competence={reference_date}")
 
-            # Calendário operacional: sempre mostra dois meses anteriores,
-            # a competência ativa e dois meses seguintes, mesmo que ainda não exista
-            # registro em particular_competencies.
+            month_names = (
+                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+            )
             competence_by_reference = {item.reference_date: item for item in competences}
 
-            def shift_month(reference: str, offset: int) -> str:
-                base = date.fromisoformat(reference[:10])
-                absolute = base.year * 12 + (base.month - 1) + offset
-                year, month_zero = divmod(absolute, 12)
-                return date(year, month_zero + 1, 1).isoformat()
-
-            # Janela móvel de cinco meses em torno da competência ativa.
-            # A lista de competências permanece com os 12 meses de 2026;
-            # as setas percorrem todos eles, atualizando esta janela.
-            calendar_references = [
-                shift_month(active_competence.reference_date, offset)
-                for offset in (-2, -1, 0, 1, 2)
-            ]
-            # Setas percorrem as competências disponíveis entre os anos;
-            # todos os meses do ano ativo ficam visíveis simultaneamente.
-            registered_references = sorted(competence_by_reference)
-            active_index = registered_references.index(active_competence.reference_date)
-            previous_reference = (
-                registered_references[active_index - 1] if active_index > 0 else None
-            )
-            next_reference = (
-                registered_references[active_index + 1]
-                if active_index + 1 < len(registered_references) else None
-            )
-            month_names = (
-                "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
-                "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
-            )
+            with ui.dialog() as competence_dialog:
+                with ui.card().classes("w-[440px] max-w-[95vw] p-5 gap-4 rounded-xl"):
+                    with ui.row().classes("w-full items-center justify-between"):
+                        with ui.column().classes("gap-0"):
+                            ui.label("COMPETÊNCIA DE REFERÊNCIA").classes(
+                                "text-caption text-primary text-weight-bold"
+                            )
+                            ui.label(str(active_competence.year)).classes("text-h5 text-weight-bold")
+                        ui.button(icon="close", on_click=competence_dialog.close).props(
+                            "flat round dense"
+                        )
+                    with ui.element("div").classes("grid grid-cols-3 gap-2 w-full"):
+                        for month_number, name in enumerate(month_names, start=1):
+                            reference = date(active_competence.year, month_number, 1).isoformat()
+                            item = competence_by_reference.get(reference)
+                            is_active = reference == active_competence.reference_date
+                            with ui.button(
+                                on_click=lambda ref=reference: change_active_competence(ref),
+                            ).props("no-caps unelevated").classes(
+                                "min-h-[66px] rounded-lg "
+                                + ("bg-[#005691] text-white" if is_active
+                                   else "bg-slate-100 text-[#164563] hover:bg-slate-200")
+                            ):
+                                with ui.column().classes("items-center gap-0"):
+                                    ui.label(name[:3].upper()).classes("text-body1 text-weight-bold")
+                                    ui.label(
+                                        "Ativo" if is_active else (
+                                            "Com dados" if item and item.id else "Sem dados"
+                                        )
+                                    ).classes("text-[10px]")
+                    ui.label(
+                        "Meses sem dados podem ser selecionados; seus indicadores ficam vazios."
+                    ).classes("text-caption text-grey-7")
 
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
@@ -517,99 +523,28 @@ def render_particular(user: dict) -> None:
                         "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
                     ).classes("portal-particular-hero-description")
 
-                with ui.element("div").classes("portal-particular-hero-side mt-[56px]"):
-                    for icon, title, subtitle in (
-                        ("account_balance_wallet", "Carteira", "visão consolidada"),
-                        ("timeline", "Operação", "evidências rastreáveis"),
-                        (
-                            "fact_check",
-                            "Revisões",
-                            f"{pending_count} pendente(s)" if pending_count else "sem pendências",
-                        ),
-                    ):
-                        with ui.element("div").classes("portal-particular-hero-point"):
-                            with ui.element("div").classes("portal-particular-hero-point-icon"):
-                                ui.icon(icon)
-                            with ui.column().classes("portal-particular-hero-point-copy"):
-                                ui.label(title).classes("portal-particular-hero-point-title")
-                                ui.label(subtitle).classes("portal-particular-hero-point-subtitle")
+                with ui.element("div").classes("portal-particular-hero-side"):
+                    with ui.card().classes(
+                        "w-full p-5 gap-3 rounded-xl bg-white/10 border border-white/25 shadow-none"
+                    ).style("background: rgba(255,255,255,0.10); color: white"):
+                        ui.label("COMPETÊNCIA ATIVA").classes(
+                            "text-[11px] tracking-widest text-white/75 text-weight-bold"
+                        )
+                        ui.label(
+                            f"{month_names[active_competence.month - 1]} de {active_competence.year}"
+                        ).classes("text-h5 text-weight-bold text-white")
+                        ui.label(active_competence.status_label).classes(
+                            "text-caption text-white/80"
+                        )
+                        ui.button(
+                            "Alterar competência",
+                            icon="calendar_month",
+                            on_click=competence_dialog.open,
+                        ).props("unelevated no-caps").classes(
+                            "w-full bg-white text-[#005691] font-semibold"
+                        )
 
                 render_hero_art(variant="particular", icon="insights")
-
-                # Faixa mensal encaixada na largura reservada ao conteúdo principal
-                # do hero, sem alterar o grid original de título, cards e abas.
-                with ui.element("div").classes(
-                    "absolute left-0 right-0 top-0 h-[58px] z-20 overflow-hidden "
-                    "rounded-t-[20px] bg-[#0B6FA4] border-b border-white/20 shadow-sm"
-                ):
-                    with ui.row().classes("w-full h-full items-stretch gap-0 no-wrap"):
-                        ui.button(
-                            icon="chevron_left",
-                            on_click=lambda: change_active_competence(previous_reference)
-                            if previous_reference else None,
-                        ).props("flat dense").classes(
-                            "h-full w-[42px] shrink-0 rounded-none text-white bg-[#075C8D]"
-                        ).set_enabled(previous_reference is not None)
-                        for reference in calendar_references:
-                            month = date.fromisoformat(reference)
-                            item = competence_by_reference.get(reference)
-                            is_active = reference == active_competence.reference_date
-                            label = f"{month_names[month.month - 1]}/{month.year}"
-
-                            def select_calendar_month(
-                                selected_reference: str = reference,
-                                selected_item=item,
-                                selected_label: str = label,
-                            ) -> None:
-                                if selected_item is None:
-                                    ui.notify(
-                                        f"{selected_label.title()} ainda não possui competência cadastrada.",
-                                        type="info",
-                                        position="top",
-                                    )
-                                    return
-                                change_active_competence(selected_reference)
-
-                            status = item.status if item is not None else ""
-                            status_icon = {
-                                "CLOSED": "check_circle",
-                                "IN_CLOSING": "pending",
-                                "OPEN": "radio_button_unchecked",
-                            }.get(status)
-
-                            button = ui.button(
-                                on_click=select_calendar_month,
-                            ).props("flat no-caps").classes(
-                                "flex-1 min-w-0 h-full rounded-none border-r border-slate-200 "
-                                "transition-all duration-150 "
-                                + (
-                                    "bg-white/22 text-white text-weight-bold "
-                                    "border-b-[4px] border-b-white shadow-lg ring-1 ring-inset ring-white/25"
-                                    if is_active
-                                    else "bg-[#0B6FA4] text-white hover:bg-white/10"
-                                )
-                            )
-                            with button:
-                                with ui.row().classes("items-center justify-center gap-1 no-wrap"):
-                                    if status_icon:
-                                        ui.icon(status_icon, size="14px").classes(
-                                            "text-white" if is_active else "text-white/80"
-                                        )
-                                    ui.label(label).classes(
-                                        "text-[13px] tracking-wide text-white "
-                                        + ("text-weight-bold" if is_active else "text-weight-medium")
-                                    )
-                            if item is not None:
-                                button.tooltip(f"{item.label} · {item.status_label}")
-                            else:
-                                button.tooltip("Competência ainda não cadastrada")
-                        ui.button(
-                            icon="chevron_right",
-                            on_click=lambda: change_active_competence(next_reference)
-                            if next_reference else None,
-                        ).props("flat dense").classes(
-                            "h-full w-[42px] shrink-0 rounded-none text-white bg-[#075C8D]"
-                        ).set_enabled(next_reference is not None)
 
                 with ui.element("nav").classes("portal-particular-workspace-nav"):
                     with ui.tabs().props(
