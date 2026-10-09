@@ -139,7 +139,16 @@ def get_particular_competence_sources(
         select="id,spreadsheet_id,status,rows_total,errors_count,finished_at,metadata",
         order_field="finished_at",
     )
-    grade = grade_rows[0] if grade_rows else None
+    grade = next(
+        (
+            row
+            for row in grade_rows
+            if str(
+                (row.get("metadata") or {}).get("competence") or ""
+            )[:7] == reference
+        ),
+        None,
+    )
 
     evolution_rows = _completed_rows(
         "particular_admin_evolution_imports",
