@@ -479,40 +479,6 @@ def render_particular(user: dict) -> None:
             )
             competence_by_reference = {item.reference_date: item for item in competences}
 
-            with ui.dialog() as competence_dialog:
-                with ui.card().classes("w-[440px] max-w-[95vw] p-5 gap-4 rounded-xl"):
-                    with ui.row().classes("w-full items-center justify-between"):
-                        with ui.column().classes("gap-0"):
-                            ui.label("COMPETÊNCIA DE REFERÊNCIA").classes(
-                                "text-caption text-primary text-weight-bold"
-                            )
-                            ui.label(str(active_competence.year)).classes("text-h5 text-weight-bold")
-                        ui.button(icon="close", on_click=competence_dialog.close).props(
-                            "flat round dense"
-                        )
-                    with ui.element("div").classes("grid grid-cols-3 gap-2 w-full"):
-                        for month_number, name in enumerate(month_names, start=1):
-                            reference = date(active_competence.year, month_number, 1).isoformat()
-                            item = competence_by_reference.get(reference)
-                            is_active = reference == active_competence.reference_date
-                            with ui.button(
-                                on_click=lambda ref=reference: change_active_competence(ref),
-                            ).props("no-caps unelevated").classes(
-                                "min-h-[66px] rounded-lg "
-                                + ("bg-[#005691] text-white" if is_active
-                                   else "bg-slate-100 text-[#164563] hover:bg-slate-200")
-                            ):
-                                with ui.column().classes("items-center gap-0"):
-                                    ui.label(name[:3].upper()).classes("text-body1 text-weight-bold")
-                                    ui.label(
-                                        "Ativo" if is_active else (
-                                            "Com dados" if item and item.id else "Sem dados"
-                                        )
-                                    ).classes("text-[10px]")
-                    ui.label(
-                        "Meses sem dados podem ser selecionados; seus indicadores ficam vazios."
-                    ).classes("text-caption text-grey-7")
-
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
@@ -523,26 +489,47 @@ def render_particular(user: dict) -> None:
                         "Acompanhe a carteira, evidências operacionais, movimentações e pontos que exigem revisão."
                     ).classes("portal-particular-hero-description")
 
+                # Calendário integrado ao lado direito do hero, sem modal.
+                # O mês ativo é visível e qualquer mês de 2026 pode ser escolhido.
                 with ui.element("div").classes("portal-particular-hero-side"):
-                    with ui.card().classes(
-                        "w-full p-5 gap-3 rounded-xl bg-white/10 border border-white/25 shadow-none"
+                    with ui.element("div").classes(
+                        "w-full rounded-xl border border-white/25 p-3"
                     ).style("background: rgba(255,255,255,0.10); color: white"):
-                        ui.label("COMPETÊNCIA ATIVA").classes(
-                            "text-[11px] tracking-widest text-white/75 text-weight-bold"
-                        )
+                        with ui.row().classes("w-full items-center justify-between mb-2"):
+                            ui.label("MÊS DE REFERÊNCIA").classes(
+                                "text-[10px] tracking-widest text-white font-bold"
+                            )
+                            ui.label(str(active_competence.year)).classes(
+                                "text-sm text-white font-bold"
+                            )
+                        with ui.element("div").classes("grid grid-cols-4 gap-[5px] w-full"):
+                            for month_number, name in enumerate(month_names, start=1):
+                                reference = date(active_competence.year, month_number, 1).isoformat()
+                                item = competence_by_reference.get(reference)
+                                is_active = reference == active_competence.reference_date
+                                has_data = bool(item and item.id)
+                                button = ui.button(
+                                    name[:3].upper(),
+                                    on_click=lambda ref=reference: change_active_competence(ref),
+                                ).props("no-caps unelevated dense").classes(
+                                    "w-full min-h-[32px] rounded-md text-[11px] font-semibold "
+                                    + (
+                                        "bg-white text-[#005691] ring-2 ring-white/60"
+                                        if is_active else
+                                        "bg-white/20 text-white hover:bg-white/35"
+                                        if has_data else
+                                        "bg-black/15 text-white/65 hover:bg-white/20"
+                                    )
+                                )
+                                button.tooltip(
+                                    f"{name}/{active_competence.year} · "
+                                    + ("Selecionado" if is_active else (
+                                        item.status_label if item else "Sem dados cadastrados"
+                                    ))
+                                )
                         ui.label(
-                            f"{month_names[active_competence.month - 1]} de {active_competence.year}"
-                        ).classes("text-h5 text-weight-bold text-white")
-                        ui.label(active_competence.status_label).classes(
-                            "text-caption text-white/80"
-                        )
-                        ui.button(
-                            "Alterar competência",
-                            icon="calendar_month",
-                            on_click=competence_dialog.open,
-                        ).props("unelevated no-caps").classes(
-                            "w-full bg-white text-[#005691] font-semibold"
-                        )
+                            f"Selecionado: {month_names[active_competence.month - 1]} de {active_competence.year}"
+                        ).classes("text-[11px] text-white mt-2")
 
                 render_hero_art(variant="particular", icon="insights")
 
