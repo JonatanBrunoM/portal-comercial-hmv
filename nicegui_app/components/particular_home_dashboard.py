@@ -113,72 +113,104 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                         ui.label(value).classes("text-h5 text-weight-bold")
                         ui.label(detail).classes("text-caption text-grey-7")
 
+            # Painel único: classificação, rastreabilidade e ação são
+            # dimensões diferentes da mesma carteira, não somáveis entre si.
             with ui.card().classes("w-full p-5 gap-4 shadow-sm rounded-xl"):
-                ui.label("Composição da carteira").classes("text-h6 text-weight-bold")
-                ui.label("Classificação gerencial dos orçamentos criados na competência. Não representa execução ou faturamento.").classes("text-body2 text-grey-7")
-                if validation and total:
-                    categories = (
-                        ("Liberados", _int(validation.get("orcamentos_liberados")), "#087C86"),
-                        ("Transcrições", _int(validation.get("orcamentos_transcricao")), "#D79B36"),
-                        ("Em análise", _int(validation.get("orcamentos_aguardando_analise")), "#D65D54"),
-                        ("Duplicidades", _int(validation.get("orcamentos_excluidos")), "#8792A2"),
-                        ("Anulados", _int(validation.get("orcamentos_anulados")), "#64748B"),
-                        ("Outros", max(0, total - sum(_int(validation.get(key)) for key in (
-                            "orcamentos_liberados", "orcamentos_transcricao",
-                            "orcamentos_aguardando_analise", "orcamentos_excluidos",
-                            "orcamentos_anulados"))), "#B7C0CB"),
-                    )
-                    for label, count, color in categories:
-                        if not count:
-                            continue
-                        percent = count / total * 100
-                        with ui.row().classes("w-full items-center gap-3 no-wrap"):
-                            ui.label(label).classes("w-[112px] text-body2")
-                            with ui.element("div").classes("flex-1 h-[12px] rounded-full bg-slate-100 overflow-hidden"):
-                                ui.element("div").style(
-                                    f"height: 100%; width: {percent:.3f}%; "
-                                    f"background: {color}; border-radius: 999px"
-                                )
-                            ui.label(f"{count} · {percent:.1f}%".replace(".", ",")).classes(
-                                "w-[100px] text-right text-body2 text-weight-medium"
-                            )
-                else:
-                    ui.label("Classificação mensal indisponível para esta competência.").classes("text-body2 text-grey-7")
+                with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
+                    with ui.column().classes("gap-0"):
+                        ui.label("Mapa da carteira").classes("text-h6 text-weight-bold")
+                        ui.label(
+                            "Classificação gerencial, rastreabilidade e alertas — três leituras independentes."
+                        ).classes("text-body2 text-grey-7")
+                    ui.badge(f"{total} orçamentos originais", color="primary").props("outline")
 
-            with ui.row().classes("w-full gap-4 items-stretch flex-wrap"):
-                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
-                    ui.label("Rastreabilidade operacional").classes("text-h6 text-weight-bold")
-                    with_date = _int(row.get("budgets_with_operational_date"))
-                    without_date = _int(row.get("budgets_without_operational_date"))
-                    ui.label(f"{with_date} de {total} com data operacional").classes("text-h6 text-weight-bold")
-                    for label, count, color in (
-                        ("Com data", with_date, "#087C86"),
-                        ("Sem data", without_date, "#CBD5E1"),
-                    ):
-                        percent = count / total * 100 if total else 0
-                        with ui.row().classes("w-full items-center gap-3 no-wrap"):
-                            ui.label(label).classes("w-[78px] text-body2")
-                            with ui.element("div").classes("flex-1 h-[14px] rounded-full bg-slate-100 overflow-hidden"):
-                                ui.element("div").style(
-                                    f"height: 100%; width: {percent:.3f}%; "
-                                    f"background: {color}; border-radius: 999px"
-                                )
-                            ui.label(f"{count} · {percent:.1f}%".replace(".", ",")).classes(
-                                "w-[105px] text-right text-body2 text-weight-medium"
+                with ui.row().classes("w-full gap-5 items-stretch flex-wrap"):
+                    with ui.column().classes("flex-[2] min-w-[300px] gap-3"):
+                        ui.label("01  COMPOSIÇÃO GERENCIAL").classes(
+                            "text-caption text-weight-bold text-primary"
+                        )
+                        if validation and total:
+                            categories = (
+                                ("Liberados", _int(validation.get("orcamentos_liberados")), "#087C86"),
+                                ("Transcrições", _int(validation.get("orcamentos_transcricao")), "#D79B36"),
+                                ("Em análise", _int(validation.get("orcamentos_aguardando_analise")), "#D65D54"),
+                                ("Duplicidades", _int(validation.get("orcamentos_excluidos")), "#8792A2"),
+                                ("Anulados", _int(validation.get("orcamentos_anulados")), "#64748B"),
+                                ("Outros", max(0, total - sum(_int(validation.get(key)) for key in (
+                                    "orcamentos_liberados", "orcamentos_transcricao",
+                                    "orcamentos_aguardando_analise", "orcamentos_excluidos",
+                                    "orcamentos_anulados"))), "#B7C0CB"),
                             )
-                    ui.label(f"{without_date} sem data identificada · {_pct(row.get('pct_budgets_with_operational_date'))} com data").classes("text-body2 text-grey-7")
-                    ui.label("Data operacional é evidência de rastreabilidade; não comprova realização.").classes("text-caption text-grey-7")
-                with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
-                    ui.label("Pontos de atenção").classes("text-h6 text-weight-bold")
+                            # Uma única faixa representa 100% da carteira.
+                            with ui.element("div").classes(
+                                "flex w-full h-[22px] overflow-hidden rounded-lg bg-slate-100"
+                            ):
+                                for label, count, color in categories:
+                                    if count:
+                                        segment = ui.element("div").style(
+                                            f"width: {count / total * 100:.5f}%; background: {color};"
+                                        )
+                                        segment.tooltip(f"{label}: {count} ({count / total * 100:.1f}%)")
+                            with ui.element("div").classes("grid grid-cols-2 gap-x-5 gap-y-2 w-full"):
+                                for label, count, color in categories:
+                                    if count:
+                                        with ui.row().classes("items-center justify-between gap-2"):
+                                            with ui.row().classes("items-center gap-2"):
+                                                ui.element("span").classes(
+                                                    "w-[9px] h-[9px] rounded-full"
+                                                ).style(f"background: {color}")
+                                                ui.label(label).classes("text-body2")
+                                            ui.label(
+                                                f"{count} · {count / total * 100:.1f}%".replace(".", ",")
+                                            ).classes("text-body2 text-weight-medium")
+                        else:
+                            ui.label("Classificação indisponível.").classes("text-body2 text-grey-7")
+                        ui.label(
+                            "Classificação não representa realização ou faturamento."
+                        ).classes("text-caption text-grey-7")
+
+                    ui.separator().props("vertical").classes("max-sm:hidden")
+
+                    with ui.column().classes("flex-1 min-w-[245px] gap-3"):
+                        ui.label("02  RASTREABILIDADE").classes(
+                            "text-caption text-weight-bold text-primary"
+                        )
+                        with_date = _int(row.get("budgets_with_operational_date"))
+                        without_date = _int(row.get("budgets_without_operational_date"))
+                        ui.label(f"{with_date} de {total}").classes("text-h5 text-weight-bold")
+                        ui.label("com data operacional identificada").classes(
+                            "text-body2 text-grey-7"
+                        )
+                        with ui.element("div").classes(
+                            "flex w-full h-[22px] rounded-lg overflow-hidden bg-slate-200"
+                        ):
+                            if total:
+                                ui.element("div").style(
+                                    f"width: {with_date / total * 100:.5f}%; background: #087C86;"
+                                )
+                        with ui.row().classes("w-full justify-between"):
+                            ui.label(f"Com data: {with_date}").classes("text-body2")
+                            ui.label(f"Sem data: {without_date}").classes("text-body2")
+                        ui.label(
+                            "Data é evidência de rastreabilidade, não confirmação de realização."
+                        ).classes("text-caption text-grey-7")
+
+                ui.separator()
+                with ui.row().classes("w-full items-center gap-4 flex-wrap"):
+                    ui.label("03  EXIGEM ATENÇÃO").classes(
+                        "text-caption text-weight-bold text-primary"
+                    )
                     for label, key in (
                         ("Revisão operacional", "budgets_review"),
                         ("Sinais de cancelamento", "budgets_cancellation_signal"),
                         ("Sinais de transferência", "budgets_transfer_signal"),
                     ):
-                        with ui.row().classes("w-full items-center justify-between"):
+                        with ui.row().classes("items-center gap-2"):
                             ui.label(label).classes("text-body2")
                             ui.badge(str(_int(row.get(key))), color="primary").props("outline")
-                    ui.label("Sinais não são decisões confirmadas.").classes("text-caption text-grey-7")
+                    ui.label("Sinais não são decisões confirmadas.").classes(
+                        "text-caption text-grey-7"
+                    )
 
             with ui.expansion("Explorar trajetória operacional e distribuição por competência", icon="timeline").classes("w-full bg-white shadow-sm"):
                 ui.label("Primeira competência operacional observada para os orçamentos criados neste mês.").classes("text-body2 text-grey-7")
