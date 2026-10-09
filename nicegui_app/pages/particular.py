@@ -493,6 +493,16 @@ def render_particular(user: dict) -> None:
                 "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
             )
 
+            with ui.row().classes("w-full items-center justify-end gap-3"):
+                ui.label("MÊS DE REFERÊNCIA").classes("text-caption text-weight-bold text-primary")
+                ui.select(
+                    options={item.reference_date: item.label for item in competences},
+                    value=active_competence.reference_date,
+                    on_change=lambda event: change_active_competence(event.value)
+                    if event.value and event.value != active_competence.reference_date else None,
+                    label="Selecionar competência",
+                ).props("dense outlined options-dense").classes("w-[230px]")
+
             with ui.element("section").classes("portal-particular-hero"):
                 with ui.column().classes("portal-particular-hero-copy pt-[56px]"):
                     ui.label("GESTÃO PARTICULAR").classes("portal-particular-hero-kicker")
