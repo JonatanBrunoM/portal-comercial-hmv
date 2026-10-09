@@ -83,6 +83,11 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
         executive.clear()
         row = management_by_month.get(month)
         if not row:
+            with executive:
+                with ui.card().classes("w-full p-6 rounded-xl shadow-sm gap-2"):
+                    ui.icon("event_busy", size="30px").classes("text-grey-5")
+                    ui.label("Ainda não há produção registrada nesta competência.").classes("text-h6")
+                    ui.label("Nenhum orçamento de outro mês será exibido como se pertencesse ao período selecionado.").classes("text-body2 text-grey-7")
             return
 
         validation = validation_by_month.get(month, {})
@@ -123,25 +128,20 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                             "orcamentos_aguardando_analise", "orcamentos_excluidos",
                             "orcamentos_anulados"))), "#B7C0CB"),
                     )
-                    ui.echart({
-                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} orçamentos ({d}%)"},
-                        "legend": {"show": False},
-                        "series": [{
-                            "type": "pie", "radius": ["55%", "78%"],
-                            "center": ["50%", "50%"],
-                            "label": {"show": True, "formatter": "{d}%", "fontSize": 12},
-                            "data": [
-                                {"name": label, "value": count, "itemStyle": {"color": color}}
-                                for label, count, color in categories if count
-                            ],
-                        }],
-                    }).classes("w-full h-56")
-                    with ui.row().classes("w-full gap-4 flex-wrap"):
-                        for label, count, color in categories:
-                            if count:
-                                with ui.row().classes("items-center gap-2"):
-                                    ui.element("span").style(f"width: 9px; height: 9px; border-radius: 50%; background: {color}")
-                                    ui.label(f"{label}: {count}").classes("text-caption")
+                    for label, count, color in categories:
+                        if not count:
+                            continue
+                        percent = count / total * 100
+                        with ui.row().classes("w-full items-center gap-3 no-wrap"):
+                            ui.label(label).classes("w-[112px] text-body2")
+                            with ui.element("div").classes("flex-1 h-[12px] rounded-full bg-slate-100 overflow-hidden"):
+                                ui.element("div").style(
+                                    f"height: 100%; width: {percent:.3f}%; "
+                                    f"background: {color}; border-radius: 999px"
+                                )
+                            ui.label(f"{count} · {percent:.1f}%".replace(".", ",")).classes(
+                                "w-[100px] text-right text-body2 text-weight-medium"
+                            )
                 else:
                     ui.label("Classificação mensal indisponível para esta competência.").classes("text-body2 text-grey-7")
 
@@ -151,18 +151,21 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                     with_date = _int(row.get("budgets_with_operational_date"))
                     without_date = _int(row.get("budgets_without_operational_date"))
                     ui.label(f"{with_date} de {total} com data operacional").classes("text-h6 text-weight-bold")
-                    ui.echart({
-                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} orçamentos ({d}%)"},
-                        "legend": {"bottom": 0},
-                        "series": [{
-                            "type": "pie", "radius": ["55%", "76%"],
-                            "label": {"show": False},
-                            "data": [
-                                {"name": "Com data", "value": with_date, "itemStyle": {"color": "#087C86"}},
-                                {"name": "Sem data", "value": without_date, "itemStyle": {"color": "#CBD5E1"}},
-                            ],
-                        }],
-                    }).classes("w-full h-48")
+                    for label, count, color in (
+                        ("Com data", with_date, "#087C86"),
+                        ("Sem data", without_date, "#CBD5E1"),
+                    ):
+                        percent = count / total * 100 if total else 0
+                        with ui.row().classes("w-full items-center gap-3 no-wrap"):
+                            ui.label(label).classes("w-[78px] text-body2")
+                            with ui.element("div").classes("flex-1 h-[14px] rounded-full bg-slate-100 overflow-hidden"):
+                                ui.element("div").style(
+                                    f"height: 100%; width: {percent:.3f}%; "
+                                    f"background: {color}; border-radius: 999px"
+                                )
+                            ui.label(f"{count} · {percent:.1f}%".replace(".", ",")).classes(
+                                "w-[105px] text-right text-body2 text-weight-medium"
+                            )
                     ui.label(f"{without_date} sem data identificada · {_pct(row.get('pct_budgets_with_operational_date'))} com data").classes("text-body2 text-grey-7")
                     ui.label("Data operacional é evidência de rastreabilidade; não comprova realização.").classes("text-caption text-grey-7")
                 with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
@@ -239,17 +242,14 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             month_select.set_visibility(False)
             month_select.update()
 
-            if not management_by_month:
+            if not management_by_month and not competence:
                 executive.clear()
                 with executive:
                     ui.label("Nenhuma competência disponível na base gerencial.")
                 return
 
-            current = (
-                competence
-                if competence in management_by_month
-                else month_select.value
-                if month_select.value in management_by_month
+            current = competence or (
+                month_select.value if month_select.value in management_by_month
                 else next(iter(management_by_month))
             )
             month_select.value = current
