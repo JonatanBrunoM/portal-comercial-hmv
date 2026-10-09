@@ -162,6 +162,18 @@ def get_particular_competence_sources(
         if str(row.get("reference_month") or "")[:7] == reference
     ), None)
 
+    # O relatório MV não possui coluna própria de competência.
+    # Só o vinculamos ao mês quando o metadado o declara explicitamente.
+    mv_rows = _completed_rows(
+        "particular_mv_account_imports",
+        select="id,source_filename,status,records_processed,records_error,completed_at,metadata",
+        order_field="completed_at",
+    )
+    mv_accounts = next((
+        row for row in mv_rows
+        if str((row.get("metadata") or {}).get("competence") or "")[:7] == reference
+    ), None)
+
     def health(*, source: str, label: str, row: dict[str, Any] | None,
                processed_key: str, error_key: str, date_key: str, detail: str) -> ParticularSourceHealth:
         if row is None:
@@ -194,6 +206,11 @@ def get_particular_competence_sources(
             source="GRADES", label="Grades operacionais", row=grade,
             processed_key="rows_total", error_key="errors_count", date_key="finished_at",
             detail="Última sincronização operacional concluída",
+        ),
+        health(
+            source="MV_ACCOUNTS", label="Relatório de Contas MV", row=mv_accounts,
+            processed_key="records_processed", error_key="records_error", date_key="completed_at",
+            detail=f"Competência declarada {reference}",
         ),
         health(
             source="EVOLUTION", label="Relatório de evolução", row=evolution,
