@@ -123,10 +123,19 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                             "orcamentos_aguardando_analise", "orcamentos_excluidos",
                             "orcamentos_anulados"))), "#B7C0CB"),
                     )
-                    with ui.row().classes("w-full h-4 gap-0 rounded-full overflow-hidden"):
-                        for _, count, color in categories:
-                            if count:
-                                ui.element("div").style(f"flex: {count}; background: {color}; min-width: 2px")
+                    ui.echart({
+                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} orçamentos ({d}%)"},
+                        "legend": {"show": False},
+                        "series": [{
+                            "type": "pie", "radius": ["55%", "78%"],
+                            "center": ["50%", "50%"],
+                            "label": {"show": True, "formatter": "{d}%", "fontSize": 12},
+                            "data": [
+                                {"name": label, "value": count, "itemStyle": {"color": color}}
+                                for label, count, color in categories if count
+                            ],
+                        }],
+                    }).classes("w-full h-56")
                     with ui.row().classes("w-full gap-4 flex-wrap"):
                         for label, count, color in categories:
                             if count:
@@ -142,7 +151,18 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                     with_date = _int(row.get("budgets_with_operational_date"))
                     without_date = _int(row.get("budgets_without_operational_date"))
                     ui.label(f"{with_date} de {total} com data operacional").classes("text-h6 text-weight-bold")
-                    ui.linear_progress(value=with_date / total if total else 0, color="primary").classes("w-full")
+                    ui.echart({
+                        "tooltip": {"trigger": "item", "formatter": "{b}: {c} orçamentos ({d}%)"},
+                        "legend": {"bottom": 0},
+                        "series": [{
+                            "type": "pie", "radius": ["55%", "76%"],
+                            "label": {"show": False},
+                            "data": [
+                                {"name": "Com data", "value": with_date, "itemStyle": {"color": "#087C86"}},
+                                {"name": "Sem data", "value": without_date, "itemStyle": {"color": "#CBD5E1"}},
+                            ],
+                        }],
+                    }).classes("w-full h-48")
                     ui.label(f"{without_date} sem data identificada · {_pct(row.get('pct_budgets_with_operational_date'))} com data").classes("text-body2 text-grey-7")
                     ui.label("Data operacional é evidência de rastreabilidade; não comprova realização.").classes("text-caption text-grey-7")
                 with ui.card().classes("flex-1 min-w-[300px] p-5 gap-3 shadow-sm rounded-xl"):
@@ -216,7 +236,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 key: month_label(key)
                 for key in management_by_month
             }
-            month_select.set_visibility(bool(management_by_month))
+            month_select.set_visibility(False)
             month_select.update()
 
             if not management_by_month:
@@ -251,7 +271,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             on_click=refresh,
         ).props("flat no-caps")
 
-    with ui.expansion("Análises detalhadas: financeiro, médicos, itens e evolução", icon="analytics").classes("w-full bg-white shadow-sm"):
+    with ui.expansion("Análises detalhadas: financeiro, médicos, itens e evolução", icon="analytics", value=False).classes("w-full bg-white shadow-sm"):
         with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap mb-3"):
             with ui.column().classes("gap-0"):
                 ui.label("EXPLORAR").classes("text-caption text-weight-bold text-primary")
