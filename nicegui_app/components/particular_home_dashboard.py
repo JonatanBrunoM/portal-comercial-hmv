@@ -67,13 +67,9 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     competence_cache: dict[str, list[dict[str, Any]]] = {}
     validation_by_month: dict[str, dict[str, Any]] = {}
 
-    with ui.row().classes("w-full items-end justify-between gap-3 flex-wrap"):
-        with ui.column().classes("gap-0"):
-            ui.label("CARTEIRA PARTICULAR").classes("text-caption text-weight-bold text-primary")
-            ui.label(
-                "Da criação do orçamento à primeira evidência operacional identificada."
-            ).classes("text-body2 text-grey-7")
-        month_select = ui.select(options={}, label="Competência de criação").props("dense outlined").classes("w-[210px]")
+    # O seletor técnico continua disponível para sincronizar a competência
+    # global, mas não cria um cabeçalho redundante na Home.
+    month_select = ui.select(options={}, label="Competência de criação").props("dense outlined").classes("w-[210px]")
     # A competência agora é controlada pelo contexto global do módulo Particular.
     month_select.set_visibility(False)
 
@@ -100,9 +96,9 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             with ui.row().classes("w-full gap-3 flex-wrap"):
                 for title, value, detail, icon in (
                     ("Orçamentos criados", str(total), "Total original preservado", "receipt_long"),
-                    ("Valor original", _compact_brl(row.get("original_value_total")), "Procedimentos e materiais", "payments"),
-                    ("Liberados gerencialmente", str(_int(validation.get("orcamentos_liberados"))) if validation else "—",
-                     _compact_brl(validation.get("valor_liberado_duplicidade")) if validation else "Validação não disponível", "verified"),
+                    ("Valor total bruto", format_brl(row.get("original_value_total")), "Procedimentos e materiais · valor original", "payments"),
+                    ("Com evidência operacional", str(_int(row.get("budgets_with_operational_date"))),
+                     "Data identificada · não comprova realização", "event_available"),
                     ("Aguardando análise", str(_int(validation.get("orcamentos_aguardando_analise"))) if validation else "—",
                      "Pendências da validação financeira" if validation else "Validação não disponível", "pending_actions"),
                 ):
@@ -195,22 +191,6 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                             "Data é evidência de rastreabilidade, não confirmação de realização."
                         ).classes("text-caption text-grey-7")
 
-                ui.separator()
-                with ui.row().classes("w-full items-center gap-4 flex-wrap"):
-                    ui.label("03  EXIGEM ATENÇÃO").classes(
-                        "text-caption text-weight-bold text-primary"
-                    )
-                    for label, key in (
-                        ("Revisão operacional", "budgets_review"),
-                        ("Sinais de cancelamento", "budgets_cancellation_signal"),
-                        ("Sinais de transferência", "budgets_transfer_signal"),
-                    ):
-                        with ui.row().classes("items-center gap-2"):
-                            ui.label(label).classes("text-body2")
-                            ui.badge(str(_int(row.get(key))), color="primary").props("outline")
-                    ui.label("Sinais não são decisões confirmadas.").classes(
-                        "text-caption text-grey-7"
-                    )
 
             with ui.expansion("Explorar trajetória operacional e distribuição por competência", icon="timeline").classes("w-full bg-white shadow-sm"):
                 ui.label("Primeira competência operacional observada para os orçamentos criados neste mês.").classes("text-body2 text-grey-7")
