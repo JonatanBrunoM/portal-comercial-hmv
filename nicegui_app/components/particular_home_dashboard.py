@@ -7,6 +7,7 @@ from nicegui import run, ui
 
 from nicegui_app.components.particular_monthly_dashboard import render_particular_monthly_dashboard
 from nicegui_app.services.particular_doctor_dashboard import list_doctor_monthly
+from nicegui_app.services.particular_item_dashboard import list_item_monthly
 from nicegui_app.services.particular_monthly_dashboard import (
     format_brl,
     list_home_management,
@@ -68,6 +69,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     competence_cache: dict[str, list[dict[str, Any]]] = {}
     validation_by_month: dict[str, dict[str, Any]] = {}
     doctor_cache: dict[str, list[dict[str, Any]]] = {}
+    item_cache: dict[str, list[dict[str, Any]]] = {}
 
     # O seletor técnico continua disponível para sincronizar a competência
     # global, mas não cria um cabeçalho redundante na Home.
@@ -336,20 +338,75 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                         ui.label("Transcrições CONSULTORIO não atribuídas a médicos.").classes(
                             "text-caption text-grey-7"
                         )
-                    with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-2"):
-                        ui.label("Top 5 procedimentos").classes("text-h6 text-weight-bold")
-                        ui.label("Pacotes e procedimentos cirúrgicos").classes("text-caption text-grey-7")
-                        ui.label(
-                            "Classificação gerencial em preparação. "
-                            "Complementos de robótica e taxas serão excluídos."
-                        ).classes("text-body2 text-grey-7")
-                    with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-2"):
-                        ui.label("Top 5 materiais e medicamentos").classes("text-h6 text-weight-bold")
-                        ui.label("Valores detalhados dos itens").classes("text-caption text-grey-7")
-                        ui.label(
-                            "Classificação gerencial em preparação. "
-                            "Os valores detalhados não são totais financeiros oficiais."
-                        ).classes("text-body2 text-grey-7")
+                    for title, subtitle, category in (
+                        ("Top 5 procedimentos", "Pacotes cirúrgicos · valores detalhados", "procedures"),
+                        ("Top 5 materiais e medicamentos", "Itens de materiais e medicamentos · valores detalhados", "supplies"),
+                    ):
+                        with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-3"):
+                            ui.label(title).classes("text-h6 text-weight-bold")
+                            ui.label(subtitle).classes("text-caption text-grey-7")
+                            items = item_cache.get(month)
+                            if ranking_basis["value"] != "released":
+                                ui.label(
+                                    "Selecione Gerencialmente liberado para consultar os itens. "
+                                    "A view atual não disponibiliza itens de todos os orçamentos."
+                                ).classes("text-body2 text-grey-7")
+                            elif items is None:
+                                ui.label("Itens indisponíveis nesta competência.").classes("text-body2 text-grey-7")
+                            else:
+                                grouped: dict[str, Decimal] = {}
+                                descriptions: dict[str, str] = {}
+                                for item in items:
+                                    code = str(item.get("codigo") or "").strip()
+                                    description = str(item.get("descricao") or "").strip()
+                                    normalized = description.upper()
+                                    prefix = code[:2]
+                                    is_complement = "COMPLEMENTO" in normalized or "ROBOTICA" in normalized
+                                    is_procedure = (
+                                        prefix == "91"
+                                        and not is_complement
+                                        and ("PCT" in normalized or "PACOTE" in normalized)
+                                    )
+                                    is_supply = prefix in ("07", "08", "87")
+                                    if (category == "procedures" and is_procedure) or (
+                                        category == "supplies" and is_supply
+                                    ):
+                                        grouped[code] = grouped.get(code, Decimal(0)) + Decimal(
+                                            str(item.get("valor_itens") or 0)
+                                        )
+                                        descriptions.setdefault(code, description)
+                                top_items = sorted(
+                                    grouped.items(), key=lambda pair: pair[1], reverse=True
+                                )[:5]
+                                highest_item = top_items[0][1] if top_items else Decimal(0)
+                                for index, (code, value) in enumerate(top_items, 1):
+                                    width = float(value / highest_item * 100) if highest_item > 0 else 0
+                                    with ui.column().classes("w-full gap-1 py-1"):
+                                        with ui.row().classes("w-full items-start gap-2 no-wrap"):
+                                            ui.label(f"{index:02d}").classes(
+                                                "text-primary text-weight-bold text-body2"
+                                            )
+                                            ui.label(descriptions[code]).classes(
+                                                "text-body2 text-weight-medium flex-1"
+                                            ).style("overflow-wrap: anywhere;")
+                                        ui.label(format_brl(value)).classes(
+                                            "text-body2 text-weight-bold"
+                                        )
+                                        with ui.element("div").classes(
+                                            "w-full h-[5px] rounded-full overflow-hidden bg-slate-100"
+                                        ):
+                                            ui.element("div").classes(
+                                                "h-full rounded-full bg-cyan-700"
+                                            ).style(f"width: {max(0, min(width, 100)):.2f}%")
+                                if not top_items:
+                                    ui.label("Nenhum item classificado neste grupo.").classes(
+                                        "text-body2 text-grey-7"
+                                    )
+                                ui.label(
+                                    "Classificação preliminar por código e descrição. "
+                                    "Não equivale ao valor financeiro consolidado."
+                                ).classes("text-caption text-grey-7")
+
 
     def change_ranking_basis(value: str) -> None:
         ranking_basis["value"] = value
@@ -375,7 +432,15 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 except Exception:
                     doctor_cache.pop(month, None)
                 if month_select.value == month:
-                    render_doctors(month)
+                    try:
+                        items = item_cache.get(month)
+                        if items is None:
+                            items = await run.io_bound(list_item_monthly, access, month)
+                            item_cache[month] = items
+                    except Exception:
+                        item_cache.pop(month, None)
+                    if month_select.value == month:
+                        render_doctors(month)
         except Exception:
             executive.clear()
             with executive:
@@ -407,6 +472,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             })
             competence_cache.clear()
             doctor_cache.clear()
+            item_cache.clear()
             month_select.options = {
                 key: month_label(key)
                 for key in management_by_month
