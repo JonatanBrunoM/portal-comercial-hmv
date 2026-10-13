@@ -283,59 +283,73 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
         field = "valor_liberado_duplicidade" if ranking_basis["value"] == "released" else "valor_bruto_importado"
         rows = doctor_cache.get(month)
         with ranking:
-            with ui.card().classes("w-full p-5 rounded-xl shadow-sm gap-4"):
+            with ui.column().classes("w-full gap-3"):
                 with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-                    with ui.column().classes("gap-0"):
-                        ui.label("DESTAQUES DA COMPETÊNCIA").classes("text-caption text-weight-bold text-primary")
-                        ui.label("Top 5 médicos").classes("text-h6 text-weight-bold")
+                    ui.label("DESTAQUES DA COMPETÊNCIA").classes(
+                        "text-caption text-weight-bold text-primary"
+                    )
                     ui.toggle(
                         {"gross": "Bruto original", "released": "Gerencialmente liberado"},
                         value=ranking_basis["value"],
                         on_change=lambda event: change_ranking_basis(event.value),
                     ).props("no-caps dense").classes("text-body2")
-                ui.label(
-                    "Valores financeiros consolidados por médico, conforme a competência de criação."
-                ).classes("text-caption text-grey-7")
-                if rows is None:
-                    ui.label("Ranking indisponível nesta competência.").classes("text-body2 text-grey-7")
-                    return
-                valid = [
-                    item for item in rows
-                    if str(item.get("medico") or "").strip()
-                    and "CONSULT" not in str(item.get("medico") or "").upper()
-                ]
-                valid.sort(key=lambda item: Decimal(str(item.get(field) or 0)), reverse=True)
-                top = valid[:5]
-                highest = max((Decimal(str(item.get(field) or 0)) for item in top), default=Decimal(0))
-                with ui.element("div").classes("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 w-full"):
-                    for index, item in enumerate(top, 1):
-                        value = Decimal(str(item.get(field) or 0))
-                        width = float(value / highest * 100) if highest > 0 else 0
-                        with ui.card().classes("w-full p-4 rounded-lg shadow-none border border-slate-200 gap-3"):
-                            with ui.row().classes("w-full items-center gap-2 no-wrap"):
-                                ui.label(f"{index:02d}").classes(
-                                    "text-primary text-weight-bold text-h6"
-                                )
-                                ui.label(str(item.get("medico"))).classes(
-                                    "text-body2 text-weight-medium flex-1"
-                                ).style("overflow-wrap: anywhere;")
-                            ui.label(format_brl(value)).classes(
-                                "text-subtitle1 text-weight-bold"
+                with ui.element("div").classes("grid grid-cols-1 lg:grid-cols-3 gap-4 w-full"):
+                    with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-3"):
+                        ui.label("Top 5 médicos").classes("text-h6 text-weight-bold")
+                        ui.label("Valores financeiros consolidados").classes("text-caption text-grey-7")
+                        if rows is None:
+                            ui.label("Ranking indisponível.").classes("text-body2 text-grey-7")
+                        else:
+                            valid = [
+                                item for item in rows
+                                if str(item.get("medico") or "").strip()
+                                and "CONSULT" not in str(item.get("medico") or "").upper()
+                            ]
+                            valid.sort(key=lambda item: Decimal(str(item.get(field) or 0)), reverse=True)
+                            top = valid[:5]
+                            highest = max(
+                                (Decimal(str(item.get(field) or 0)) for item in top),
+                                default=Decimal(0),
                             )
-                            with ui.element("div").classes(
-                                "w-full h-[7px] rounded-full overflow-hidden bg-slate-100"
-                            ):
-                                ui.element("div").classes(
-                                    "h-full rounded-full bg-cyan-700"
-                                ).style(f"width: {max(0, min(width, 100)):.2f}%")
-                if not top:
-                    ui.label("Nenhum médico identificado para esta competência.").classes(
-                        "text-body2 text-grey-7"
-                    )
-                ui.label(
-                    "Barras proporcionais ao maior valor do Top 5. "
-                    "Transcrições CONSULTORIO não são atribuídas a médicos."
-                ).classes("text-caption text-grey-7")
+                            for index, item in enumerate(top, 1):
+                                value = Decimal(str(item.get(field) or 0))
+                                width = float(value / highest * 100) if highest > 0 else 0
+                                with ui.column().classes("w-full gap-1 py-1"):
+                                    with ui.row().classes("w-full items-start gap-2 no-wrap"):
+                                        ui.label(f"{index:02d}").classes(
+                                            "text-primary text-weight-bold text-body2"
+                                        )
+                                        ui.label(str(item.get("medico"))).classes(
+                                            "text-body2 text-weight-medium flex-1"
+                                        ).style("overflow-wrap: anywhere;")
+                                    ui.label(format_brl(value)).classes(
+                                        "text-body2 text-weight-bold"
+                                    )
+                                    with ui.element("div").classes(
+                                        "w-full h-[5px] rounded-full overflow-hidden bg-slate-100"
+                                    ):
+                                        ui.element("div").classes(
+                                            "h-full rounded-full bg-cyan-700"
+                                        ).style(f"width: {max(0, min(width, 100)):.2f}%")
+                            if not top:
+                                ui.label("Nenhum médico identificado.").classes("text-body2 text-grey-7")
+                        ui.label("Transcrições CONSULTORIO não atribuídas a médicos.").classes(
+                            "text-caption text-grey-7"
+                        )
+                    with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-2"):
+                        ui.label("Top 5 procedimentos").classes("text-h6 text-weight-bold")
+                        ui.label("Pacotes e procedimentos cirúrgicos").classes("text-caption text-grey-7")
+                        ui.label(
+                            "Classificação gerencial em preparação. "
+                            "Complementos de robótica e taxas serão excluídos."
+                        ).classes("text-body2 text-grey-7")
+                    with ui.card().classes("w-full p-4 rounded-xl shadow-sm gap-2"):
+                        ui.label("Top 5 materiais e medicamentos").classes("text-h6 text-weight-bold")
+                        ui.label("Valores detalhados dos itens").classes("text-caption text-grey-7")
+                        ui.label(
+                            "Classificação gerencial em preparação. "
+                            "Os valores detalhados não são totais financeiros oficiais."
+                        ).classes("text-body2 text-grey-7")
 
     def change_ranking_basis(value: str) -> None:
         ranking_basis["value"] = value
