@@ -192,6 +192,74 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                         ).classes("text-caption text-grey-7")
 
 
+            # Gráficos executivos derivados exclusivamente das views mensais existentes.
+            # As dimensões financeira e operacional não devem ser somadas.
+            with ui.row().classes("w-full gap-4 items-stretch flex-wrap"):
+                with ui.card().classes("flex-1 min-w-[320px] p-5 rounded-xl shadow-sm gap-2"):
+                    ui.label("Valor por situação").classes("text-h6 text-weight-bold")
+                    ui.label(
+                        "Valores gerenciais da carteira · não representam faturamento."
+                    ).classes("text-caption text-grey-7")
+                    if validation:
+                        financial_series = (
+                            ("Liberado", "valor_liberado_duplicidade", "#087C86"),
+                            ("Em análise", "valor_aguardando_analise", "#D79B36"),
+                            ("Transcrições", "valor_transcricao", "#64748B"),
+                            ("Duplicidades", "valor_excluido_duplicidade", "#8792A2"),
+                            ("Anulados", "valor_anulado", "#D65D54"),
+                        )
+                        ui.echart({
+                            "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+                            "grid": {"left": 130, "right": 25, "top": 10, "bottom": 30},
+                            "xAxis": {"type": "value", "name": "R$ milhões"},
+                            "yAxis": {"type": "category", "inverse": True,
+                                      "data": [name for name, _, _ in financial_series]},
+                            "series": [{
+                                "type": "bar",
+                                "data": [
+                                    {"value": float(Decimal(str(validation.get(field) or 0)) / Decimal("1000000")),
+                                     "itemStyle": {"color": color}}
+                                    for _, field, color in financial_series
+                                ],
+                                "barMaxWidth": 22,
+                            }],
+                        }).classes("w-full h-[290px]")
+                        ui.label(
+                            "Classificações exclusivas da validação; valores exibidos em milhões."
+                        ).classes("text-caption text-grey-7")
+                    else:
+                        ui.label("Valores financeiros indisponíveis para esta competência.").classes("text-body2 text-grey-7")
+
+                with ui.card().classes("flex-1 min-w-[320px] p-5 rounded-xl shadow-sm gap-2"):
+                    ui.label("Rastreabilidade operacional").classes("text-h6 text-weight-bold")
+                    ui.label(
+                        "Presença de data operacional nos orçamentos originais."
+                    ).classes("text-caption text-grey-7")
+                    with_date = _int(row.get("budgets_with_operational_date"))
+                    without_date = _int(row.get("budgets_without_operational_date"))
+                    if with_date + without_date == total and total:
+                        ui.echart({
+                            "tooltip": {"trigger": "item"},
+                            "legend": {"bottom": 0},
+                            "series": [{
+                                "type": "pie",
+                                "radius": ["52%", "73%"],
+                                "center": ["50%", "44%"],
+                                "label": {"formatter": "{b}: {c}"},
+                                "data": [
+                                    {"name": "Com data", "value": with_date,
+                                     "itemStyle": {"color": "#087C86"}},
+                                    {"name": "Sem data", "value": without_date,
+                                     "itemStyle": {"color": "#CBD5E1"}},
+                                ],
+                            }],
+                        }).classes("w-full h-[290px]")
+                        ui.label(
+                            "Data identificada não comprova realização, faturamento ou pagamento."
+                        ).classes("text-caption text-grey-7")
+                    else:
+                        ui.label("Contagem operacional não conciliada com a carteira.").classes("text-body2 text-grey-7")
+
             with ui.expansion("Explorar trajetória operacional e distribuição por competência", icon="timeline").classes("w-full bg-white shadow-sm"):
                 ui.label("Primeira competência operacional observada para os orçamentos criados neste mês.").classes("text-body2 text-grey-7")
                 if competence_rows:
