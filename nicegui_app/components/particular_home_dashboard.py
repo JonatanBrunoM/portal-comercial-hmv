@@ -99,8 +99,8 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                     ("Valor total bruto", format_brl(row.get("original_value_total")), "Procedimentos e materiais · valor original", "payments"),
                     ("Com evidência operacional", str(_int(row.get("budgets_with_operational_date"))),
                      "Data identificada · não comprova realização", "event_available"),
-                    ("Aguardando análise", str(_int(validation.get("orcamentos_aguardando_analise"))) if validation else "—",
-                     "Pendências da validação financeira" if validation else "Validação não disponível", "pending_actions"),
+                    ("Valor gerencialmente liberado", format_brl(validation.get("valor_liberado_duplicidade")) if validation else "—",
+                     f"{_int(validation.get('orcamentos_liberados'))} orçamentos elegíveis" if validation else "Validação não disponível", "verified"),
                 ):
                     with ui.card().classes("flex-1 min-w-[205px] p-5 gap-2 shadow-sm rounded-xl"):
                         with ui.row().classes("w-full items-center justify-between"):
