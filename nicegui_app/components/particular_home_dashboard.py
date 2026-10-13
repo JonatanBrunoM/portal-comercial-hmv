@@ -77,7 +77,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
 
     executive = ui.column().classes("w-full gap-4")
     ranking = ui.column().classes("w-full gap-3")
-    ranking_basis = ui.toggle({"gross": "Bruto original", "released": "Gerencialmente liberado"}, value="gross").props("no-caps dense")
+    ranking_basis = {"value": "gross"}
 
     def render_month(month: str, competence_rows: list[dict[str, Any]]) -> None:
         executive.clear()
@@ -280,13 +280,13 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
 
     def render_doctors(month: str) -> None:
         ranking.clear()
-        field = "valor_liberado_duplicidade" if ranking_basis.value == "released" else "valor_bruto_importado"
+        field = "valor_liberado_duplicidade" if ranking_basis["value"] == "released" else "valor_bruto_importado"
         rows = doctor_cache.get(month)
         with ranking:
             with ui.card().classes("w-full p-5 rounded-xl shadow-sm gap-3"):
                 with ui.row().classes("w-full items-center justify-between flex-wrap gap-2"):
                     ui.label("Top 5 médicos").classes("text-h6 text-weight-bold")
-                    ranking_basis.move()
+                    ui.toggle({"gross": "Bruto original", "released": "Gerencialmente liberado"}, value=ranking_basis["value"], on_change=lambda event: change_ranking_basis(event.value)).props("no-caps dense")
                 ui.label("Ranking financeiro consolidado por médico · competência de criação do orçamento.").classes("text-caption text-grey-7")
                 if rows is None:
                     ui.label("Ranking indisponível nesta competência.").classes("text-body2 text-grey-7")
@@ -301,7 +301,10 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                     ui.label("Nenhum médico identificado para esta competência.").classes("text-body2 text-grey-7")
                 ui.label("Transcrições identificadas como CONSULTORIO não são atribuídas a médicos.").classes("text-caption text-grey-7")
 
-    ranking_basis.on_value_change(lambda _: render_doctors(month_select.value) if month_select.value else None)
+    def change_ranking_basis(value: str) -> None:
+        ranking_basis["value"] = value
+        if month_select.value:
+            render_doctors(month_select.value)
 
     async def load_competence(month: str) -> None:
         executive.clear()
