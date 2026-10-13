@@ -6,6 +6,7 @@ from typing import Any
 from nicegui import run, ui
 
 from nicegui_app.components.particular_monthly_dashboard import render_particular_monthly_dashboard
+from nicegui_app.services.particular_doctor_dashboard import list_doctor_monthly
 from nicegui_app.services.particular_monthly_dashboard import (
     format_brl,
     list_home_management,
@@ -66,6 +67,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     management_by_month: dict[str, dict[str, Any]] = {}
     competence_cache: dict[str, list[dict[str, Any]]] = {}
     validation_by_month: dict[str, dict[str, Any]] = {}
+    doctor_cache: dict[str, list[dict[str, Any]]] = {}
 
     # O seletor técnico continua disponível para sincronizar a competência
     # global, mas não cria um cabeçalho redundante na Home.
@@ -74,6 +76,8 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     month_select.set_visibility(False)
 
     executive = ui.column().classes("w-full gap-4")
+    ranking = ui.column().classes("w-full gap-3")
+    ranking_basis = ui.toggle({"gross": "Bruto original", "released": "Gerencialmente liberado"}, value="gross").props("no-caps dense")
 
     def render_month(month: str, competence_rows: list[dict[str, Any]]) -> None:
         executive.clear()
@@ -274,6 +278,31 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 else:
                     ui.label("Sem distribuição operacional disponível.").classes("text-body2 text-grey-7")
 
+    def render_doctors(month: str) -> None:
+        ranking.clear()
+        field = "valor_liberado_duplicidade" if ranking_basis.value == "released" else "valor_bruto_importado"
+        rows = doctor_cache.get(month)
+        with ranking:
+            with ui.card().classes("w-full p-5 rounded-xl shadow-sm gap-3"):
+                with ui.row().classes("w-full items-center justify-between flex-wrap gap-2"):
+                    ui.label("Top 5 médicos").classes("text-h6 text-weight-bold")
+                    ranking_basis.move()
+                ui.label("Ranking financeiro consolidado por médico · competência de criação do orçamento.").classes("text-caption text-grey-7")
+                if rows is None:
+                    ui.label("Ranking indisponível nesta competência.").classes("text-body2 text-grey-7")
+                    return
+                valid = [item for item in rows if str(item.get("medico") or "").strip() and "CONSULT" not in str(item.get("medico") or "").upper()]
+                valid.sort(key=lambda item: Decimal(str(item.get(field) or 0)), reverse=True)
+                for index, item in enumerate(valid[:5], 1):
+                    with ui.row().classes("w-full items-center justify-between gap-3 border-b border-grey-2 py-2"):
+                        ui.label(f"{index:02d}  {item.get('medico')}").classes("text-body2 text-weight-medium")
+                        ui.label(format_brl(item.get(field))).classes("text-body2 text-weight-bold")
+                if not valid:
+                    ui.label("Nenhum médico identificado para esta competência.").classes("text-body2 text-grey-7")
+                ui.label("Transcrições identificadas como CONSULTORIO não são atribuídas a médicos.").classes("text-caption text-grey-7")
+
+    ranking_basis.on_value_change(lambda _: render_doctors(month_select.value) if month_select.value else None)
+
     async def load_competence(month: str) -> None:
         executive.clear()
         with executive:
@@ -285,6 +314,15 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 competence_cache[month] = rows
             if month_select.value == month:
                 render_month(month, rows)
+                try:
+                    doctors = doctor_cache.get(month)
+                    if doctors is None:
+                        doctors = await run.io_bound(list_doctor_monthly, access, month)
+                        doctor_cache[month] = doctors
+                except Exception:
+                    doctor_cache.pop(month, None)
+                if month_select.value == month:
+                    render_doctors(month)
         except Exception:
             executive.clear()
             with executive:
@@ -315,6 +353,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 if row.get("budget_competence")
             })
             competence_cache.clear()
+            doctor_cache.clear()
             month_select.options = {
                 key: month_label(key)
                 for key in management_by_month
