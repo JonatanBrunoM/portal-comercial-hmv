@@ -579,14 +579,19 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
             if "NEUROPEDIATRIA" in _text(row, "codigo").upper()
         )
 
-        def _modal_field(label: str, value: str, icon: str = "info") -> None:
+        def _modal_field(label: str, value: str, icon: str = "info", tooltip: str = "") -> None:
             if not value:
                 return
             with ui.element("div").classes("portal-operator-modal-field"):
+                if tooltip:
+                    ui.tooltip(tooltip).classes("max-w-sm text-sm")
                 with ui.element("div").classes("portal-operator-modal-field-icon"):
                     ui.icon(icon)
                 with ui.column().classes("portal-operator-modal-field-copy gap-0"):
-                    ui.label(label).classes("portal-operator-modal-label")
+                    with ui.row().classes("items-center gap-1"):
+                        ui.label(label).classes("portal-operator-modal-label")
+                        if tooltip:
+                            ui.icon("info_outline", size="xs").classes("text-blue-500")
                     ui.label(value).classes("portal-operator-modal-value")
 
         def _open_authorization_modal(row: dict[str, Any]) -> None:
@@ -663,8 +668,17 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
                 if coverage:
                     with ui.element("div").classes("portal-operator-modal-grid"):
-                        _modal_field("Acomodação", _text(coverage, "acomodacao"), "hotel")
-                        _modal_field("Acompanhante", _text(coverage, "acompanhante"), "group")
+                        _modal_field(
+                            "Acomodação", _text(coverage, "acomodacao"), "hotel",
+                            "Enfermaria: leito semiprivativo (compartilhado). "
+                            "Apartamento: leito privativo (individual).",
+                        )
+                        _modal_field(
+                            "Acompanhante", _text(coverage, "acompanhante"), "group",
+                            "Conforme estatuto: crianças e adolescentes menores de 18 anos "
+                            "e pessoas com 60 anos ou mais têm direito legal a acompanhante, "
+                            "observadas as condições legais aplicáveis.",
+                        )
                         _modal_field("Restrições", _text(coverage, "restricoes_cobertura"), "warning_amber")
 
                     notes = _text(coverage, "observacoes")
