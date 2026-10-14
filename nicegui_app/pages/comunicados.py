@@ -107,7 +107,7 @@ def _gallery_card(
             ui.label(communication.title).classes("portal-communication-gallery-title")
             ui.label(communication.operator_name).classes("portal-communication-gallery-operator")
 
-            summary = communication.summary or communication.content or "Consulte o comunicado completo."
+            summary = communication.content or "Consulte o comunicado completo."
             ui.label(summary).classes("portal-communication-gallery-summary")
 
             with ui.row().classes("portal-communication-gallery-meta"):
@@ -337,8 +337,8 @@ def render_comunicado_detail(user: dict, communication_id: str) -> None:
                         ui.label(communication.category).classes("portal-communication-gallery-badge")
                 ui.label(communication.title).classes("portal-communication-detail-title")
                 ui.label(communication.operator_name).classes("portal-communication-detail-operator")
-                if communication.summary:
-                    ui.label(communication.summary).classes("portal-communication-detail-lead")
+                if communication.content:
+                    ui.label(communication.content).classes("portal-communication-detail-lead")
 
             _cover_art(theme, icon)
 
@@ -356,6 +356,8 @@ def render_comunicado_detail(user: dict, communication_id: str) -> None:
                 ui.label(
                     communication.content or "Nenhum conteúdo detalhado foi informado."
                 ).classes("portal-communication-content")
+                if communication.summary.startswith(("https://", "http://")):
+                    ui.link("Abrir comunicado original ↗", communication.summary, new_tab=True).classes("portal-communication-original-link")
 
             with ui.element("aside").classes("portal-communication-reading-aside"):
                 ui.icon("bookmark_added")
