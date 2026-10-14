@@ -346,17 +346,19 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                             ui.label(title).classes("text-h6 text-weight-bold")
                             ui.label(subtitle).classes("text-caption text-grey-7")
                             items = item_cache.get(month)
-                            if ranking_basis["value"] != "released":
-                                ui.label(
-                                    "Selecione Gerencialmente liberado para consultar os itens. "
-                                    "A view atual não disponibiliza itens de todos os orçamentos."
-                                ).classes("text-body2 text-grey-7")
-                            elif items is None:
+                            if items is None:
                                 ui.label("Itens indisponíveis nesta competência.").classes("text-body2 text-grey-7")
                             else:
                                 grouped: dict[str, Decimal] = {}
                                 descriptions: dict[str, str] = {}
+                                selected_base = (
+                                    "RELEASED"
+                                    if ranking_basis["value"] == "released"
+                                    else "GROSS"
+                                )
                                 for item in items:
+                                    if item.get("base_valor") != selected_base:
+                                        continue
                                     code = str(item.get("codigo") or "").strip()
                                     description = str(item.get("descricao") or "").strip()
                                     normalized = description.upper()
