@@ -119,6 +119,13 @@ def _gallery_card(
                         ui.icon("groups")
                         ui.label(communication.audience)
 
+            if communication.summary.startswith(("https://", "http://")):
+                ui.button(
+                    "Acessar e-mail original",
+                    icon="open_in_new",
+                    on_click=lambda url=communication.summary: ui.navigate.to(url, new_tab=True),
+                ).props("outline no-caps").classes("portal-communication-gallery-action")
+
             ui.button(
                 "Abrir comunicado",
                 icon="arrow_outward",
@@ -357,7 +364,11 @@ def render_comunicado_detail(user: dict, communication_id: str) -> None:
                     communication.content or "Nenhum conteúdo detalhado foi informado."
                 ).classes("portal-communication-content")
                 if communication.summary.startswith(("https://", "http://")):
-                    ui.link("Abrir comunicado original ↗", communication.summary, new_tab=True).classes("portal-communication-original-link")
+                    ui.button(
+                        "Acessar e-mail original",
+                        icon="open_in_new",
+                        on_click=lambda url=communication.summary: ui.navigate.to(url, new_tab=True),
+                    ).props("outline no-caps").classes("portal-communication-gallery-action")
 
             with ui.element("aside").classes("portal-communication-reading-aside"):
                 ui.icon("bookmark_added")
