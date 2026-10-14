@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 import logging
 from dataclasses import dataclass
 from datetime import date
@@ -134,8 +136,10 @@ def save_comunicado(
     if not title:
         raise ValueError("Informe o título do comunicado.")
 
-    if not summary:
-        raise ValueError("Informe o resumo do comunicado.")
+    if summary:
+        parsed_url = urlsplit(summary)
+        if parsed_url.scheme not in {"https", "http"} or not parsed_url.hostname or parsed_url.username or parsed_url.password:
+            raise ValueError("Informe um link HTTP(S) válido para o comunicado.")
 
     if not content:
         raise ValueError("Informe o conteúdo do comunicado.")
