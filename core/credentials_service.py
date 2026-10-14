@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -24,17 +25,21 @@ class DecryptionResult:
 
 def _get_fernet() -> Fernet | None:
     """Obtém a chave de criptografia sem expor seu valor."""
+    key = None
     try:
         key = st.secrets["SECURITY"]["FERNET_KEY"]
-    except Exception:
-        return None
+    except (KeyError, FileNotFoundError, TypeError):
+        pass
+
+    if not key:
+        key = os.getenv("PORTAL_CREDENTIALS_FERNET_KEY")
 
     if not key:
         return None
 
     try:
-        return Fernet(str(key).encode("utf-8"))
-    except Exception:
+        return Fernet(str(key).strip().encode("utf-8"))
+    except (ValueError, TypeError):
         return None
 
 
