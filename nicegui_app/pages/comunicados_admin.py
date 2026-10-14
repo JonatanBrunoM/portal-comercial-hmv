@@ -186,7 +186,7 @@ def render_admin_comunicados(user: dict) -> None:
                                     )
 
                             ui.label(
-                                item.summary or "Sem resumo"
+                                item.content or "Sem conteúdo"
                             ).classes(
                                 "portal-admin-communications-summary"
                             )
@@ -280,10 +280,11 @@ def _open_dialog(
             value=item.title if item else "",
         ).props("outlined")
 
-        summary = ui.textarea(
-            "Resumo",
-            value=item.summary if item else "",
-        ).props("outlined autogrow")
+        summary = ui.input(
+            "Link do comunicado (e-mail original)",
+            value=item.summary if item and item.summary.startswith(("https://", "http://")) else "",
+            placeholder="https://mail.google.com/mail/u/0/#...",
+        ).props("outlined type=url")
 
         content = ui.textarea(
             "Conteúdo",
