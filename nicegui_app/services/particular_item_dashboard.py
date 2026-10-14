@@ -17,10 +17,10 @@ def list_item_monthly(access: ParticularAccess, month: str) -> list[dict[str, An
         raise ValueError("Mês de referência inválido.")
 
     rows = rest_select(
-        "particular_item_monthly_summary",
+        "particular_item_ranking_monthly_v1",
         select=(
-            "mes_referencia,codigo,descricao,orcamentos,registros_item,"
-            "quantidade,valor_itens,participacao_itens_percentual"
+            "mes_referencia,base_valor,codigo,descricao,"
+            "orcamentos,registros_item,quantidade,valor_itens"
         ),
         params={
             "mes_referencia": f"eq.{reference.isoformat()}",
