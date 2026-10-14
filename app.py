@@ -14,6 +14,7 @@ from nicegui_app.auth.google_oauth import (
     start_google_login,
 )
 from nicegui_app.auth.admin_access import get_current_admin_profile
+from nicegui_app.components.communication_notice import show_latest_communication_notice
 from nicegui_app.pages.home import render_home
 from nicegui_app.pages.administracao import render_administracao
 from nicegui_app.pages.usuarios_admin import render_admin_usuarios
@@ -350,6 +351,9 @@ def portal_page(request: Request) -> RedirectResponse | None:
     client_router = ui.context.client.sub_pages_router
     client_router.on_path_changed(navigation.update)
     navigation.update(client_router.current_path)
+
+    # Mostra o último comunicado vigente uma vez por usuário e publicação.
+    show_latest_communication_notice(user)
 
     # Evita manter scroll intermediário ao trocar de módulo e acrescenta
     # feedback visual imediato sem bloquear a navegação.
