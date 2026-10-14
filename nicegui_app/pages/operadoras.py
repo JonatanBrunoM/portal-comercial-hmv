@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from nicegui import ui
 
 from nicegui_app.hero_art import render_hero_art
+from nicegui_app.services.plan_help_texts import get_plan_help_texts, save_plan_help_texts
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.operadoras_service import (
     OperadoraPreview,
@@ -648,6 +649,32 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
 
         def _open_plan_modal(plan: dict[str, Any]) -> None:
             coverage = _coverage_for_plan(plan, detail.coberturas)
+            try:
+                help_texts = get_plan_help_texts()
+            except Exception:
+                ui.notify("Não foi possível carregar os textos de ajuda.", type="warning")
+                help_texts = {}
+
+            def edit_help_texts() -> None:
+                with ui.dialog() as editor, ui.card().classes("w-full max-w-xl p-5 gap-4"):
+                    ui.label("Editar informações dos planos").classes("text-xl font-bold")
+                    accommodation_input = ui.textarea("Acomodação", value=help_texts.get("plano_acomodacao", "")).props("outlined autogrow").classes("w-full")
+                    companion_input = ui.textarea("Acompanhante", value=help_texts.get("plano_acompanhante", "")).props("outlined autogrow").classes("w-full")
+
+                    def save_texts() -> None:
+                        try:
+                            save_plan_help_texts(user, accommodation_input.value or "", companion_input.value or "")
+                        except Exception as error:
+                            ui.notify(str(error), type="negative")
+                            return
+                        editor.close()
+                        dialog.close()
+                        ui.notify("Informações atualizadas.", type="positive")
+
+                    with ui.row().classes("w-full justify-end"):
+                        ui.button("Cancelar", on_click=editor.close).props("flat no-caps")
+                        ui.button("Salvar alterações", icon="save", on_click=save_texts).props("unelevated no-caps")
+                editor.open()
             with ui.dialog() as dialog, ui.card().classes("portal-operator-modal-card"):
                 with ui.row().classes("portal-operator-modal-header"):
                     with ui.row().classes("portal-operator-modal-heading"):
@@ -666,18 +693,18 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                         "flat round dense aria-label='Fechar'"
                     ).classes("portal-operator-modal-close")
 
+                if str(user.get("role") or "").lower() == "admin":
+                    ui.button("Editar informações", icon="edit", on_click=edit_help_texts).props("flat no-caps")
+
                 if coverage:
                     with ui.element("div").classes("portal-operator-modal-grid"):
                         _modal_field(
                             "Acomodação", _text(coverage, "acomodacao"), "hotel",
-                            "Enfermaria: leito semiprivativo (compartilhado). "
-                            "Apartamento: leito privativo (individual).",
+                            help_texts.get("plano_acomodacao", ""),
                         )
                         _modal_field(
                             "Acompanhante", _text(coverage, "acompanhante"), "group",
-                            "Conforme estatuto: crianças e adolescentes menores de 18 anos "
-                            "e pessoas com 60 anos ou mais têm direito legal a acompanhante, "
-                            "observadas as condições legais aplicáveis.",
+                            help_texts.get("plano_acompanhante", ""),
                         )
                         _modal_field("Restrições", _text(coverage, "restricoes_cobertura"), "warning_amber")
 
