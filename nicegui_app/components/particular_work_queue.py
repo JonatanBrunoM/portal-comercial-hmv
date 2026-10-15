@@ -113,7 +113,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
 
     with ui.column().classes("w-full gap-3 intel-queue"):
         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
-            ui.label("VISÃO GERAL DAS PENDÊNCIAS").classes(
+            ui.label("PAINEL OPERACIONAL").classes(
                 "text-caption text-weight-bold text-grey-7"
             ).style("letter-spacing: .08em")
             ui.badge("Motor operacional V2").props("outline").classes("text-primary")
@@ -174,20 +174,22 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     def render_summary() -> None:
         summary.clear()
         cards = [
-            ("priority_high", "Aguardando decisão", REVIEW_GROUPS, "DECIDIR", "Casos que dependem de validação humana"),
-            ("manage_search", "Investigar origem", INVESTIGATE_GROUPS, "INVESTIGAR", "Origem operacional sem evidência correspondente"),
-            ("event", "Em acompanhamento", FOLLOW_GROUPS, "ACOMPANHAR", "Operações identificadas que ainda estão em trajetória"),
+            ("priority_high", "Aguardando decisão", REVIEW_GROUPS, "DECIDIR"),
+            ("manage_search", "Investigar origem", INVESTIGATE_GROUPS, "INVESTIGAR"),
+            ("event", "Em acompanhamento", FOLLOW_GROUPS, "ACOMPANHAR"),
         ]
         with summary:
-            for icon, title, groups, kicker, subtitle in cards:
+            for icon, title, groups, kicker in cards:
                 with ui.card().classes("intel-summary flex-1 min-w-[220px] gap-1"):
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label(kicker).classes("text-caption text-weight-bold text-primary")
-                        ui.icon(icon, size="23px").classes("text-primary")
-                    ui.label(str(_count(all_rows, groups))).classes("text-h5 text-weight-bold")
-                    ui.label(title).classes("text-body1 text-weight-bold")
-                    ui.label(_money(_sum(all_rows, groups))).classes("text-body2 text-weight-medium")
-                    ui.label(subtitle).classes("text-caption text-grey-7")
+                        ui.icon(icon, size="20px").classes("text-primary")
+                    with ui.row().classes("items-center gap-3"):
+                        ui.label(str(_count(all_rows, groups))).classes("text-h5 text-weight-bold")
+                        ui.label(title).classes("text-body2 text-weight-medium")
+                    ui.label(_money(_sum(all_rows, groups)) + " em valores de referência").classes(
+                        "text-caption text-grey-7"
+                    )
 
     def render_scopes() -> None:
         scope_row.clear()
@@ -242,12 +244,12 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         ):
                             pass
                         with ui.row().classes("flex-1 items-center gap-4 px-4 py-3 flex-wrap"):
-                            with ui.column().classes("gap-0 min-w-[135px]"):
+                            with ui.column().classes("gap-0 min-w-[90px]"):
                                 ui.label(f'#{row.get("budget_number")}').classes("text-subtitle1 text-weight-bold")
                                 ui.label(_date(row.get("budget_date"))).classes("text-caption text-grey-7")
                                 ui.label(str(row.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-caption text-grey-6")
 
-                            with ui.column().classes("gap-1 flex-1 min-w-[330px]"):
+                            with ui.column().classes("gap-1 flex-1 min-w-[190px]"):
                                 with ui.row().classes("items-center gap-2"):
                                     ui.icon(icon, size="19px").classes("text-primary")
                                     ui.label(action).classes("text-body1 text-weight-bold")
@@ -257,17 +259,16 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                                 if doctor:
                                     ui.label(doctor).classes("text-caption text-grey-6")
 
-                            with ui.column().classes("gap-0 min-w-[145px]"):
-                                ui.label("Valor de referência").classes("text-caption text-grey-6")
+                            with ui.column().classes("gap-0 min-w-[110px]"):
+                                ui.label("Referência").classes("text-caption text-grey-6")
                                 ui.label(_money(row.get("original_value"))).classes("text-body2 text-weight-bold")
 
-                            with ui.column().classes("gap-0 min-w-[180px]"):
+                            with ui.column().classes("gap-0 min-w-[125px]"):
                                 attendance = row.get("attendance_number")
                                 ui.label(f"Atend. {attendance}" if attendance else "Sem atendimento vinculado").classes("text-body2")
                                 last_date = row.get("last_observed_operational_date")
                                 ui.label(
-                                    f"Última data observada: {_date(last_date)}" if last_date
-                                    else "Sem data operacional identificada"
+                                    _date(last_date) if last_date else "Data não identificada"
                                 ).classes("text-caption text-grey-7")
 
                             budget_id = str(row.get("budget_id") or "")
@@ -321,15 +322,25 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         ui.label("Atendimento").classes("text-caption text-grey-7")
                         ui.label(str(selected.get("attendance_number") or "Não vinculado")).classes("text-body2 text-weight-medium")
                 ui.separator()
+                ui.label("LEITURA DO MOTOR").classes("text-caption text-weight-bold text-primary")
                 with ui.column().classes("intel-insight w-full gap-2 p-4"):
                     with ui.row().classes("items-center gap-2"):
                         ui.icon(icon).classes("text-primary")
                         ui.label(action).classes("text-body1 text-weight-bold")
                     ui.label(explanation).classes("text-body2 text-grey-7")
                     ui.label("Classificação atual da fila, não uma conclusão definitiva.").classes("text-caption text-grey-7")
-                ui.label("Última data operacional: " + _date(
-                    selected.get("last_observed_operational_date")
-                )).classes("text-caption text-grey-7")
+                with ui.expansion("Dados para conferência", icon="fact_check").classes(
+                    "intel-evidence w-full"
+                ):
+                    ui.label(
+                        "Última data operacional observada: " + _date(
+                            selected.get("last_observed_operational_date")
+                        )
+                    ).classes("text-body2")
+                    ui.label(
+                        "Os dados acima são um resumo da fila. Consulte o dossiê "
+                        "para verificar fontes, eventos e evoluções."
+                    ).classes("text-body2 text-grey-7")
                 ui.button(
                     "Abrir análise completa", icon="open_in_new",
                     on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
