@@ -113,10 +113,10 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     with ui.column().classes("w-full gap-4"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-0"):
-                ui.label("CENTRAL DE TRABALHO").classes("text-caption text-weight-bold text-primary")
-                ui.label("Prioridades do Particular").classes("text-h4 text-weight-bold")
+                ui.label("TRIAGEM OPERACIONAL").classes("text-caption text-weight-bold text-primary")
+                ui.label("O que precisa da sua atenção").classes("text-h4 text-weight-bold")
                 ui.label(
-                    "A fila mostra primeiro o que exige decisão. Evidências e carteira completa continuam disponíveis sem poluir o trabalho diário."
+                    "Escolha entre decidir, investigar ou acompanhar. Use os filtros para consultar os demais casos."
                 ).classes("text-body2 text-grey-7")
             ui.badge("Motor operacional V2").props("outline").classes("text-primary")
 
@@ -170,9 +170,9 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     def render_summary() -> None:
         summary.clear()
         cards = [
-            ("priority_high", "Decisão necessária", REVIEW_GROUPS, "AÇÃO", "Casos que dependem de validação humana"),
-            ("manage_search", "Investigar", INVESTIGATE_GROUPS, "INVESTIGAR", "Origem operacional sem evidência correspondente"),
-            ("event", "Monitorar", FOLLOW_GROUPS, "ACOMPANHAR", "Operações identificadas que ainda estão em trajetória"),
+            ("priority_high", "Aguardando decisão", REVIEW_GROUPS, "DECIDIR", "Casos que dependem de validação humana"),
+            ("manage_search", "Investigar origem", INVESTIGATE_GROUPS, "INVESTIGAR", "Origem operacional sem evidência correspondente"),
+            ("event", "Em acompanhamento", FOLLOW_GROUPS, "ACOMPANHAR", "Operações identificadas que ainda estão em trajetória"),
         ]
         with summary:
             for icon, title, groups, kicker, subtitle in cards:
@@ -188,10 +188,10 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     def render_scopes() -> None:
         scope_row.clear()
         options = [
-            ("ACTION", "Decisão necessária", _count(all_rows, REVIEW_GROUPS)),
+            ("ACTION", "Decidir", _count(all_rows, REVIEW_GROUPS)),
             ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
-            ("FOLLOW", "Monitorar", _count(all_rows, FOLLOW_GROUPS)),
-            ("ARCHIVE", "Carteira completa / resolvidos", _count(all_rows, ARCHIVE_GROUPS)),
+            ("FOLLOW", "Acompanhar", _count(all_rows, FOLLOW_GROUPS)),
+            ("ARCHIVE", "Demais situações / concluídos", _count(all_rows, ARCHIVE_GROUPS)),
             ("ALL", "Todos", len(all_rows)),
         ]
         with scope_row:
