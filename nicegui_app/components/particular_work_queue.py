@@ -194,7 +194,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             ("ACTION", "Decidir", _count(all_rows, REVIEW_GROUPS)),
             ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
             ("FOLLOW", "Acompanhar", _count(all_rows, FOLLOW_GROUPS)),
-            *(([("DUPLICATES", "Duplicidades", duplicates_count)]) if render_duplicates else []),
+            *([("DUPLICATES", "Duplicidades", duplicates_count)] if render_duplicates else []),
             ("ARCHIVE", "Demais situações / concluídos", _count(all_rows, ARCHIVE_GROUPS)),
             ("ALL", "Todos", len(all_rows)),
         ]
