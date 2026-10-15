@@ -880,8 +880,8 @@ def render_particular(user: dict) -> None:
                     .intelligence-center .intel-workspace { padding: 8px 0 0; }
                     .intelligence-center .intel-summary {
                         background: white; border: 1px solid #e7edf2 !important;
-                        border-radius: 16px !important; padding: 16px 18px !important;
-                        box-shadow: 0 5px 20px rgba(22, 52, 75, .045) !important;
+                        border-radius: 14px !important; padding: 12px 16px !important;
+                        box-shadow: 0 4px 16px rgba(22, 52, 75, .035) !important;
                     }
                     .intelligence-center .intel-summary .text-h5 { font-size: 27px; line-height: 1.15; }
                     .intelligence-center .intel-tabs {
@@ -913,6 +913,22 @@ def render_particular(user: dict) -> None:
                         transform: translateY(-1px);
                     }
                     .intelligence-center .intel-case .q-badge { border-radius: 7px; }
+                    .intelligence-center .intel-queue .intel-list .intel-case .q-card__section {
+                        padding: 12px;
+                    }
+                    .intelligence-center .intel-evidence {
+                        border: 1px solid #e5edf4; border-radius: 12px;
+                        background: #f8fafc;
+                    }
+                    .intelligence-center .intel-evidence .q-item {
+                        min-height: 42px; font-weight: 600; color: #28506c;
+                    }
+                    .intelligence-center .intel-detail-card .q-btn {
+                        border-radius: 10px;
+                    }
+                    .intelligence-center .intel-summary .text-h5 {
+                        font-variant-numeric: tabular-nums;
+                    }
                     .intelligence-center .intel-split { align-items: flex-start; }
                     .intelligence-center .intel-list { flex: 1 1 57%; min-width: 0; }
                     .intelligence-center .intel-detail {
