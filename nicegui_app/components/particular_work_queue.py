@@ -110,20 +110,17 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     state = {"scope": "ACTION", "search": "", "group": "TODOS", "origin": "TODOS"}
     all_rows: list[dict[str, Any]] = []
 
-    with ui.column().classes("w-full gap-3"):
-        with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
-            with ui.column().classes("gap-0"):
-                ui.label("TRIAGEM OPERACIONAL").classes("text-caption text-weight-bold text-primary")
-                ui.label("Painel de prioridades").classes("text-subtitle1 text-weight-bold")
-                ui.label(
-                    "Escolha entre decidir, investigar ou acompanhar. Use os filtros para consultar os demais casos."
-                ).classes("text-body2 text-grey-7")
+    with ui.column().classes("w-full gap-3 intel-queue"):
+        with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
+            ui.label("VISÃO GERAL DAS PENDÊNCIAS").classes(
+                "text-caption text-weight-bold text-grey-7"
+            ).style("letter-spacing: .08em")
             ui.badge("Motor operacional V2").props("outline").classes("text-primary")
 
         summary = ui.row().classes("w-full gap-3 flex-wrap")
-        scope_row = ui.row().classes("w-full gap-2 flex-wrap")
+        scope_row = ui.row().classes("intel-tabs w-full gap-2 flex-wrap")
 
-        filters_card = ui.card().classes("w-full p-3 shadow-none border rounded-lg")
+        filters_card = ui.card().classes("intel-filters w-full p-3 shadow-none border rounded-lg")
         with filters_card:
             with ui.row().classes("w-full items-end gap-3 flex-wrap"):
                 search = ui.input(
@@ -179,7 +176,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         ]
         with summary:
             for icon, title, groups, kicker, subtitle in cards:
-                with ui.card().classes("flex-1 min-w-[240px] p-3 gap-1 shadow-none border rounded-lg"):
+                with ui.card().classes("intel-summary flex-1 min-w-[220px] gap-1"):
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label(kicker).classes("text-caption text-weight-bold text-primary")
                         ui.icon(icon, size="23px").classes("text-primary")
@@ -195,14 +192,14 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
             ("FOLLOW", "Acompanhar", _count(all_rows, FOLLOW_GROUPS)),
             *([("DUPLICATES", "Duplicidades", duplicates_count)] if render_duplicates else []),
-            ("ARCHIVE", "Demais situações / concluídos", _count(all_rows, ARCHIVE_GROUPS)),
+            ("ARCHIVE", "Outras situações", _count(all_rows, ARCHIVE_GROUPS)),
             ("ALL", "Todos", len(all_rows)),
         ]
         with scope_row:
             for key, label, count in options:
                 props = "unelevated no-caps" if state["scope"] == key else "outline no-caps"
                 ui.button(
-                    f"{label} · {count}", on_click=lambda _=None, key=key: set_scope(key)
+                    f"{label}  {count}", on_click=lambda _=None, key=key: set_scope(key)
                 ).props(props)
 
     def render_rows() -> None:
@@ -225,7 +222,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 group = str(row.get("work_group") or "")
                 label, color, icon = GROUPS.get(group, (group, "grey", "info"))
                 action, explanation = _action(row)
-                with ui.card().classes("w-full p-0 shadow-none border rounded-lg overflow-hidden"):
+                with ui.card().classes("intel-case w-full p-0 overflow-hidden"):
                     with ui.row().classes("w-full items-stretch no-wrap"):
                         with ui.element("div").classes(
                             "w-[5px] bg-red-5" if group in REVIEW_GROUPS
@@ -233,7 +230,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                             else "w-[5px] bg-blue-5"
                         ):
                             pass
-                        with ui.row().classes("flex-1 items-center gap-4 p-4 flex-wrap"):
+                        with ui.row().classes("flex-1 items-center gap-4 px-4 py-3 flex-wrap"):
                             with ui.column().classes("gap-0 min-w-[135px]"):
                                 ui.label(f'#{row.get("budget_number")}').classes("text-subtitle1 text-weight-bold")
                                 ui.label(_date(row.get("budget_date"))).classes("text-caption text-grey-7")
