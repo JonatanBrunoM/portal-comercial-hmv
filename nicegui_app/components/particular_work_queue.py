@@ -110,11 +110,11 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     state = {"scope": "ACTION", "search": "", "group": "TODOS", "origin": "TODOS"}
     all_rows: list[dict[str, Any]] = []
 
-    with ui.column().classes("w-full gap-4"):
+    with ui.column().classes("w-full gap-3"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-0"):
                 ui.label("TRIAGEM OPERACIONAL").classes("text-caption text-weight-bold text-primary")
-                ui.label("O que precisa da sua atenção").classes("text-h4 text-weight-bold")
+                ui.label("Painel de prioridades").classes("text-subtitle1 text-weight-bold")
                 ui.label(
                     "Escolha entre decidir, investigar ou acompanhar. Use os filtros para consultar os demais casos."
                 ).classes("text-body2 text-grey-7")
@@ -123,7 +123,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         summary = ui.row().classes("w-full gap-3 flex-wrap")
         scope_row = ui.row().classes("w-full gap-2 flex-wrap")
 
-        with ui.card().classes("w-full p-3 shadow-sm"):
+        with ui.card().classes("w-full p-3 shadow-none border rounded-lg"):
             with ui.row().classes("w-full items-end gap-3 flex-wrap"):
                 search = ui.input(
                     "Buscar", placeholder="Orçamento, médico ou atendimento"
@@ -176,12 +176,12 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         ]
         with summary:
             for icon, title, groups, kicker, subtitle in cards:
-                with ui.card().classes("flex-1 min-w-[260px] p-4 gap-1 shadow-sm"):
+                with ui.card().classes("flex-1 min-w-[240px] p-3 gap-1 shadow-none border rounded-lg"):
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label(kicker).classes("text-caption text-weight-bold text-primary")
                         ui.icon(icon, size="23px").classes("text-primary")
-                    ui.label(str(_count(all_rows, groups))).classes("text-h4 text-weight-bold")
-                    ui.label(title).classes("text-subtitle1 text-weight-bold")
+                    ui.label(str(_count(all_rows, groups))).classes("text-h5 text-weight-bold")
+                    ui.label(title).classes("text-body1 text-weight-bold")
                     ui.label(_money(_sum(all_rows, groups))).classes("text-body2 text-weight-medium")
                     ui.label(subtitle).classes("text-caption text-grey-7")
 
@@ -216,7 +216,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 group = str(row.get("work_group") or "")
                 label, color, icon = GROUPS.get(group, (group, "grey", "info"))
                 action, explanation = _action(row)
-                with ui.card().classes("w-full p-0 shadow-sm overflow-hidden"):
+                with ui.card().classes("w-full p-0 shadow-none border rounded-lg overflow-hidden"):
                     with ui.row().classes("w-full items-stretch no-wrap"):
                         with ui.element("div").classes(
                             "w-[5px] bg-red-5" if group in REVIEW_GROUPS
