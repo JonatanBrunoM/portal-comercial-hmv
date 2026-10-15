@@ -195,10 +195,56 @@ def get_particular_case_dossier(*, budget_id: str) -> dict[str, Any]:
             timeout=20.0,
         )
 
+    # Valores originais vigentes: espelho estruturado da importação, não XML bruto.
+    original_values = rest_select(
+        "particular_original_value_current",
+        select="budget_id,procedure_value,material_value,total_value,effective_at",
+        params={"budget_id": f"eq.{budget_id}", "limit": "1"},
+        timeout=20.0,
+    )
+
+    # Vinculação MV apenas por número de aviso explícito na grade.
+    # Ausência de correspondência não implica inexistência de conta.
+    notice_numbers = sorted({
+        str(item.get("notice_number")).strip()
+        for item in occurrences
+        if item.get("notice_number") is not None
+        and str(item.get("notice_number")).strip()
+    })
+    mv_notices: list[dict[str, Any]] = []
+    mv_accounts: list[dict[str, Any]] = []
+    if notice_numbers:
+        for offset in range(0, len(notice_numbers), 30):
+            batch = notice_numbers[offset:offset + 30]
+            mv_notices.extend(rest_select(
+                "particular_mv_account_notices",
+                select="account_record_id,notice_number",
+                params={"notice_number": "in.(" + ",".join(batch) + ")"},
+                timeout=20.0,
+            ))
+        record_ids = sorted({
+            str(item.get("account_record_id"))
+            for item in mv_notices if item.get("account_record_id")
+        })
+        for offset in range(0, len(record_ids), 30):
+            batch = record_ids[offset:offset + 30]
+            mv_accounts.extend(rest_select(
+                "particular_mv_account_records",
+                select=(
+                    "id,attendance_number,account_number,account_start_date,"
+                    "account_end_date,is_closed,account_total,import_id"
+                ),
+                params={"id": "in.(" + ",".join(batch) + ")"},
+                timeout=20.0,
+            ))
+
     return {
         "queue": row,
         "occurrences": occurrences,
         "events": events,
         "evolutions": evolutions,
         "investigation_candidates": investigation_candidates,
+        "original_values": original_values,
+        "mv_notices": mv_notices,
+        "mv_accounts": mv_accounts,
     }
