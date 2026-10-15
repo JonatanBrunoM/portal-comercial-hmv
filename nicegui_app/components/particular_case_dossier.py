@@ -258,6 +258,31 @@ def open_particular_case_dossier(
                         ui.label(title).classes("text-h6 text-weight-bold")
                         ui.label(next_action).classes("text-body1")
 
+            # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
+            # A ausência de registros nesta consulta não comprova ausência na origem.
+            with ui.card().classes("w-full p-4 shadow-none border"):
+                ui.label("Evidências reunidas").classes("text-subtitle1 text-weight-bold")
+                ui.label(
+                    "Resumo das fontes consultadas para este orçamento. "
+                    "Registros não localizados nesta consulta não significam inexistência na origem."
+                ).classes("text-caption text-grey-7")
+                with ui.row().classes("w-full gap-5 flex-wrap mt-2"):
+                    _metric("Ocorrências operacionais", str(len(occurrences)), "Grade vinculada ao caso")
+                    _metric("Eventos financeiros", str(len(events)), "Eventos retornados na análise")
+                    _metric("Evoluções administrativas", str(len(evolutions)), "Registros associados ao caso")
+                    _metric("Indícios para investigação", str(len(investigation_candidates)), "Possíveis relações, não confirmadas")
+                with ui.row().classes("w-full gap-2 flex-wrap mt-2"):
+                    ui.badge("Orçamento de referência: " + _money(
+                        row.get("reference_budget_value") or row.get("original_value")
+                    )).props("outline")
+                    if row.get("account_status"):
+                        ui.badge(
+                            "Estado da conta: " + _text(row.get("account_status"))
+                        ).props("outline")
+                ui.label(
+                    "A situação financeira não confirma, por si só, o desfecho operacional."
+                ).classes("text-caption text-grey-7")
+
             closure_label, closure_reason, closure_mode = _closure_review_context(events, evolutions)
             raw_review_reason = str(row.get("account_review_reason") or "")
             ambiguity_with_explicit_closure = (
