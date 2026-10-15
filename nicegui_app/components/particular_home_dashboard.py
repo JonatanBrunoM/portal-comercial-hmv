@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from calendar import monthrange
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -10,6 +12,7 @@ from nicegui_app.services.particular_doctor_dashboard import list_doctor_monthly
 from nicegui_app.services.particular_item_dashboard import list_item_monthly
 from nicegui_app.services.particular_monthly_dashboard import (
     format_brl,
+    list_daily_production,
     list_home_management,
     list_monthly_validation,
     list_home_operational_competence,
@@ -70,6 +73,8 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
     validation_by_month: dict[str, dict[str, Any]] = {}
     doctor_cache: dict[str, list[dict[str, Any]]] = {}
     item_cache: dict[str, list[dict[str, Any]]] = {}
+    daily_cache: dict[str, list[dict[str, Any]]] = {}
+    production_basis = {"value": "count"}
 
     # O seletor técnico continua disponível para sincronizar a competência
     # global, mas não cria um cabeçalho redundante na Home.
@@ -266,6 +271,91 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                     else:
                         ui.label("Contagem operacional não conciliada com a carteira.").classes("text-body2 text-grey-7")
 
+            # Evolução da produção própria: não inclui transcrições, nem representa procedimentos realizados.
+            with ui.card().classes("w-full p-5 rounded-xl shadow-sm gap-3"):
+                with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+                    with ui.column().classes("gap-1"):
+                        ui.label("Evolução da produção").classes("text-h6 text-weight-bold")
+                        ui.label(
+                            "Orçamentos criados por dia · produção própria, sem transcrições."
+                        ).classes("text-caption text-grey-7")
+                    ui.toggle(
+                        {"count": "Quantidade", "value": "Valor bruto"},
+                        value=production_basis["value"],
+                        on_change=lambda event: change_production_basis(event.value),
+                    ).props("no-caps dense")
+                production_chart = ui.column().classes("w-full gap-2")
+
+                def draw_production() -> None:
+                    production_chart.clear()
+                    daily_rows = daily_cache.get(month)
+                    with production_chart:
+                        if daily_rows is None:
+                            ui.label("Evolução diária indisponível para esta competência.").classes(
+                                "text-body2 text-grey-7"
+                            )
+                            return
+                        reference = date.fromisoformat(month[:10])
+                        days_in_month = monthrange(reference.year, reference.month)[1]
+                        by_day = {
+                            str(item.get("data_orcamento"))[:10]: item
+                            for item in daily_rows if item.get("data_orcamento")
+                        }
+                        days = [
+                            reference + timedelta(days=offset)
+                            for offset in range(days_in_month)
+                        ]
+                        value_mode = production_basis["value"] == "value"
+                        values = [
+                            float(Decimal(str(
+                                by_day.get(day.isoformat(), {}).get("valor_bruto_producao") or 0
+                            ))) if value_mode else _int(
+                                by_day.get(day.isoformat(), {}).get("quantidade_orcamentos")
+                            )
+                            for day in days
+                        ]
+                        ui.echart({
+                            "tooltip": {
+                                "trigger": "axis",
+                                "valueFormatter": (
+                                    None if not value_mode else
+                                    "{value}"
+                                ),
+                            },
+                            "grid": {"left": 75, "right": 24, "top": 25, "bottom": 48},
+                            "xAxis": {
+                                "type": "category",
+                                "name": "Dia do mês",
+                                "data": [f"{day.day:02d}" for day in days],
+                                "axisLabel": {"interval": 1},
+                            },
+                            "yAxis": {
+                                "type": "value",
+                                "name": "R$" if value_mode else "Orçamentos",
+                                "min": 0,
+                            },
+                            "series": [{
+                                "name": "Valor bruto (R$)" if value_mode else "Orçamentos",
+                                "type": "bar" if value_mode else "line",
+                                "smooth": not value_mode,
+                                "showSymbol": False,
+                                "areaStyle": {"opacity": 0.09} if not value_mode else None,
+                                "itemStyle": {"color": "#087C86"},
+                                "data": values,
+                            }],
+                        }).classes("w-full h-[315px]")
+                        total_value = sum(
+                            (Decimal(str(item.get("valor_bruto_producao") or 0)) for item in daily_rows),
+                            Decimal(0),
+                        )
+                        total_count = sum(_int(item.get("quantidade_orcamentos")) for item in daily_rows)
+                        ui.label(
+                            f"{total_count} orçamentos · {format_brl(total_value)} "
+                            "em valores originais da produção própria. "
+                            "Inclui orçamentos anulados; não comprova realização."
+                        ).classes("text-caption text-grey-7")
+                draw_production()
+
             with ui.expansion("Explorar trajetória operacional e distribuição por competência", icon="timeline").classes("w-full bg-white shadow-sm"):
                 ui.label("Primeira competência operacional observada para os orçamentos criados neste mês.").classes("text-body2 text-grey-7")
                 if competence_rows:
@@ -410,6 +500,11 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                                 ).classes("text-caption text-grey-7")
 
 
+    def change_production_basis(value: str) -> None:
+        production_basis["value"] = value
+        if month_select.value and month_select.value in management_by_month:
+            render_month(month_select.value, competence_cache.get(month_select.value, []))
+
     def change_ranking_basis(value: str) -> None:
         ranking_basis["value"] = value
         if month_select.value:
@@ -425,6 +520,13 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                 rows = await run.io_bound(list_home_operational_competence, access, month)
                 competence_cache[month] = rows
             if month_select.value == month:
+                try:
+                    if month not in daily_cache:
+                        daily_cache[month] = await run.io_bound(list_daily_production, access, month)
+                except Exception:
+                    daily_cache.pop(month, None)
+                if month_select.value != month:
+                    return
                 render_month(month, rows)
                 try:
                     doctors = doctor_cache.get(month)
@@ -475,6 +577,7 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
             competence_cache.clear()
             doctor_cache.clear()
             item_cache.clear()
+            daily_cache.clear()
             month_select.options = {
                 key: month_label(key)
                 for key in management_by_month
