@@ -310,6 +310,21 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         events = dossier.get("events") or []
         evolutions = dossier.get("evolutions") or []
         candidates = dossier.get("investigation_candidates") or []
+        original_values = dossier.get("original_values") or []
+        mv_notices = dossier.get("mv_notices") or []
+        mv_accounts = dossier.get("mv_accounts") or []
+        original = original_values[0] if original_values else {}
+        linked_mv_ids = {str(item.get("id")) for item in mv_accounts}
+        matched_notices = sorted({
+            str(item.get("notice_number"))
+            for item in mv_notices
+            if str(item.get("account_record_id")) in linked_mv_ids
+        })
+        original_total = original.get("total_value")
+        mv_totals = [
+            item.get("account_total") for item in mv_accounts
+            if item.get("account_total") is not None
+        ]
         container.clear()
         event_labels = {
             "ACCOUNT_ADJUSTED": "Ajuste registrado na conta",
@@ -392,6 +407,21 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 "confirmada somente por esta busca.",
                 "warning",
             ))
+        if mv_accounts:
+            findings.append((
+                "Correspondência de aviso com conta MV",
+                f"{len(mv_accounts)} registro(s) de conta MV associado(s) a "
+                f"{len(matched_notices)} aviso(s) da grade. Confira o atendimento "
+                "e o histórico antes de interpretar o desfecho.",
+                "info",
+            ))
+        elif occurrences:
+            findings.append((
+                "Sem correspondência MV nesta consulta",
+                "Nenhuma conta MV foi vinculada aos avisos consultados. "
+                "Isso não comprova ausência de conta ou de atendimento.",
+                "info",
+            ))
         if not findings:
             findings.append((
                 "Sem conclusão adicional nesta consulta",
@@ -408,6 +438,14 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             follow_ups.append("Confirmar se as intenções registradas na grade se concretizaram.")
         if candidates:
             follow_ups.append("Validar os vínculos sugeridos antes de relacionar orçamentos.")
+        if mv_accounts:
+            follow_ups.append(
+                "Conferir atendimento, datas e valores das contas MV vinculadas."
+            )
+        elif occurrences:
+            follow_ups.append(
+                "Pesquisar no MV os avisos sem correspondência nesta consulta."
+            )
         if not follow_ups:
             follow_ups.append("Conferir o dossiê completo antes de registrar a decisão.")
         container.clear()
@@ -427,6 +465,64 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                     with ui.column().classes("intel-evidence-count flex-1 gap-0 p-2"):
                         ui.label(str(len(records))).classes("text-subtitle1 text-weight-bold")
                         ui.label(name).classes("text-caption text-grey-7")
+            with ui.column().classes("w-full gap-2 p-3").style(
+                "background:#fff;border-radius:12px;border:1px solid #dce9f3"
+            ):
+                ui.label("CONFRONTO DE FONTES").classes(
+                    "text-caption text-weight-bold text-primary"
+                )
+                with ui.row().classes("w-full gap-2 flex-wrap"):
+                    with ui.column().classes("flex-1 gap-0"):
+                        ui.label("Original vigente").classes("text-caption text-grey-7")
+                        ui.label(_money(original_total)).classes("text-body1 text-weight-bold")
+                        ui.label(
+                            "Valores estruturados da importação; não XML bruto."
+                        ).classes("text-caption text-grey-7")
+                    with ui.column().classes("flex-1 gap-0"):
+                        ui.label("Contas MV vinculadas").classes("text-caption text-grey-7")
+                        ui.label(str(len(mv_accounts))).classes("text-body1 text-weight-bold")
+                        ui.label(
+                            f"{len(matched_notices)} aviso(s) com correspondência"
+                        ).classes("text-caption text-grey-7")
+                if original:
+                    ui.label(
+                        "Procedimento: " + _money(original.get("procedure_value"))
+                        + " · Materiais: " + _money(original.get("material_value"))
+                    ).classes("text-caption text-grey-7")
+                if mv_accounts:
+                    with ui.expansion(
+                        "Conferir registros de contas MV", icon="receipt_long"
+                    ).classes("w-full"):
+                        for account in mv_accounts[:10]:
+                            record_id = str(account.get("id"))
+                            notices = sorted({
+                                str(item.get("notice_number"))
+                                for item in mv_notices
+                                if str(item.get("account_record_id")) == record_id
+                            })
+                            with ui.column().classes("w-full gap-1 py-2"):
+                                ui.label(
+                                    "Aviso(s): " + (", ".join(notices) or "não informado")
+                                ).classes("text-body2 text-weight-bold")
+                                ui.label(
+                                    "Atendimento: "
+                                    + str(account.get("attendance_number") or "não informado")
+                                    + " · Conta: "
+                                    + str(account.get("account_number") or "não informada")
+                                ).classes("text-body2")
+                                ui.label(
+                                    "Valor da conta: " + _money(account.get("account_total"))
+                                    + " · Estado no registro: "
+                                    + (
+                                        "Fechada" if account.get("is_closed") is True
+                                        else "Aberta" if account.get("is_closed") is False
+                                        else "Não informado"
+                                    )
+                                ).classes("text-body2")
+                ui.label(
+                    "Valores MV não são valores finais confirmados nem comprovantes "
+                    "de pagamento. Ausência de vínculo não significa ausência na origem."
+                ).classes("text-caption text-grey-7")
             with ui.column().classes("w-full gap-1 p-3").style(
                 "background:#f0f6fb;border-radius:12px;border:1px solid #dce9f3"
             ):
