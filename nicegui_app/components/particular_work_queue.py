@@ -109,6 +109,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
 
     state = {"scope": "ACTION", "search": "", "group": "TODOS", "origin": "TODOS"}
     all_rows: list[dict[str, Any]] = []
+    state["selected_budget_id"] = None
 
     with ui.column().classes("w-full gap-3 intel-queue"):
         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
@@ -134,7 +135,9 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 ).props("outlined dense").classes("min-w-[180px]")
 
         result_label = ui.label("").classes("text-sm text-grey-7")
-        results = ui.column().classes("w-full gap-2")
+        with ui.row().classes("intel-split w-full items-start gap-4 no-wrap"):
+            results = ui.column().classes("intel-list gap-2")
+            detail_panel = ui.column().classes("intel-detail gap-3")
 
     def visible_rows() -> list[dict[str, Any]]:
         scope = state["scope"]
@@ -164,6 +167,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         group_select.value = "TODOS"
         filters_card.set_visibility(scope != "DUPLICATES")
         summary.set_visibility(scope != "DUPLICATES")
+        detail_panel.set_visibility(scope != "DUPLICATES")
         render_scopes()
         render_rows()
 
@@ -211,6 +215,10 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 render_duplicates()
             return
         result_label.set_text(f"{len(rows)} caso(s) nesta fila.")
+        selected_ids = {str(r.get("budget_id") or "") for r in rows}
+        if state["selected_budget_id"] not in selected_ids:
+            state["selected_budget_id"] = str(rows[0].get("budget_id") or "") if rows else None
+        render_detail()
         with results:
             if not rows:
                 with ui.card().classes("w-full p-6"):
@@ -222,7 +230,10 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 group = str(row.get("work_group") or "")
                 label, color, icon = GROUPS.get(group, (group, "grey", "info"))
                 action, explanation = _action(row)
-                with ui.card().classes("intel-case w-full p-0 overflow-hidden"):
+                selected = str(row.get("budget_id") or "") == state["selected_budget_id"]
+                with ui.card().classes(
+                    "intel-case w-full p-0 overflow-hidden" + (" intel-case-selected" if selected else "")
+                ):
                     with ui.row().classes("w-full items-stretch no-wrap"):
                         with ui.element("div").classes(
                             "w-[5px] bg-red-5" if group in REVIEW_GROUPS
@@ -261,10 +272,69 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
 
                             budget_id = str(row.get("budget_id") or "")
                             ui.button(
-                                "Abrir decisão" if group in REVIEW_GROUPS else "Abrir caso",
+                                "Analisar" if group in REVIEW_GROUPS else "Visualizar",
                                 icon="arrow_forward",
-                                on_click=lambda _=None, bid=budget_id: open_case(bid),
+                                on_click=lambda _=None, bid=budget_id: select_case(bid),
                             ).props("unelevated no-caps")
+
+    def select_case(budget_id: str) -> None:
+        state["selected_budget_id"] = budget_id
+        render_rows()
+
+    def render_detail() -> None:
+        detail_panel.clear()
+        if state["scope"] == "DUPLICATES":
+            return
+        selected = next(
+            (r for r in all_rows if str(r.get("budget_id") or "") == state["selected_budget_id"]),
+            None,
+        )
+        with detail_panel:
+            if not selected:
+                with ui.card().classes("intel-detail-card w-full p-5"):
+                    ui.icon("fact_check", size="36px").classes("text-blue-4")
+                    ui.label("Selecione um orçamento").classes("text-subtitle1 text-weight-bold")
+                    ui.label("Escolha um caso para visualizar seu resumo.").classes("text-body2 text-grey-7")
+                return
+            group = str(selected.get("work_group") or "")
+            label, color, icon = GROUPS.get(group, (group, "grey", "info"))
+            action, explanation = _action(selected)
+            with ui.card().classes("intel-detail-card w-full p-5 gap-4"):
+                with ui.row().classes("w-full items-center justify-between gap-2"):
+                    ui.label("RESUMO DO CASO").classes("text-caption text-weight-bold text-primary")
+                    ui.badge(label, color=color).props("outline")
+                ui.label(f'Orçamento #{selected.get("budget_number")}').classes("text-h5 text-weight-bold")
+                ui.label(str(selected.get("doctor_name") or "Médico não informado")).classes("text-body2 text-grey-7")
+                ui.separator()
+                with ui.row().classes("w-full gap-4 flex-wrap"):
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label("Data do orçamento").classes("text-caption text-grey-7")
+                        ui.label(_date(selected.get("budget_date"))).classes("text-body2 text-weight-medium")
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label("Origem").classes("text-caption text-grey-7")
+                        ui.label(str(selected.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-body2 text-weight-medium")
+                with ui.row().classes("w-full gap-4 flex-wrap"):
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label("Valor de referência").classes("text-caption text-grey-7")
+                        ui.label(_money(selected.get("original_value"))).classes("text-subtitle1 text-weight-bold")
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label("Atendimento").classes("text-caption text-grey-7")
+                        ui.label(str(selected.get("attendance_number") or "Não vinculado")).classes("text-body2 text-weight-medium")
+                ui.separator()
+                with ui.column().classes("intel-insight w-full gap-2 p-4"):
+                    with ui.row().classes("items-center gap-2"):
+                        ui.icon(icon).classes("text-primary")
+                        ui.label(action).classes("text-body1 text-weight-bold")
+                    ui.label(explanation).classes("text-body2 text-grey-7")
+                    ui.label("Classificação atual da fila, não uma conclusão definitiva.").classes("text-caption text-grey-7")
+                ui.label("Última data operacional: " + _date(
+                    selected.get("last_observed_operational_date")
+                )).classes("text-caption text-grey-7")
+                ui.button(
+                    "Abrir análise completa", icon="open_in_new",
+                    on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
+                ).props("unelevated no-caps").classes("w-full")
+                ui.label("As evidências detalhadas e decisões permanecem no dossiê completo.").classes("text-caption text-grey-7")
 
     def refresh() -> None:
         state["search"] = str(search.value or "").strip()
