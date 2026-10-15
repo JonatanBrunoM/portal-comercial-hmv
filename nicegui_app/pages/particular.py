@@ -866,33 +866,83 @@ def render_particular(user: dict) -> None:
                                                 ui.label(source_summary).classes("text-caption text-grey-7")
                             render_particular_import(access=access)
 
-                with ui.tab_panel(review_tab).classes("px-0 py-2"):
-                    with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
+                ui.add_css("""
+                    .intelligence-center { --intel-navy: #12334a; --intel-blue: #005691; }
+                    .intelligence-center .intel-header {
+                        padding: 22px 26px; border-radius: 18px;
+                        background: linear-gradient(115deg, #063a5b 0%, #005691 68%, #087ba8 100%);
+                        color: white; box-shadow: 0 12px 30px rgba(4, 55, 89, .12);
+                    }
+                    .intelligence-center .intel-header .q-field,
+                    .intelligence-center .intel-header .q-badge { color: white; }
+                    .intelligence-center .intel-header .text-grey-7,
+                    .intelligence-center .intel-header .text-primary { color: #d6eaf5 !important; }
+                    .intelligence-center .intel-workspace { padding: 8px 0 0; }
+                    .intelligence-center .intel-summary {
+                        background: white; border: 1px solid #e7edf2 !important;
+                        border-radius: 16px !important; padding: 16px 18px !important;
+                        box-shadow: 0 5px 20px rgba(22, 52, 75, .045) !important;
+                    }
+                    .intelligence-center .intel-summary .text-h5 { font-size: 27px; line-height: 1.15; }
+                    .intelligence-center .intel-tabs {
+                        background: #e8eff4; border-radius: 13px; padding: 5px;
+                        gap: 4px !important;
+                    }
+                    .intelligence-center .intel-tabs .q-btn {
+                        border: 0 !important; border-radius: 9px !important;
+                        min-height: 36px; font-weight: 600;
+                        background: transparent; color: #486276;
+                        box-shadow: none !important; padding: 0 14px;
+                    }
+                    .intelligence-center .intel-tabs .q-btn.bg-primary {
+                        background: white !important; color: #005691 !important;
+                        box-shadow: 0 2px 7px rgba(25, 65, 91, .1) !important;
+                    }
+                    .intelligence-center .intel-filters {
+                        background: white; border: 1px solid #e7edf2 !important;
+                        border-radius: 13px !important; box-shadow: none !important;
+                    }
+                    .intelligence-center .intel-case {
+                        border: 1px solid #e4ebf0 !important;
+                        border-radius: 13px !important; background: white;
+                        box-shadow: 0 3px 12px rgba(16, 47, 71, .035) !important;
+                        transition: box-shadow .15s ease, transform .15s ease;
+                    }
+                    .intelligence-center .intel-case:hover {
+                        box-shadow: 0 9px 25px rgba(16, 47, 71, .11) !important;
+                        transform: translateY(-1px);
+                    }
+                    .intelligence-center .intel-case .q-badge { border-radius: 7px; }
+                    @media (max-width: 760px) {
+                        .intelligence-center .intel-header { padding: 17px; }
+                        .intelligence-center .intel-tabs { flex-wrap: wrap; }
+                    }
+                """)
+                with ui.tab_panel(review_tab).classes("px-0 py-2 intelligence-center"):
+                    with ui.row().classes("intel-header w-full items-center justify-between gap-5 flex-wrap"):
                         with ui.column().classes("gap-1"):
-                            ui.label("INTELIGÊNCIA COMERCIAL · PARTICULAR").classes(
-                                "text-caption text-weight-bold text-primary"
-                            )
+                            ui.label("PARTICULAR  /  ANÁLISE INTEGRADA").classes(
+                                "text-caption text-weight-bold"
+                            ).style("letter-spacing: .13em; opacity: .82")
                             ui.label("Central de Inteligência").classes(
                                 "text-h4 text-weight-bold"
                             )
                             ui.label(
-                                "Um único ambiente para analisar orçamentos, cruzar "
-                                "evidências, investigar divergências e registrar decisões."
-                            ).classes("text-body1 text-grey-7")
-
+                                "Decisões, investigações e relações entre orçamentos em um único fluxo."
+                            ).classes("text-body2").style("opacity: .9")
                         with ui.column().classes("items-end gap-1"):
-                            ui.label(
+                            ui.badge(
                                 "Gestor" if access.module_role == "MANAGER" else "Operador"
-                            ).classes("text-weight-bold")
-                            ui.label(f"{pending_count} relações pendentes · {reviewed_count} analisadas").classes(
-                                "text-caption"
-                            )
+                            ).props("outline")
+                            ui.label(
+                                f"{pending_count} relações pendentes · {reviewed_count} analisadas"
+                            ).classes("text-caption").style("opacity: .88")
 
-                    ui.separator().classes("my-5")
-                    ui.label("Pendências e acompanhamento").classes("text-h6 text-weight-bold")
-                    ui.label(
-                        "Consulte o que exige decisão, o que precisa ser investigado e o que permanece em acompanhamento."
-                    ).classes("text-body2 text-grey-7")
+                    with ui.column().classes("intel-workspace w-full gap-1"):
+                        ui.label("Fila de análises").classes("text-subtitle1 text-weight-bold")
+                        ui.label(
+                            "Selecione uma categoria para consultar os casos e suas evidências."
+                        ).classes("text-body2 text-grey-7")
                     def render_duplicate_cases() -> None:
                         if not rows:
                             with ui.card().classes("w-full p-6"):
