@@ -241,7 +241,7 @@ def open_particular_case_dossier(
         with header:
             with ui.row().classes("w-full items-start justify-between gap-4"):
                 with ui.column().classes("gap-0"):
-                    ui.label("CENTRAL DE DECISAO").classes("text-caption text-weight-bold text-primary")
+                    ui.label("ANÁLISE DO ORÇAMENTO").classes("text-caption text-weight-bold text-primary")
                     ui.label(f"Orçamento #{number}").classes("text-h5 text-weight-bold")
                     ui.label(
                         f'{_text(row.get("doctor_name"))} · origem {_text(row.get("portfolio_origin")).title()}'
@@ -261,7 +261,7 @@ def open_particular_case_dossier(
             # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
             # A ausência de registros nesta consulta não comprova ausência na origem.
             with ui.card().classes("w-full p-4 shadow-none border"):
-                ui.label("Evidências reunidas").classes("text-subtitle1 text-weight-bold")
+                ui.label("Resumo das evidências disponíveis").classes("text-subtitle1 text-weight-bold")
                 ui.label(
                     "Resumo das fontes consultadas para este orçamento. "
                     "Registros não localizados nesta consulta não significam inexistência na origem."
