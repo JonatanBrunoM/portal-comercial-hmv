@@ -913,6 +913,36 @@ def render_particular(user: dict) -> None:
                         transform: translateY(-1px);
                     }
                     .intelligence-center .intel-case .q-badge { border-radius: 7px; }
+                    .intelligence-center .intel-split { align-items: flex-start; }
+                    .intelligence-center .intel-list { flex: 1 1 57%; min-width: 0; }
+                    .intelligence-center .intel-detail {
+                        flex: 0 0 39%; min-width: 0;
+                        position: sticky; top: 82px;
+                    }
+                    .intelligence-center .intel-detail-card {
+                        border: 1px solid #e2ebf2 !important;
+                        border-radius: 18px !important; background: #fff;
+                        box-shadow: 0 10px 30px rgba(13, 51, 78, .07) !important;
+                    }
+                    .intelligence-center .intel-insight {
+                        border: 1px solid #e7eef7; background: #f4f8fc;
+                        border-radius: 13px;
+                    }
+                    .intelligence-center .intel-case-selected {
+                        border-color: #74ade3 !important;
+                        background: #f7fbff !important;
+                        box-shadow: 0 5px 18px rgba(0, 86, 145, .10) !important;
+                    }
+                    .intelligence-center .intel-list .intel-case .q-btn {
+                        border-radius: 9px; font-weight: 600;
+                    }
+                    @media (max-width: 1160px) {
+                        .intelligence-center .intel-split { flex-wrap: wrap; }
+                        .intelligence-center .intel-list,
+                        .intelligence-center .intel-detail { flex: 1 1 100%; width: 100%; }
+                        .intelligence-center .intel-detail { position: static; }
+                    }
+
                     @media (max-width: 760px) {
                         .intelligence-center .intel-header { padding: 17px; }
                         .intelligence-center .intel-tabs { flex-wrap: wrap; }
