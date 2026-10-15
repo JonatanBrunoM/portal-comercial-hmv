@@ -884,21 +884,21 @@ def render_particular(user: dict) -> None:
                             ui.label(
                                 "Gestor" if access.module_role == "MANAGER" else "Operador"
                             ).classes("text-weight-bold")
-                            ui.label(f"{len(rows)} relações para análise").classes(
+                            ui.label(f"{pending_count} relações pendentes · {reviewed_count} analisadas").classes(
                                 "text-caption"
                             )
 
                     ui.separator().classes("my-5")
-                    ui.label("Fila de trabalho e decisões").classes("text-h5 text-weight-bold")
+                    ui.label("1. Pendências e acompanhamento").classes("text-h5 text-weight-bold")
                     ui.label(
-                        "Investigue os casos operacionais, revise evidências e abra decisões na mesma central."
+                        "Consulte o que exige decisão, o que precisa ser investigado e o que permanece em acompanhamento."
                     ).classes("text-body2 text-grey-7")
                     render_particular_work_queue(
                         access=access, competence=active_competence.reference_date
                     )
 
                     ui.separator().classes("my-5")
-                    ui.label("Revisão de possíveis duplicidades").classes("text-h5 text-weight-bold")
+                    ui.label("2. Análise de duplicidades e relações").classes("text-h5 text-weight-bold")
                     if not rows:
                         with ui.card().classes("w-full p-6"):
                             ui.label("Nenhuma relação encontrada.").classes("text-h6")
