@@ -311,50 +311,136 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         evolutions = dossier.get("evolutions") or []
         candidates = dossier.get("investigation_candidates") or []
         container.clear()
+        event_labels = {
+            "ACCOUNT_ADJUSTED": "Ajuste registrado na conta",
+            "ACCOUNT_CLOSED": "Fechamento de conta identificado",
+            "ACCOUNT_REOPENED": "Reabertura de conta identificada",
+            "ACCOUNT_OPENED": "Abertura de conta identificada",
+        }
+        closure_labels = {
+            "ACCORDING_TO_BUDGET": "Conforme orçamento",
+            "HIGHER": "Valor maior que o orçamento",
+            "LOWER": "Valor menor que o orçamento",
+            "WITH_ADJUSTMENT": "Com ajuste",
+            "OTHER": "Outra modalidade",
+        }
+        container.clear()
         with container:
-            ui.label("EVIDÊNCIAS VINCULADAS").classes("text-caption text-weight-bold text-primary")
+            with ui.row().classes("w-full items-center justify-between gap-2"):
+                ui.label("FONTES CONSULTADAS").classes(
+                    "text-caption text-weight-bold text-primary"
+                )
+                ui.badge("Consulta factual").props("outline").classes("text-grey-7")
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 for name, records in (
                     ("Grade", occurrences),
                     ("Eventos da conta", events),
                     ("Evoluções", evolutions),
-                    ("Indícios", candidates),
+                    ("Possíveis relações", candidates),
                 ):
                     with ui.column().classes("intel-evidence-count flex-1 gap-0 p-2"):
                         ui.label(str(len(records))).classes("text-subtitle1 text-weight-bold")
                         ui.label(name).classes("text-caption text-grey-7")
+            with ui.column().classes("w-full gap-1 p-3").style(
+                "background:#f0f6fb;border-radius:12px;border:1px solid #dce9f3"
+            ):
+                ui.label("O que estas fontes mostram").classes("text-body2 text-weight-bold")
+                if events:
+                    ui.label(
+                        f"{len(events)} evento(s) financeiro(s) associado(s) ao orçamento. "
+                        "Confira a sequência e o desfecho antes de decidir."
+                    ).classes("text-body2")
+                elif occurrences or evolutions:
+                    ui.label(
+                        "Há informações operacionais ou administrativas vinculadas, "
+                        "mas nenhum evento financeiro foi retornado nesta consulta."
+                    ).classes("text-body2")
+                else:
+                    ui.label(
+                        "Nenhum registro vinculado foi retornado pelas fontes consultadas."
+                    ).classes("text-body2")
+                ui.label(
+                    "A presença de eventos não comprova, isoladamente, pagamento "
+                    "ou encerramento definitivo da conta."
+                ).classes("text-caption text-grey-7")
             if occurrences:
-                with ui.expansion("Ocorrências da grade", icon="event_note").classes("w-full"):
+                with ui.expansion(
+                    f"Grade operacional · {len(occurrences)} registro(s)",
+                    icon="event_note",
+                ).classes("w-full"):
                     for item in occurrences[:10]:
+                        with ui.column().classes("w-full gap-1 py-2"):
+                            ui.label(
+                                "Aviso " + str(item.get("notice_number") or "não informado")
+                            ).classes("text-body2 text-weight-bold")
+                            ui.label(
+                                "Procedimento: " + _date(item.get("procedure_date"))
+                                + " · Local: " + str(item.get("location") or "não informado")
+                            ).classes("text-body2")
+                            if item.get("notes_original"):
+                                ui.label(
+                                    "Observação da origem: " + str(item["notes_original"])
+                                ).classes("text-caption text-grey-7")
+            if events:
+                with ui.expansion(
+                    f"Histórico financeiro · {len(events)} evento(s)",
+                    icon="account_balance_wallet",
+                    value=True,
+                ).classes("w-full"):
+                    for item in events[:10]:
+                        code = str(item.get("event_type") or "")
+                        with ui.column().classes("w-full gap-1 py-2"):
+                            ui.label(
+                                event_labels.get(code, code.replace("_", " ").title() or "Evento")
+                            ).classes("text-body2 text-weight-bold")
+                            ui.label(
+                                "Data: " + _date(item.get("event_at"))
+                                + " · Modalidade: "
+                                + closure_labels.get(
+                                    str(item.get("closure_mode") or ""),
+                                    str(item.get("closure_mode") or "não informada"),
+                                )
+                            ).classes("text-body2")
+                            if item.get("interpretation_details"):
+                                ui.label(
+                                    str(item["interpretation_details"])
+                                ).classes("text-caption text-grey-7")
+                            if item.get("requires_review"):
+                                ui.badge("Requer validação humana", color="warning")
+            if evolutions:
+                with ui.expansion(
+                    f"Evoluções administrativas · {len(evolutions)} registro(s)",
+                    icon="history",
+                ).classes("w-full"):
+                    for item in evolutions[:10]:
+                        with ui.column().classes("w-full gap-1 py-2"):
+                            ui.label(
+                                str(item.get("evolution_type") or "Evolução administrativa")
+                            ).classes("text-body2 text-weight-bold")
+                            ui.label(
+                                "Registrada em " + _date(item.get("evolution_recorded_at"))
+                            ).classes("text-caption text-grey-7")
+                            if item.get("description_raw"):
+                                ui.label(
+                                    str(item["description_raw"])
+                                ).classes("text-body2 whitespace-pre-wrap break-words")
+            if candidates:
+                with ui.expansion(
+                    f"Possíveis relações · {len(candidates)} indício(s)",
+                    icon="manage_search",
+                ).classes("w-full"):
+                    for item in candidates[:10]:
                         ui.label(
                             "Aviso " + str(item.get("notice_number") or "não informado")
                             + " · " + _date(item.get("procedure_date"))
-                            + " · " + str(item.get("location") or "Local não informado")
                         ).classes("text-body2")
-            if events:
-                with ui.expansion("Eventos financeiros", icon="account_balance_wallet").classes("w-full"):
-                    for item in events[:10]:
-                        ui.label(
-                            str(item.get("event_type") or "Evento")
-                            + " · " + _date(item.get("event_at"))
-                            + " · " + str(item.get("closure_mode") or "Sem modalidade")
-                        ).classes("text-body2")
-            if evolutions:
-                with ui.expansion("Evoluções administrativas", icon="history").classes("w-full"):
-                    for item in evolutions[:10]:
-                        ui.label(
-                            _date(item.get("evolution_recorded_at"))
-                            + " · " + str(item.get("evolution_type") or "Evolução")
-                        ).classes("text-body2")
-            if candidates:
-                ui.label(
-                    f"{len(candidates)} possível(is) ocorrência(s) relacionada(s), "
-                    "ainda não confirmada(s)."
-                ).classes("text-caption text-grey-7")
+                    ui.label(
+                        "Indícios de associação, ainda não confirmados."
+                    ).classes("text-caption text-grey-7")
             ui.label(
-                "Contagens limitadas às fontes consultadas. Sem registro não significa "
-                "ausência na origem. O XML de referência e os registros MV não são "
-                "consultados diretamente neste resumo."
+                "Exibidos até 10 registros por categoria. Ausência nesta consulta "
+                "não comprova ausência na origem. XML e contas MV não são consultados "
+                "diretamente neste resumo."
             ).classes("text-caption text-grey-7")
 
     def render_detail() -> None:
