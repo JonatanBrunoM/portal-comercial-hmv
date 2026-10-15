@@ -195,10 +195,10 @@ def open_particular_case_dossier(
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[860px] p-0"):
-        header = ui.column().classes("w-full px-6 py-5 gap-1")
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[980px] p-0 rounded-xl"):
+        header = ui.column().classes("w-full px-6 py-4 gap-1")
         ui.separator()
-        body = ui.column().classes("w-full px-6 py-5 gap-4").style("max-height: 76vh; overflow-y: auto")
+        body = ui.column().classes("w-full px-6 py-4 gap-3").style("max-height: 76vh; overflow-y: auto")
     dialog.open()
 
     async def load() -> None:
@@ -250,7 +250,7 @@ def open_particular_case_dossier(
 
         body.clear()
         with body:
-            with ui.card().classes("w-full p-5 shadow-none border"):
+            with ui.card().classes("w-full p-4 shadow-none border rounded-lg"):
                 with ui.row().classes("w-full gap-4 items-center no-wrap"):
                     with ui.element("div").classes("rounded-full bg-red-50 p-3" if needs_review else "rounded-full bg-blue-50 p-3"):
                         ui.icon("priority_high" if needs_review else "check_circle", size="28px").classes("text-primary")
