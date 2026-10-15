@@ -324,6 +324,92 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             "WITH_ADJUSTMENT": "Com ajuste",
             "OTHER": "Outra modalidade",
         }
+        case_row = dossier.get("queue") or {}
+        account_state = str(case_row.get("account_status") or "").upper()
+        event_types = {str(item.get("event_type") or "").upper() for item in events}
+        intent_notes = [
+            str(item.get("notes_original") or "").strip()
+            for item in occurrences
+            if str(item.get("notes_original") or "").strip()
+        ]
+        review_flags = [
+            item for item in events if item.get("requires_review") is True
+        ]
+        findings: list[tuple[str, str, str]] = []
+        if account_state == "CLOSED":
+            findings.append((
+                "Estado financeiro registrado",
+                "A visão consolidada da conta indica CLOSED. Isso não comprova pagamento "
+                "nem resolve automaticamente a situação operacional.",
+                "info",
+            ))
+        elif account_state:
+            findings.append((
+                "Estado financeiro disponível",
+                f"Situação informada pelo motor: {account_state}. "
+                "Consulte o dossiê antes de registrar um desfecho.",
+                "info",
+            ))
+        if "ACCOUNT_ADJUSTED" in event_types:
+            findings.append((
+                "Ajuste financeiro identificado",
+                "Há registro de ajuste na conta. Um ajuste isolado não comprova "
+                "fechamento, pagamento ou valor final confirmado.",
+                "warning",
+            ))
+        if "ACCOUNT_CLOSED" in event_types:
+            findings.append((
+                "Evento de fechamento identificado",
+                "Existe evento interpretado como fechamento. Confira sua data, "
+                "modalidade e eventuais eventos posteriores.",
+                "info",
+            ))
+        if review_flags:
+            findings.append((
+                "Validação humana indicada",
+                f"{len(review_flags)} evento(s) financeiro(s) sinalizado(s) "
+                "para revisão pela fonte de interpretação.",
+                "warning",
+            ))
+        if len({str(item.get("notice_number")) for item in occurrences if item.get("notice_number")}) > 1:
+            findings.append((
+                "Mais de um aviso operacional",
+                "Foram identificados números de aviso distintos neste orçamento. "
+                "A relação entre eles precisa ser conferida.",
+                "warning",
+            ))
+        if intent_notes:
+            findings.append((
+                "Observações operacionais disponíveis",
+                "Há anotações da grade. Expressões de intenção, como 'vai cancelar' "
+                "ou 'vai transferir', não confirmam que o evento ocorreu.",
+                "info",
+            ))
+        if candidates:
+            findings.append((
+                "Possíveis relações para investigação",
+                "Há ocorrências candidatas a vínculo; nenhuma relação é "
+                "confirmada somente por esta busca.",
+                "warning",
+            ))
+        if not findings:
+            findings.append((
+                "Sem conclusão adicional nesta consulta",
+                "Os registros retornados não sustentam uma conclusão automática. "
+                "Confira o histórico e as fontes antes de decidir.",
+                "info",
+            ))
+        follow_ups: list[str] = []
+        if "ACCOUNT_ADJUSTED" in event_types or review_flags:
+            follow_ups.append("Verificar no MV a sequência de eventos e o desfecho da conta.")
+        if len({str(item.get("notice_number")) for item in occurrences if item.get("notice_number")}) > 1:
+            follow_ups.append("Conferir se os avisos representam o mesmo atendimento.")
+        if intent_notes:
+            follow_ups.append("Confirmar se as intenções registradas na grade se concretizaram.")
+        if candidates:
+            follow_ups.append("Validar os vínculos sugeridos antes de relacionar orçamentos.")
+        if not follow_ups:
+            follow_ups.append("Conferir o dossiê completo antes de registrar a decisão.")
         container.clear()
         with container:
             with ui.row().classes("w-full items-center justify-between gap-2"):
@@ -362,6 +448,33 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 ui.label(
                     "A presença de eventos não comprova, isoladamente, pagamento "
                     "ou encerramento definitivo da conta."
+                ).classes("text-caption text-grey-7")
+            with ui.column().classes("w-full gap-2 p-3").style(
+                "border:1px solid #d9e8f3;border-radius:12px;background:#f8fbfe"
+            ):
+                ui.label("LEITURA CONSOLIDADA").classes(
+                    "text-caption text-weight-bold text-primary"
+                )
+                for heading, detail, level in findings:
+                    with ui.row().classes("w-full items-start gap-2 no-wrap"):
+                        ui.icon(
+                            "error_outline" if level == "warning" else "info_outline",
+                            size="18px",
+                        ).classes("text-amber-8" if level == "warning" else "text-blue-7")
+                        with ui.column().classes("gap-0 flex-1"):
+                            ui.label(heading).classes("text-body2 text-weight-bold")
+                            ui.label(detail).classes("text-caption text-grey-8")
+                ui.separator()
+                ui.label("Próximas verificações").classes(
+                    "text-body2 text-weight-bold"
+                )
+                for task in follow_ups:
+                    with ui.row().classes("items-start gap-2 no-wrap"):
+                        ui.icon("arrow_right", size="17px").classes("text-primary")
+                        ui.label(task).classes("text-caption text-grey-8")
+                ui.label(
+                    "Leitura informativa derivada dos registros retornados; "
+                    "não altera a classificação do motor nem registra decisão."
                 ).classes("text-caption text-grey-7")
             if occurrences:
                 with ui.expansion(
