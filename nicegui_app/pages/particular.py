@@ -559,8 +559,8 @@ def render_particular(user: dict) -> None:
                         overview_tab = ui.tab("Visão geral", icon="space_dashboard")
                         operation_tab = ui.tab("Carteira", icon="receipt_long")
                         review_tab = ui.tab(
-                            f"Revisões ({pending_count})" if pending_count else "Revisões",
-                            icon="fact_check",
+                            "Central de Inteligência",
+                            icon="psychology",
                         )
                         import_tab = ui.tab("Dados", icon="database")
 
@@ -873,14 +873,16 @@ def render_particular(user: dict) -> None:
                 with ui.tab_panel(review_tab).classes("px-0 py-2"):
                     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                         with ui.column().classes("gap-1"):
-                            ui.label("PARTICULAR").classes("text-caption text-weight-bold")
-                            ui.label("Revisão de possíveis duplicidades").classes(
+                            ui.label("INTELIGÊNCIA COMERCIAL · PARTICULAR").classes(
+                                "text-caption text-weight-bold text-primary"
+                            )
+                            ui.label("Central de Inteligência").classes(
                                 "text-h4 text-weight-bold"
                             )
                             ui.label(
-                                "Compare os orçamentos identificados pelo detector "
-                                "antes de qualquer decisão manual."
-                            ).classes("text-body1")
+                                "Um único ambiente para analisar orçamentos, cruzar "
+                                "evidências, investigar divergências e registrar decisões."
+                            ).classes("text-body1 text-grey-7")
 
                         with ui.column().classes("items-end gap-1"):
                             ui.label(
