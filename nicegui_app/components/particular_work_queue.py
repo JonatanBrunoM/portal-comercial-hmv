@@ -102,7 +102,7 @@ def _action(row: dict[str, Any]) -> tuple[str, str]:
     return ("Consultar caso", code.replace("_", " ").title() if code else "Consulte as evidências disponíveis.")
 
 
-def render_particular_work_queue(*, access: ParticularAccess, competence: str | None = None) -> None:
+def render_particular_work_queue(*, access: ParticularAccess, competence: str | None = None, render_duplicates: Any | None = None, duplicates_count: int = 0) -> None:
     if not access.can_read:
         ui.label("Você não possui acesso à carteira operacional.")
         return
@@ -123,7 +123,8 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         summary = ui.row().classes("w-full gap-3 flex-wrap")
         scope_row = ui.row().classes("w-full gap-2 flex-wrap")
 
-        with ui.card().classes("w-full p-3 shadow-none border rounded-lg"):
+        filters_card = ui.card().classes("w-full p-3 shadow-none border rounded-lg")
+        with filters_card:
             with ui.row().classes("w-full items-end gap-3 flex-wrap"):
                 search = ui.input(
                     "Buscar", placeholder="Orçamento, médico ou atendimento"
@@ -164,6 +165,8 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         state["scope"] = scope
         state["group"] = "TODOS"
         group_select.value = "TODOS"
+        filters_card.set_visibility(scope != "DUPLICATES")
+        summary.set_visibility(scope != "DUPLICATES")
         render_scopes()
         render_rows()
 
@@ -191,6 +194,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             ("ACTION", "Decidir", _count(all_rows, REVIEW_GROUPS)),
             ("INVESTIGATE", "Investigar", _count(all_rows, INVESTIGATE_GROUPS)),
             ("FOLLOW", "Acompanhar", _count(all_rows, FOLLOW_GROUPS)),
+            *(([("DUPLICATES", "Duplicidades", duplicates_count)]) if render_duplicates else []),
             ("ARCHIVE", "Demais situações / concluídos", _count(all_rows, ARCHIVE_GROUPS)),
             ("ALL", "Todos", len(all_rows)),
         ]
@@ -204,6 +208,11 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
     def render_rows() -> None:
         rows = visible_rows()
         results.clear()
+        if state["scope"] == "DUPLICATES" and render_duplicates:
+            result_label.set_text(f"{duplicates_count} relação(ões) entre orçamentos.")
+            with results:
+                render_duplicates()
+            return
         result_label.set_text(f"{len(rows)} caso(s) nesta fila.")
         with results:
             if not rows:
