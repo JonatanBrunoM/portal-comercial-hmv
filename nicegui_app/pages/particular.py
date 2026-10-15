@@ -889,7 +889,7 @@ def render_particular(user: dict) -> None:
                             )
 
                     ui.separator().classes("my-5")
-                    ui.label("1. Pendências e acompanhamento").classes("text-h5 text-weight-bold")
+                    ui.label("Pendências e acompanhamento").classes("text-h6 text-weight-bold")
                     ui.label(
                         "Consulte o que exige decisão, o que precisa ser investigado e o que permanece em acompanhamento."
                     ).classes("text-body2 text-grey-7")
@@ -898,7 +898,7 @@ def render_particular(user: dict) -> None:
                     )
 
                     ui.separator().classes("my-5")
-                    ui.label("2. Análise de duplicidades e relações").classes("text-h5 text-weight-bold")
+                    ui.label("Duplicidades e relações entre orçamentos").classes("text-h6 text-weight-bold")
                     if not rows:
                         with ui.card().classes("w-full p-6"):
                             ui.label("Nenhuma relação encontrada.").classes("text-h6")
