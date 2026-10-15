@@ -9,7 +9,10 @@ from nicegui import run, ui
 
 from nicegui_app.components.particular_case_dossier import open_particular_case_dossier
 from nicegui_app.services.particular_service import ParticularAccess
-from nicegui_app.services.particular_work_queue import list_particular_work_queue
+from nicegui_app.services.particular_work_queue import (
+    get_particular_case_dossier,
+    list_particular_work_queue,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -282,6 +285,78 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         state["selected_budget_id"] = budget_id
         render_rows()
 
+    async def load_evidence(budget_id: str, container: Any) -> None:
+        """Consulta factual sob demanda, sem classificar ou alterar dados."""
+        if container.is_deleted:
+            return
+        container.clear()
+        with container:
+            ui.spinner(size="sm").classes("text-primary")
+            ui.label("Consultando fontes vinculadas...").classes("text-caption text-grey-7")
+        try:
+            dossier = await run.io_bound(get_particular_case_dossier, budget_id=budget_id)
+        except Exception:
+            logger.exception("Falha ao consultar evidências do orçamento %s", budget_id)
+            if not container.is_deleted:
+                container.clear()
+                with container:
+                    ui.label("Não foi possível consultar as fontes. Tente novamente.").classes(
+                        "text-body2 text-negative"
+                    )
+            return
+        if container.is_deleted or state["selected_budget_id"] != budget_id:
+            return
+        occurrences = dossier.get("occurrences") or []
+        events = dossier.get("events") or []
+        evolutions = dossier.get("evolutions") or []
+        candidates = dossier.get("investigation_candidates") or []
+        container.clear()
+        with container:
+            ui.label("EVIDÊNCIAS VINCULADAS").classes("text-caption text-weight-bold text-primary")
+            with ui.row().classes("w-full gap-2 flex-wrap"):
+                for name, records in (
+                    ("Grade", occurrences),
+                    ("Eventos da conta", events),
+                    ("Evoluções", evolutions),
+                    ("Indícios", candidates),
+                ):
+                    with ui.column().classes("intel-evidence-count flex-1 gap-0 p-2"):
+                        ui.label(str(len(records))).classes("text-subtitle1 text-weight-bold")
+                        ui.label(name).classes("text-caption text-grey-7")
+            if occurrences:
+                with ui.expansion("Ocorrências da grade", icon="event_note").classes("w-full"):
+                    for item in occurrences[:10]:
+                        ui.label(
+                            "Aviso " + str(item.get("notice_number") or "não informado")
+                            + " · " + _date(item.get("procedure_date"))
+                            + " · " + str(item.get("location") or "Local não informado")
+                        ).classes("text-body2")
+            if events:
+                with ui.expansion("Eventos financeiros", icon="account_balance_wallet").classes("w-full"):
+                    for item in events[:10]:
+                        ui.label(
+                            str(item.get("event_type") or "Evento")
+                            + " · " + _date(item.get("event_at"))
+                            + " · " + str(item.get("closure_mode") or "Sem modalidade")
+                        ).classes("text-body2")
+            if evolutions:
+                with ui.expansion("Evoluções administrativas", icon="history").classes("w-full"):
+                    for item in evolutions[:10]:
+                        ui.label(
+                            _date(item.get("evolution_recorded_at"))
+                            + " · " + str(item.get("evolution_type") or "Evolução")
+                        ).classes("text-body2")
+            if candidates:
+                ui.label(
+                    f"{len(candidates)} possível(is) ocorrência(s) relacionada(s), "
+                    "ainda não confirmada(s)."
+                ).classes("text-caption text-grey-7")
+            ui.label(
+                "Contagens limitadas às fontes consultadas. Sem registro não significa "
+                "ausência na origem. O XML de referência e os registros MV não são "
+                "consultados diretamente neste resumo."
+            ).classes("text-caption text-grey-7")
+
     def render_detail() -> None:
         detail_panel.clear()
         if state["scope"] == "DUPLICATES":
@@ -341,6 +416,13 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         "Os dados acima são um resumo da fila. Consulte o dossiê "
                         "para verificar fontes, eventos e evoluções."
                     ).classes("text-body2 text-grey-7")
+                evidence_panel = ui.column().classes("w-full gap-2")
+                ui.button(
+                    "Consultar evidências vinculadas",
+                    icon="fact_check",
+                    on_click=lambda bid=str(selected.get("budget_id") or ""), panel=evidence_panel:
+                        load_evidence(bid, panel),
+                ).props("outline no-caps").classes("w-full")
                 ui.button(
                     "Abrir análise completa", icon="open_in_new",
                     on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
