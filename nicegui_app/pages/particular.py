@@ -557,7 +557,6 @@ def render_particular(user: dict) -> None:
                         "dense no-caps indicator-color=transparent active-color=primary"
                     ).classes("portal-particular-tabs") as tabs:
                         overview_tab = ui.tab("Visão geral", icon="space_dashboard")
-                        operation_tab = ui.tab("Carteira", icon="receipt_long")
                         review_tab = ui.tab(
                             "Central de Inteligência",
                             icon="psychology",
@@ -839,9 +838,6 @@ def render_particular(user: dict) -> None:
                                     ).props("flat no-caps").classes("self-start")
 
 
-                with ui.tab_panel(operation_tab).classes("px-0 py-2"):
-                    render_particular_work_queue(access=access, competence=active_competence.reference_date)
-
                 with ui.tab_panel(import_tab).classes("px-0 py-2"):
                     with ui.column().classes("w-full gap-5"):
                             with ui.element("section").classes("w-full pt-1"):
@@ -892,13 +888,23 @@ def render_particular(user: dict) -> None:
                                 "text-caption"
                             )
 
+                    ui.separator().classes("my-5")
+                    ui.label("Fila de trabalho e decisões").classes("text-h5 text-weight-bold")
+                    ui.label(
+                        "Investigue os casos operacionais, revise evidências e abra decisões na mesma central."
+                    ).classes("text-body2 text-grey-7")
+                    render_particular_work_queue(
+                        access=access, competence=active_competence.reference_date
+                    )
+
+                    ui.separator().classes("my-5")
+                    ui.label("Revisão de possíveis duplicidades").classes("text-h5 text-weight-bold")
                     if not rows:
                         with ui.card().classes("w-full p-6"):
                             ui.label("Nenhuma relação encontrada.").classes("text-h6")
                             ui.label(
                                 "Não existem possíveis duplicidades aguardando análise."
                             )
-                        return
 
                     with ui.card().classes("w-full"):
                         with ui.column().classes("w-full gap-0"):
