@@ -317,9 +317,12 @@ def render_particular_home_dashboard(access: ParticularAccess, competence: str |
                         ui.echart({
                             "tooltip": {
                                 "trigger": "axis",
-                                "valueFormatter": (
-                                    None if not value_mode else
-                                    "{value}"
+                                "axisPointer": {"type": "shadow" if value_mode else "line"},
+                                ":valueFormatter": (
+                                    "(value) => new Intl.NumberFormat('pt-BR', "
+                                    "{style: 'currency', currency: 'BRL'}).format(value)"
+                                    if value_mode else
+                                    "(value) => new Intl.NumberFormat('pt-BR').format(value) + ' orçamentos'"
                                 ),
                             },
                             "grid": {"left": 75, "right": 24, "top": 25, "bottom": 48},
