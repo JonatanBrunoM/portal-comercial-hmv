@@ -893,69 +893,72 @@ def render_particular(user: dict) -> None:
                     ui.label(
                         "Consulte o que exige decisão, o que precisa ser investigado e o que permanece em acompanhamento."
                     ).classes("text-body2 text-grey-7")
+                    def render_duplicate_cases() -> None:
+                        if not rows:
+                            with ui.card().classes("w-full p-6"):
+                                ui.label("Nenhuma relação encontrada.").classes("text-h6")
+                                ui.label(
+                                    "Não existem possíveis duplicidades aguardando análise."
+                                )
+
+                        with ui.card().classes("w-full"):
+                            with ui.column().classes("w-full gap-0"):
+                                for index, row in enumerate(rows):
+                                    if index:
+                                        ui.separator()
+
+                                    with ui.row().classes(
+                                        "w-full items-center justify-between gap-4 p-4 flex-wrap"
+                                    ):
+                                        with ui.column().classes("gap-1"):
+                                            ui.label(
+                                                f'Orçamento {row["budget_a_number"]} '
+                                                f'× {row["budget_b_number"]}'
+                                            ).classes("text-subtitle1 text-weight-bold")
+                                            ui.label(
+                                                f'{_date(row.get("budget_a_date"))} '
+                                                f'× {_date(row.get("budget_b_date"))}'
+                                            ).classes("text-caption")
+
+                                        with ui.column().classes("gap-1"):
+                                            ui.label(
+                                                _signal_label(row.get("detector_signal"))
+                                            ).classes("text-body2 text-weight-medium")
+                                            ui.label(
+                                                _decision_label(row.get("decision"))
+                                            ).classes("text-caption")
+
+                                        with ui.column().classes("gap-1"):
+                                            ui.label(
+                                                f'Diferença total: '
+                                                f'{_money(row.get("total_difference"))}'
+                                            ).classes("text-body2")
+
+                                            days = row.get("days_apart")
+                                            ui.label(
+                                                "Mesmo dia"
+                                                if days == 0
+                                                else (
+                                                    f"{days} dia de diferença"
+                                                    if days == 1
+                                                    else f"{days} dias de diferença"
+                                                )
+                                            ).classes("text-caption")
+
+                                        relation_id = str(row.get("relation_id") or "").strip()
+
+                                        ui.button(
+                                            "Comparar",
+                                            icon="compare_arrows",
+                                            on_click=lambda relation_id=relation_id: (
+                                                _open_relation_comparison(access, relation_id)
+                                            ),
+                                        ).props("outline no-caps")
+
                     render_particular_work_queue(
-                        access=access, competence=active_competence.reference_date
+                        access=access,
+                        competence=active_competence.reference_date,
+                        render_duplicates=render_duplicate_cases,
+                        duplicates_count=len(rows),
                     )
 
-                    ui.separator().classes("my-5")
-                    ui.label("Duplicidades e relações entre orçamentos").classes("text-h6 text-weight-bold")
-                    if not rows:
-                        with ui.card().classes("w-full p-6"):
-                            ui.label("Nenhuma relação encontrada.").classes("text-h6")
-                            ui.label(
-                                "Não existem possíveis duplicidades aguardando análise."
-                            )
-
-                    with ui.card().classes("w-full"):
-                        with ui.column().classes("w-full gap-0"):
-                            for index, row in enumerate(rows):
-                                if index:
-                                    ui.separator()
-
-                                with ui.row().classes(
-                                    "w-full items-center justify-between gap-4 p-4 flex-wrap"
-                                ):
-                                    with ui.column().classes("gap-1"):
-                                        ui.label(
-                                            f'Orçamento {row["budget_a_number"]} '
-                                            f'× {row["budget_b_number"]}'
-                                        ).classes("text-subtitle1 text-weight-bold")
-                                        ui.label(
-                                            f'{_date(row.get("budget_a_date"))} '
-                                            f'× {_date(row.get("budget_b_date"))}'
-                                        ).classes("text-caption")
-
-                                    with ui.column().classes("gap-1"):
-                                        ui.label(
-                                            _signal_label(row.get("detector_signal"))
-                                        ).classes("text-body2 text-weight-medium")
-                                        ui.label(
-                                            _decision_label(row.get("decision"))
-                                        ).classes("text-caption")
-
-                                    with ui.column().classes("gap-1"):
-                                        ui.label(
-                                            f'Diferença total: '
-                                            f'{_money(row.get("total_difference"))}'
-                                        ).classes("text-body2")
-
-                                        days = row.get("days_apart")
-                                        ui.label(
-                                            "Mesmo dia"
-                                            if days == 0
-                                            else (
-                                                f"{days} dia de diferença"
-                                                if days == 1
-                                                else f"{days} dias de diferença"
-                                            )
-                                        ).classes("text-caption")
-
-                                    relation_id = str(row.get("relation_id") or "").strip()
-
-                                    ui.button(
-                                        "Comparar",
-                                        icon="compare_arrows",
-                                        on_click=lambda relation_id=relation_id: (
-                                            _open_relation_comparison(access, relation_id)
-                                        ),
-                                    ).props("outline no-caps")
