@@ -113,3 +113,24 @@ def month_label(value: str) -> str:
     month = date.fromisoformat(value[:10])
     names = ("janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro")
     return f"{names[month.month - 1].capitalize()}/{month.year}"
+
+
+def list_daily_production(access: ParticularAccess, month: str) -> list[dict[str, Any]]:
+    """Produção própria diária por criação do orçamento, sem transcrições."""
+    _check_access(access)
+    reference = date.fromisoformat(month[:10])
+    if reference.day != 1:
+        raise ValueError("Mês de referência inválido.")
+    rows = rest_select(
+        "particular_daily_production_v1",
+        select=(
+            "data_orcamento,mes_referencia,quantidade_orcamentos,"
+            "quantidade_anulados,valor_bruto_producao"
+        ),
+        params={
+            "mes_referencia": f"eq.{reference.isoformat()}",
+            "order": "data_orcamento.asc",
+            "limit": "40",
+        },
+    )
+    return [row for row in rows if isinstance(row, dict)]
