@@ -194,10 +194,10 @@ def open_particular_case_dossier(
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
 
-    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-full max-w-[1040px] p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2"):
-        header = ui.column().classes("w-full px-7 py-5 gap-1").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%)")
-        ui.separator()
-        body = ui.column().classes("w-full px-7 py-4 gap-3").style("height:min(70vh,720px); overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
+    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(790px,88vh)"):
+        header = ui.column().classes("w-full px-6 py-3 gap-1 shrink-0").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%); border-bottom:1px solid #e2eaf2")
+        body = ui.column().classes("w-full px-6 py-4 gap-3").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
+        footer = ui.column().classes("w-full px-6 py-3 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07)")
     dialog.open()
 
     async def load() -> None:
@@ -603,6 +603,8 @@ def open_particular_case_dossier(
                             if notes != "—":
                                 ui.label(notes).classes("text-caption text-grey-7 whitespace-pre-wrap")
 
+        footer.clear()
+        with footer:
             with ui.row().classes("w-full gap-6 px-4 py-3 flex-wrap rounded-xl").style("background:#eaf2f9; border:1px solid #dce8f3"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
                     ui.label("Valor de referência").classes("text-caption text-grey-6")
@@ -614,7 +616,7 @@ def open_particular_case_dossier(
                     ui.label("Data operacional observada").classes("text-caption text-grey-6")
                     ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
-            with ui.row().classes("w-full gap-2 flex-wrap items-center px-4 py-3 rounded-xl").style("background:#fff; border:1px solid #dce8f3; position:sticky; bottom:0; z-index:5; box-shadow:0 -5px 18px rgba(20,52,73,.10)"):
+            with ui.row().classes("w-full gap-2 flex-wrap items-center"):
                 review_reason = effective_review_reason
 
                 def finish_case() -> None:
