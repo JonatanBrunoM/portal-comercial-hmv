@@ -307,114 +307,66 @@ def open_particular_case_dossier(
                     "Confira os avisos e as mudanças de data ou local.",
                     "Valide o desfecho operacional antes de concluir.",
                 )
-            # O roteiro permanece como apoio secundário, sem ocupar a tela inicial.
-            if steps:
-                with ui.expansion("Orientações de conferência", icon="route").classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
-                    for index, step in enumerate(steps, start=1):
-                        ui.label(f"{index}. {step}").classes("text-body2")
+            # Síntese direta das três fontes, sem dropdowns ou histórico bruto.
+            # Cada leitura é factual: registros associados não comprovam pagamento.
+            def source_card(icon: str, label: str, headline: str, detail: str) -> None:
+                with ui.card().classes("flex-1 min-w-[205px] p-4 gap-2 shadow-none rounded-xl").style(
+                    "background:#fff; border:1px solid #dce8f3"
+                ):
+                    with ui.row().classes("items-center gap-2"):
+                        ui.icon(icon, size="19px").classes("text-primary")
+                        ui.label(label).classes("text-caption text-weight-bold text-primary")
+                    ui.label(headline).classes("text-body1 text-weight-bold").style("color:#16384d")
+                    ui.label(detail).classes("text-body2 text-grey-7")
 
-            # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
-            # A ausência de registros nesta consulta não comprova ausência na origem.
-            with ui.expansion(
-                "Explorar evidências · XML, grade e MV",
-                icon="fact_check",
-            ).classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
-                ui.label(
-                    "Confronto das fontes vinculadas ao orçamento. Os valores da "
-                    "importação não são comprovantes de pagamento nem valores finais confirmados."
-                ).classes("text-caption text-grey-7")
-                with ui.row().classes("w-full gap-5 flex-wrap"):
-                    _metric(
-                        "Original vigente (importação)",
-                        _money(original.get("total_value")),
-                        "Espelho estruturado do XML, não o arquivo bruto",
-                    )
-                    _metric(
-                        "Contas MV vinculadas",
-                        str(len(mv_accounts)),
-                        "Vínculo por aviso da grade",
-                    )
-                if original:
-                    ui.label(
-                        "Procedimento: " + _money(original.get("procedure_value"))
-                        + " · Materiais: " + _money(original.get("material_value"))
-                    ).classes("text-body2")
-                if mv_accounts:
-                    ui.label("Registros de contas MV encontrados").classes(
-                        "text-body2 text-weight-bold mt-2"
-                    )
-                    for account in mv_accounts[:15]:
-                        notices = sorted({
-                            str(item.get("notice_number"))
-                            for item in mv_notices
-                            if str(item.get("account_record_id")) == str(account.get("id"))
-                        })
-                        with ui.card().classes("w-full p-3 shadow-none border rounded-lg"):
-                            ui.label(
-                                "Aviso(s): " + (", ".join(notices) or "não informado")
-                                + " · Atendimento: "
-                                + str(account.get("attendance_number") or "não informado")
-                            ).classes("text-body2 text-weight-bold")
-                            ui.label(
-                                "Conta: " + str(account.get("account_number") or "não informada")
-                                + " · Valor registrado: " + _money(account.get("account_total"))
-                                + " · Situação no registro: "
-                                + (
-                                    "Fechada" if account.get("is_closed") is True
-                                    else "Aberta" if account.get("is_closed") is False
-                                    else "Não informada"
-                                )
-                            ).classes("text-body2")
-                else:
-                    ui.label(
-                        "Nenhuma conta MV vinculada pelos avisos consultados. "
-                        "Isso não significa que não exista conta no MV."
-                    ).classes("text-caption text-grey-7")
-                with ui.expansion(
-                    f"Grade operacional · {len(occurrences)} registro(s)", icon="event_note"
-                ):
-                    for item in occurrences[:20]:
-                        ui.label(
-                            "Aviso " + str(item.get("notice_number") or "não informado")
-                            + " · " + _date(item.get("procedure_date"))
-                            + " · " + str(item.get("location") or "local não informado")
-                        ).classes("text-body2")
-                        if item.get("notes_original"):
-                            ui.label(
-                                "Observação: " + str(item.get("notes_original"))
-                            ).classes("text-caption text-grey-7")
-                with ui.expansion(
-                    f"Eventos financeiros · {len(events)} registro(s)", icon="receipt_long"
-                ):
-                    for item in events[:20]:
-                        ui.label(
-                            str(item.get("event_type") or "Evento").replace("_", " ").title()
-                            + " · " + _date(item.get("event_at"))
-                            + " · " + str(item.get("closure_mode") or "sem modalidade")
-                        ).classes("text-body2")
-                        if item.get("interpretation_details"):
-                            details = item.get("interpretation_details")
-                            if isinstance(details, dict):
-                                details = details.get("description") or details.get("reason") or ""
-                            if details:
-                                ui.label(str(details)).classes("text-caption text-grey-7")
-                with ui.expansion(
-                    f"Evoluções administrativas · {len(evolutions)} registro(s)",
-                    icon="history",
-                ):
-                    for item in evolutions[:20]:
-                        ui.label(
-                            _date(item.get("evolution_recorded_at"))
-                            + " · " + str(item.get("evolution_type") or "Evolução")
-                        ).classes("text-body2 text-weight-bold")
-                        if item.get("description_raw"):
-                            ui.label(str(item.get("description_raw"))).classes(
-                                "text-body2 whitespace-pre-wrap"
-                            )
-                ui.label(
-                    "As fontes exibidas são os registros retornados pela consulta. "
-                    "Ausência de registro não comprova ausência na origem."
-                ).classes("text-caption text-grey-7")
+            latest_evolution = evolutions[-1] if evolutions else {}
+            evolution_description = str(latest_evolution.get("description_raw") or "").strip()
+            evolution_headline = (
+                f"{len(evolutions)} evolução(ões) vinculada(s)"
+                if evolutions else "Sem evolução vinculada"
+            )
+            evolution_detail = (
+                evolution_description[:190] + ("…" if len(evolution_description) > 190 else "")
+                if evolution_description else
+                ("Há registro(s), mas sem descrição disponível." if evolutions
+                 else "Não foram localizados registros nesta consulta.")
+            )
+            latest_occurrence = occurrences[-1] if occurrences else {}
+            grade_headline = (
+                f"{len(occurrences)} ocorrência(s) localizada(s)"
+                if occurrences else "Sem ocorrência vinculada"
+            )
+            grade_detail = (
+                "Aviso " + _text(latest_occurrence.get("notice_number"))
+                + " · " + _date(latest_occurrence.get("procedure_date"))
+                + (" · " + str(latest_occurrence.get("notes_original"))[:110]
+                   if latest_occurrence.get("notes_original") else "")
+                if occurrences else "Nenhum registro de grade associado nesta consulta."
+            )
+            latest_event = events[-1] if events else {}
+            account_headline = (
+                f"{len(events)} evento(s) · {len(mv_accounts)} conta(s) MV"
+            )
+            account_detail = (
+                "Último evento: " + _text(latest_event.get("event_type")).replace("_", " ").title()
+                + " · " + _date(latest_event.get("event_at"))
+                if events else
+                ("Conta(s) MV vinculada(s), sem evento financeiro associado nesta consulta."
+                 if mv_accounts else "Sem evento ou conta vinculada nesta consulta.")
+            )
+            with ui.row().classes("w-full gap-3 items-stretch flex-wrap"):
+                source_card("history", "EVOLUÇÕES", evolution_headline, evolution_detail)
+                source_card("event_note", "GRADE", grade_headline, grade_detail)
+                source_card("receipt_long", "CONTAS / MV", account_headline, account_detail)
+
+            if steps:
+                ui.label("Próxima conferência: " + steps[0]).classes(
+                    "text-body2 text-grey-8 px-1"
+                )
+            ui.label(
+                "Resumo dos registros vinculados. A ausência de vínculo não comprova "
+                "ausência na origem; eventos financeiros não confirmam pagamento."
+            ).classes("text-caption text-grey-6 px-1")
 
             closure_label, closure_reason, closure_mode = _closure_review_context(events, evolutions)
             raw_review_reason = str(row.get("account_review_reason") or "")
