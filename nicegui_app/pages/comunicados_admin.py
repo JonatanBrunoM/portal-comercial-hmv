@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.comunicados_admin_service import (
@@ -401,9 +402,9 @@ def _open_dialog(
             ).props("flat no-caps")
 
             ui.button(
-                "Salvar comunicado",
-                icon="check",
-                on_click=save,
+                "Revisar e salvar",
+                icon="fact_check",
+                on_click=lambda: _review_before_save("Revisar comunicado", [("Código", code.value), ("Operadora", operators.get(operator.value, "Geral / institucional")), ("Título", title.value), ("Link do e-mail", summary.value), ("Conteúdo", content.value), ("Categoria", category.value), ("Prioridade", priority.value), ("Público-alvo", target_audience.value), ("Início", start_date.value), ("Fim", end_date.value), ("Destaque", "Sim" if featured.value else "Não"), ("Status", status.value), ("Responsável", responsible.value)], save),
             ).props("unelevated no-caps").classes(
                 "portal-admin-communications-primary"
             )
