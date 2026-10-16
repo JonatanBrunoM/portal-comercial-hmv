@@ -311,33 +311,20 @@ def open_particular_case_dossier(
         return
 
     ui.add_css("""
-    .mv-outcome-cards.q-option-group {
-        display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;
-    }
-    .mv-outcome-cards .q-radio {
-        min-width:0;min-height:78px;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;gap:5px;margin:0!important;
-        padding:10px 5px;border:1px solid #dbe6ef;border-radius:13px;background:#fff;
-        box-shadow:0 3px 12px rgba(20,54,76,.04);
-    }
-    .mv-outcome-cards .q-radio:has(.q-radio__inner--truthy) {
-        background:#e7f4ff;border-color:#1985ca;
-        box-shadow:0 0 0 2px rgba(25,133,202,.12);
-    }
-    .mv-outcome-cards .q-radio__label {
-        font-weight:650;font-size:13px;color:#173b53;text-align:center;padding:0;
-    }
-    .mv-fields-grid .q-field--outlined .q-field__control {min-height:56px;}
-    .mv-fields-grid .q-textarea textarea {min-height:24px!important;resize:vertical;}
-    @media(max-width:600px) {
-        .mv-outcome-cards.q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
-        .mv-fields-grid {grid-template-columns:1fr!important}
-    }
+    .dossier-conclusion {background:#f0f7fc;border:1px solid #d7e8f4;border-radius:12px;padding:10px 12px}
+    .dossier-outcome-cards.q-option-group {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+    .dossier-outcome-cards .q-radio {min-width:0;min-height:53px;display:flex;align-items:center;justify-content:center;
+      gap:5px;margin:0!important;padding:7px 4px;border:1px solid #d3e4f1;border-radius:10px;background:white}
+    .dossier-outcome-cards .q-radio:has(.q-radio__inner--truthy) {background:#e0f1fc;border-color:#178bcd}
+    .dossier-outcome-cards .q-radio__label {font-size:12px;font-weight:650;color:#173b53}
+    .dossier-input .q-field__control {background:white;border-radius:9px}
+    @media(max-width:650px) {.dossier-outcome-cards.q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
+      .dossier-inputs {flex-wrap:wrap!important}.dossier-inputs>.dossier-input {width:100%!important;flex:1 0 100%}}
     """)
-    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(800px,92vh)"):
-        header = ui.column().classes("w-full px-6 py-2 gap-0 shrink-0").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%); border-bottom:1px solid #e2eaf2")
+    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(720px,86vh)"):
+        header = ui.column().classes("w-full px-6 py-2 gap-0 shrink-0").style("background:linear-gradient(110deg,#03466f 0%,#0077ad 100%); border-bottom:1px solid #086b9e")
         body = ui.column().classes("w-full px-6 py-3 gap-2").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
-        footer = ui.column().classes("w-full px-6 py-2 gap-1 shrink-0").style("background:#f7fafc; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07); max-height:48vh; overflow-y:auto")
+        footer = ui.column().classes("w-full px-6 py-2 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07)")
     dialog.open()
 
     async def load() -> None:
@@ -385,12 +372,12 @@ def open_particular_case_dossier(
         with header:
             with ui.row().classes("w-full items-start justify-between gap-4"):
                 with ui.column().classes("gap-0"):
-                    ui.label("CENTRAL DE INTELIGÊNCIA  /  ANÁLISE COMPLETA").classes("text-caption text-weight-bold text-primary tracking-wide")
-                    ui.label(f"Orçamento #{number}").classes("text-h5 text-weight-bold").style("color:#153449; letter-spacing:-.4px")
+                    ui.label("CENTRAL DE INTELIGÊNCIA  /  ANÁLISE COMPLETA").classes("text-caption text-weight-bold tracking-wide").style("color:#c5e8ff")
+                    ui.label(f"Orçamento #{number}").classes("text-h5 text-weight-bold").style("color:#fff; letter-spacing:-.4px")
                     ui.label(
                         f'{_text(row.get("doctor_name"))} · origem {_text(row.get("portfolio_origin")).title()}'
-                    ).classes("text-body2 text-grey-7")
-                ui.button(icon="close", on_click=dialog.close).props("flat round")
+                    ).classes("text-body2").style("color:#d6ebf7")
+                ui.button(icon="close", on_click=dialog.close).props("flat round color=white")
 
         body.clear()
         with body:
@@ -665,8 +652,8 @@ def open_particular_case_dossier(
 
         footer.clear()
         with footer:
-            with ui.column().classes("w-full gap-3"):
-                with ui.row().classes("w-full items-center gap-5 flex-wrap px-2 py-2 rounded-xl").style("background:#edf5fb;border:1px solid #d8e8f3"):
+            with ui.column().classes("w-full gap-2"):
+                with ui.row().classes("w-full items-center gap-5 flex-wrap"):
                     with ui.column().classes("gap-0"):
                         ui.label("REFERÊNCIA").classes("text-caption text-grey-6")
                         ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-body2 text-weight-bold")
@@ -777,42 +764,27 @@ def open_particular_case_dossier(
                             ).props("unelevated no-caps color=primary")
                         else:
                             inferred_closure = review_reason == "VALIDAR_VALOR_FINAL" and closure_mode in {"HIGHER", "LOWER"}
-                            with ui.column().classes("w-full gap-3 p-4 rounded-2xl").style("background:#fff;border:1px solid #dce8f2"):
+                            with ui.column().classes("w-full gap-2 dossier-conclusion"):
                                 ui.label("REGISTRAR CONCLUSÃO NO MV").classes("text-caption text-weight-bold text-primary")
                                 if inferred_closure:
-                                    with ui.row().classes("w-full items-center gap-3 p-3 rounded-xl").style(
-                                        "background:#e8f4ff;border:1px solid #a9d1f1"
-                                    ):
-                                        ui.icon("verified", size="22px").classes("text-primary")
-                                        ui.label(
-                                            "Fechamento a maior" if closure_mode == "HIGHER"
-                                            else "Fechamento a menor"
-                                        ).classes("text-body1 text-weight-bold")
+                                    ui.badge(
+                                        "Fechamento a maior" if closure_mode == "HIGHER"
+                                        else "Fechamento a menor"
+                                    ).props("color=primary")
                                     outcome_input = None
                                 else:
-                                    ui.label("Situação confirmada no MV").classes(
-                                        "text-body2 text-weight-medium"
-                                    ).style("color:#173b53")
                                     outcome_input = ui.radio(
                                         {"PENDING": "Pendente", "REALIZED": "Realizado",
                                          "NOT_PERFORMED": "Não realizado", "CANCELLED": "Cancelado"},
                                         value="PENDING",
-                                    ).classes("mv-outcome-cards w-full")
-                                with ui.grid(columns=2).classes("w-full gap-4 mv-fields-grid"):
-                                    with ui.column().classes("w-full min-w-0 gap-1"):
-                                        ui.label("Valor confirmado").classes(
-                                            "text-body2 text-weight-medium"
-                                        ).style("color:#173b53")
-                                        amount_input = ui.input(
-                                            placeholder="Ex.: 4.989,60"
-                                        ).props("outlined prefix=R$ bg-color=white").classes("w-full")
-                                    with ui.column().classes("w-full min-w-0 gap-1"):
-                                        ui.label("Observação da conferência").classes(
-                                            "text-body2 text-weight-medium"
-                                        ).style("color:#173b53")
-                                        note_input = ui.textarea(
-                                            placeholder="Qual evidência sustenta a decisão?"
-                                        ).props("outlined rows=1 bg-color=white").classes("w-full")
+                                    ).classes("dossier-outcome-cards w-full")
+                                with ui.row().classes("w-full gap-3 items-start no-wrap dossier-inputs"):
+                                    amount_input = ui.input(
+                                        "Valor confirmado (R$)", placeholder="Ex.: 4.989,60"
+                                    ).props("outlined dense").classes("w-1/3 dossier-input")
+                                    note_input = ui.input(
+                                        "Observação", placeholder="Evidência que sustenta a decisão"
+                                    ).props("outlined dense").classes("flex-1 dossier-input")
                                 saving = False
 
                                 async def save_inline() -> None:
@@ -864,7 +836,7 @@ def open_particular_case_dossier(
 
                                 save_button = ui.button(
                                     "Registrar conclusão", icon="task_alt", on_click=save_inline
-                                ).props("unelevated no-caps color=primary size=lg").classes("self-end px-5 rounded-xl")
+                                ).props("unelevated no-caps color=primary").classes("self-end")
 
             ui.label(
                     "A conclusão exige validação das evidências; dados não confirmados "
