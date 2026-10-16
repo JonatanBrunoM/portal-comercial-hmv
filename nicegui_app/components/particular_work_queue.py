@@ -393,11 +393,33 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 "A relação entre eles precisa ser conferida.",
                 "warning",
             ))
-        if intent_notes:
+        cancellation_intent = any(
+            "vai cancelar" in note.casefold() or "cancelamento previsto" in note.casefold()
+            for note in intent_notes
+        )
+        transfer_intent = any(
+            "vai transferir" in note.casefold() or "transferência prevista" in note.casefold()
+            for note in intent_notes
+        )
+        if cancellation_intent:
             findings.append((
-                "Observações operacionais disponíveis",
-                "Há anotações da grade. Expressões de intenção, como 'vai cancelar' "
-                "ou 'vai transferir', não confirmam que o evento ocorreu.",
+                "Intenção de cancelamento na grade",
+                "Existe uma anotação de intenção de cancelar. Não há confirmação "
+                "de cancelamento apenas por essa anotação.",
+                "warning",
+            ))
+        if transfer_intent:
+            findings.append((
+                "Intenção de transferência na grade",
+                "Existe uma anotação de intenção de transferir. Confirme o "
+                "destino e a efetivação antes de alterar o desfecho.",
+                "warning",
+            ))
+        if intent_notes and not (cancellation_intent or transfer_intent):
+            findings.append((
+                "Anotações operacionais disponíveis",
+                "A grade contém observações que podem contextualizar o caso; "
+                "consulte o histórico para avaliar sua relevância.",
                 "info",
             ))
         if candidates:
@@ -434,8 +456,12 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             follow_ups.append("Verificar no MV a sequência de eventos e o desfecho da conta.")
         if len({str(item.get("notice_number")) for item in occurrences if item.get("notice_number")}) > 1:
             follow_ups.append("Conferir se os avisos representam o mesmo atendimento.")
-        if intent_notes:
-            follow_ups.append("Confirmar se as intenções registradas na grade se concretizaram.")
+        if cancellation_intent:
+            follow_ups.append("Confirmar no fluxo operacional se o cancelamento ocorreu.")
+        if transfer_intent:
+            follow_ups.append("Confirmar a transferência e o atendimento de destino.")
+        if intent_notes and not (cancellation_intent or transfer_intent):
+            follow_ups.append("Ler as observações da grade para contextualizar o caso.")
         if candidates:
             follow_ups.append("Validar os vínculos sugeridos antes de relacionar orçamentos.")
         if mv_accounts:
@@ -448,16 +474,51 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             )
         if not follow_ups:
             follow_ups.append("Conferir o dossiê completo antes de registrar a decisão.")
+
+        # A ação principal acompanha a evidência mais relevante, em vez da
+        # ordem incidental em que as fontes foram consultadas.
+        notice_count = len({
+            str(item.get("notice_number"))
+            for item in occurrences if item.get("notice_number")
+        })
+        if review_flags:
+            main_action = "Revisar os eventos financeiros sinalizados para validação."
+        elif cancellation_intent:
+            main_action = "Confirmar se o cancelamento foi efetivado."
+        elif transfer_intent:
+            main_action = "Confirmar se a transferência foi efetivada e seu destino."
+        elif notice_count > 1:
+            main_action = "Verificar se os avisos pertencem ao mesmo atendimento."
+        elif candidates:
+            main_action = "Validar os indícios de relação entre orçamentos."
+        elif "ACCOUNT_ADJUSTED" in event_types:
+            main_action = "Conferir no MV o desfecho após o ajuste da conta."
+        elif mv_accounts:
+            main_action = "Conferir a sequência e o desfecho das contas MV vinculadas."
+        else:
+            main_action = follow_ups[0]
+
+        # Esta é uma interpretação de interface, não a classificação do motor.
+        finding_priority = {
+            "Validação humana indicada": 0,
+            "Intenção de cancelamento na grade": 1,
+            "Intenção de transferência na grade": 2,
+            "Mais de um aviso operacional": 3,
+            "Possíveis relações para investigação": 4,
+            "Ajuste financeiro identificado": 5,
+            "Evento de fechamento identificado": 6,
+        }
+        priority_findings = sorted(
+            findings,
+            key=lambda item: (finding_priority.get(item[0], 20), item[2] != "warning"),
+        )
         container.clear()
         with container:
             with ui.column().classes("w-full gap-2 p-3").style(
                 "background:#f4f8fc;border:1px solid #dce9f3;border-radius:12px"
             ):
-                ui.label("ANÁLISE DO MOTOR").classes(
+                ui.label("SÍNTESE DAS EVIDÊNCIAS").classes(
                     "text-caption text-weight-bold text-primary"
-                )
-                priority_findings = sorted(
-                    findings, key=lambda item: item[2] != "warning"
                 )
                 for heading, detail, level in priority_findings[:3]:
                     with ui.row().classes("w-full items-start gap-2 no-wrap"):
@@ -472,9 +533,9 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                 ui.label("Próxima ação sugerida").classes(
                     "text-body2 text-weight-bold"
                 )
-                ui.label(follow_ups[0]).classes("text-body2")
+                ui.label(main_action).classes("text-body2")
                 ui.label(
-                    "Leitura de apoio, não é uma decisão automática."
+                    "Síntese orientativa das fontes consultadas; não altera decisões."
                 ).classes("text-caption text-grey-7")
 
             with ui.expansion(
