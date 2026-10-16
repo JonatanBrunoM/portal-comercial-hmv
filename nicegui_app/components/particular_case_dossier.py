@@ -194,10 +194,10 @@ def open_particular_case_dossier(
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[980px] p-0 rounded-xl"):
-        header = ui.column().classes("w-full px-6 py-4 gap-1")
+    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-full max-w-[1040px] p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2"):
+        header = ui.column().classes("w-full px-7 py-5 gap-1").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%)")
         ui.separator()
-        body = ui.column().classes("w-full px-6 py-4 gap-3").style("max-height: 76vh; overflow-y: auto")
+        body = ui.column().classes("w-full px-7 py-5 gap-4").style("max-height: 73vh; overflow-y:auto; background:#f7f9fc")
     dialog.open()
 
     async def load() -> None:
@@ -245,8 +245,8 @@ def open_particular_case_dossier(
         with header:
             with ui.row().classes("w-full items-start justify-between gap-4"):
                 with ui.column().classes("gap-0"):
-                    ui.label("ANÁLISE DO ORÇAMENTO").classes("text-caption text-weight-bold text-primary")
-                    ui.label(f"Orçamento #{number}").classes("text-h5 text-weight-bold")
+                    ui.label("CENTRAL DE INTELIGÊNCIA  /  ANÁLISE COMPLETA").classes("text-caption text-weight-bold text-primary tracking-wide")
+                    ui.label(f"Orçamento #{number}").classes("text-h5 text-weight-bold").style("color:#153449; letter-spacing:-.4px")
                     ui.label(
                         f'{_text(row.get("doctor_name"))} · origem {_text(row.get("portfolio_origin")).title()}'
                     ).classes("text-body2 text-grey-7")
@@ -254,7 +254,7 @@ def open_particular_case_dossier(
 
         body.clear()
         with body:
-            with ui.card().classes("w-full p-4 shadow-none border rounded-lg"):
+            with ui.card().classes("w-full p-5 shadow-none rounded-xl").style("border:1px solid #cfe0f0; border-left:4px solid #4f94cc; background:#fff"):
                 with ui.row().classes("w-full gap-4 items-center no-wrap"):
                     with ui.element("div").classes("rounded-full bg-red-50 p-3" if needs_review else "rounded-full bg-blue-50 p-3"):
                         ui.icon("priority_high" if needs_review else "check_circle", size="28px").classes("text-primary")
@@ -308,7 +308,7 @@ def open_particular_case_dossier(
                     "Valide o desfecho operacional antes de concluir.",
                 )
             if steps:
-                with ui.card().classes("w-full p-4 shadow-none border rounded-lg"):
+                with ui.card().classes("w-full p-4 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
                     with ui.row().classes("items-center gap-2"):
                         ui.icon("route", size="20px").classes("text-primary")
                         ui.label("Roteiro de conferência").classes(
@@ -325,11 +325,10 @@ def open_particular_case_dossier(
 
             # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
             # A ausência de registros nesta consulta não comprova ausência na origem.
-            with ui.card().classes("w-full p-4 shadow-none border"):
-                ui.label("Resumo das evidências disponíveis").classes("text-subtitle1 text-weight-bold")
+            with ui.card().classes("w-full p-4 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
+                ui.label("Fontes identificadas").classes("text-subtitle1 text-weight-bold")
                 ui.label(
-                    "Resumo das fontes consultadas para este orçamento. "
-                    "Registros não localizados nesta consulta não significam inexistência na origem."
+                    "Registros vinculados a este orçamento nas fontes consultadas."
                 ).classes("text-caption text-grey-7")
                 with ui.row().classes("w-full gap-5 flex-wrap mt-2"):
                     _metric("Ocorrências operacionais", str(len(occurrences)), "Grade vinculada ao caso")
@@ -349,9 +348,9 @@ def open_particular_case_dossier(
                 ).classes("text-caption text-grey-7")
 
             with ui.expansion(
-                "Investigação detalhada · XML, grade e MV",
+                "Explorar evidências · XML, grade e MV",
                 icon="fact_check",
-            ).classes("w-full border rounded-lg"):
+            ).classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
                 ui.label(
                     "Confronto das fontes vinculadas ao orçamento. Os valores da "
                     "importação não são comprovantes de pagamento nem valores finais confirmados."
@@ -604,7 +603,7 @@ def open_particular_case_dossier(
                             if notes != "—":
                                 ui.label(notes).classes("text-caption text-grey-7 whitespace-pre-wrap")
 
-            with ui.row().classes("w-full gap-6 px-1 flex-wrap"):
+            with ui.row().classes("w-full gap-6 px-4 py-3 flex-wrap rounded-xl").style("background:#eaf2f9; border:1px solid #dce8f3"):
                 with ui.column().classes("gap-0 min-w-[160px]"):
                     ui.label("Valor de referência").classes("text-caption text-grey-6")
                     ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-subtitle1 text-weight-bold")
@@ -615,7 +614,7 @@ def open_particular_case_dossier(
                     ui.label("Data operacional observada").classes("text-caption text-grey-6")
                     ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
-            with ui.row().classes("w-full gap-2 flex-wrap"):
+            with ui.row().classes("w-full gap-2 flex-wrap items-center px-4 py-3 rounded-xl").style("background:#fff; border:1px solid #dce8f3"):
                 review_reason = effective_review_reason
 
                 def finish_case() -> None:
@@ -732,7 +731,7 @@ def open_particular_case_dossier(
                     ).props("unelevated no-caps")
 
             ui.label(
-                "O histórico detalhado e as evidências técnicas ficarão disponíveis na área de auditoria."
+                "As decisões registradas preservam o histórico e as evidências vinculadas."
             ).classes("text-caption text-grey-6")
 
             ui.separator()
