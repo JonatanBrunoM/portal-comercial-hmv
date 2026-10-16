@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.contatos_admin_service import (
@@ -434,9 +435,9 @@ def _open_dialog(
             ).props("flat no-caps")
 
             ui.button(
-                "Salvar contato",
-                icon="check",
-                on_click=save,
+                "Revisar e salvar",
+                icon="fact_check",
+                on_click=lambda: _review_before_save("Revisar contato", [("Operadora", operators.get(operator.value, "Não informada")), ("Setor", department.value), ("Finalidade", purpose.value), ("Contato", contact.value), ("Tipo", contact_type.value), ("Responsável", responsible.value), ("Horário", service_hours.value), ("Status", status.value), ("Observações", notes.value)], save),
             ).props("unelevated no-caps").classes(
                 "portal-admin-contacts-primary"
             )
