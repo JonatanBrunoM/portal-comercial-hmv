@@ -471,22 +471,20 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         render_scopes()
         render_rows()
 
-    def open_case(budget_id: str) -> None:
-        # A rolagem do portal pode estar em um contêiner interno do Quasar,
-        # não na janela. Reposicionar os contêineres da página, sem tocar
-        # na rolagem interna dos diálogos.
-        ui.run_javascript("""
-            requestAnimationFrame(() => {
+    async def open_case(budget_id: str) -> None:
+        # Reposicionar antes de abrir o diálogo: o Quasar bloqueia a
+        # rolagem do fundo assim que o modal é exibido.
+        await ui.run_javascript("""
+            (() => {
+                const candidates = [
+                    document.scrollingElement,
+                    document.querySelector('.q-page-container'),
+                    document.querySelector('.q-page'),
+                    ...document.querySelectorAll('.q-scrollarea__container')
+                ].filter(Boolean);
+                for (const el of candidates) el.scrollTop = 0;
                 window.scrollTo(0, 0);
-                document.documentElement.scrollTop = 0;
-                document.body.scrollTop = 0;
-                document.querySelectorAll('body *').forEach(el => {
-                    if (el.closest('.q-dialog')) return;
-                    if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) {
-                        el.scrollTop = 0;
-                    }
-                });
-            });
+            })();
         """)
         open_particular_case_dossier(
             access=access,
