@@ -7,7 +7,7 @@ from typing import Any
 
 from nicegui import run, ui
 
-from nicegui_app.components.particular_case_dossier import open_particular_case_dossier
+from nicegui_app.components.particular_case_dossier import open_particular_case_dossier, _technical_label
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import list_particular_work_queue
 
@@ -99,7 +99,7 @@ def _action(row: dict[str, Any]) -> tuple[str, str]:
         return ("Monitorar", f'Operação observada para {_date(row.get("last_observed_operational_date"))}.')
     if group == "OPERACAO_COMPETENCIA":
         return ("Acompanhar evolução", "Há operação identificada na competência.")
-    return ("Consultar caso", code.replace("_", " ").title() if code else "Consulte as evidências disponíveis.")
+    return ("Consultar caso", _technical_label(code) if code else "Consulte as evidências disponíveis.")
 
 
 def _queue_signals(row: dict[str, Any]) -> list[str]:
@@ -274,7 +274,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                             with ui.column().classes("gap-0 min-w-[90px]"):
                                 ui.label(f'#{row.get("budget_number")}').classes("text-subtitle1 text-weight-bold")
                                 ui.label(_date(row.get("budget_date"))).classes("text-caption text-grey-7")
-                                ui.label(str(row.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-caption text-grey-6")
+                                ui.label(_technical_label(row.get("portfolio_origin"))).classes("text-caption text-grey-6")
 
                             with ui.column().classes("gap-1 flex-1 min-w-[190px]"):
                                 with ui.row().classes("items-center gap-2"):
@@ -340,7 +340,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         ui.label(_date(selected.get("budget_date"))).classes("text-body2 text-weight-medium")
                     with ui.column().classes("gap-0 flex-1"):
                         ui.label("Origem").classes("text-caption text-grey-7")
-                        ui.label(str(selected.get("portfolio_origin") or "—").replace("_", " ").title()).classes("text-body2 text-weight-medium")
+                        ui.label(_technical_label(selected.get("portfolio_origin"))).classes("text-body2 text-weight-medium")
                 with ui.row().classes("w-full gap-4 flex-wrap"):
                     with ui.column().classes("gap-0 flex-1"):
                         ui.label("Valor de referência").classes("text-caption text-grey-7")
@@ -411,7 +411,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         })
         origin_select.options = {
             "TODOS": "Todas",
-            **{x: x.replace("_", " ").title() for x in origins},
+            **{x: _technical_label(x) for x in origins},
         }
         render_summary()
         render_scopes()
@@ -440,7 +440,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
             **{key: value[0] for key, value in GROUPS.items() if any(r.get("work_group") == key for r in all_rows)},
         }
         origins = sorted({str(r.get("portfolio_origin") or "") for r in all_rows if r.get("portfolio_origin")})
-        origin_select.options = {"TODOS": "Todas", **{x: x.replace("_", " ").title() for x in origins}}
+        origin_select.options = {"TODOS": "Todas", **{x: _technical_label(x) for x in origins}}
         render_summary()
         render_scopes()
         render_rows()
