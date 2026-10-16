@@ -170,6 +170,35 @@ def _open_dialog(user: dict, item: AdminPortal | None, operators: dict[str, str]
 
         with ui.row().classes("portal-admin-portals-dialog-actions"):
             ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
-            ui.button("Salvar portal", icon="check", on_click=save).props(
+            def review() -> None:
+                with ui.dialog() as confirmation, ui.card().classes("w-full max-w-lg p-5 gap-3"):
+                    ui.label("Revisar portal").classes("text-xl font-bold")
+                    ui.label("Confira os dados antes de confirmar. Campos opcionais podem ficar vazios.").classes("text-sm text-gray-600")
+                    fields = [
+                        ("Operadora", operators.get(operator.value, "Não informada")),
+                        ("Plano", plans.get(plan.value, ("", "Não informado"))[1] if plan.value else "Não informado"),
+                        ("Local", locations.get(location.value, "Não informado")),
+                        ("Código", code.value), ("Nome do portal", name.value),
+                        ("Tipo", portal_type.value), ("URL", url.value),
+                        ("Exige login", "Sim" if requires_login.value else "Não"),
+                        ("Status", status.value), ("Instrução de acesso", instruction.value),
+                        ("Dica geral", tip.value), ("Observações", notes.value),
+                    ]
+                    with ui.column().classes("w-full gap-2"):
+                        for label, value in fields:
+                            with ui.row().classes("w-full justify-between items-start gap-3"):
+                                ui.label(label).classes("font-medium")
+                                ui.label(str(value or "Não informado")).classes("text-right text-gray-600 break-words")
+                    with ui.row().classes("w-full justify-end gap-2"):
+                        ui.button("Voltar e editar", on_click=confirmation.close).props("flat no-caps")
+
+                        def confirm() -> None:
+                            confirmation.close()
+                            save()
+
+                        ui.button("Confirmar e salvar", icon="check", on_click=confirm).props("unelevated no-caps")
+                confirmation.open()
+
+            ui.button("Revisar e salvar", icon="fact_check", on_click=review).props(
                 "unelevated no-caps").classes("portal-admin-portals-primary")
     dialog.open()
