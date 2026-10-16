@@ -754,7 +754,8 @@ def open_particular_case_dossier(
                         # Registro integrado ao dossiê: sem abrir um segundo modal.
                         # A composição com desfecho comprovado mantém sua decisão específica.
                         composition_direct = review_reason == "COMPOSICAO_DIVERGENTE" and bool(composition_reason)
-                        if composition_direct:
+                        sequence_direct = raw_review_reason in {"MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}
+                        if composition_direct or sequence_direct:
                             ui.button(
                                 "Concluir composição", icon="task_alt",
                                 on_click=lambda: open_account_resolution_dialog(
