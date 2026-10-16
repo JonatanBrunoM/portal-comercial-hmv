@@ -221,6 +221,11 @@ def open_particular_case_dossier(
         events = data["events"]
         evolutions = data["evolutions"]
         investigation_candidates = data.get("investigation_candidates") or []
+        original_values = data.get("original_values") or []
+        original = original_values[0] if original_values else {}
+        mv_notices = data.get("mv_notices") or []
+        mv_accounts = data.get("mv_accounts") or []
+
         number = str(row.get("budget_number") or "")
         title, why, next_action = _decision_for(row)
         group = str(row.get("work_group") or "")
@@ -281,6 +286,107 @@ def open_particular_case_dossier(
                         ).props("outline")
                 ui.label(
                     "A situação financeira não confirma, por si só, o desfecho operacional."
+                ).classes("text-caption text-grey-7")
+
+            with ui.expansion(
+                "Investigação detalhada · XML, grade e MV",
+                icon="fact_check",
+            ).classes("w-full border rounded-lg"):
+                ui.label(
+                    "Confronto das fontes vinculadas ao orçamento. Os valores da "
+                    "importação não são comprovantes de pagamento nem valores finais confirmados."
+                ).classes("text-caption text-grey-7")
+                with ui.row().classes("w-full gap-5 flex-wrap"):
+                    _metric(
+                        "Original vigente (importação)",
+                        _money(original.get("total_value")),
+                        "Espelho estruturado do XML, não o arquivo bruto",
+                    )
+                    _metric(
+                        "Contas MV vinculadas",
+                        str(len(mv_accounts)),
+                        "Vínculo por aviso da grade",
+                    )
+                if original:
+                    ui.label(
+                        "Procedimento: " + _money(original.get("procedure_value"))
+                        + " · Materiais: " + _money(original.get("material_value"))
+                    ).classes("text-body2")
+                if mv_accounts:
+                    ui.label("Registros de contas MV encontrados").classes(
+                        "text-body2 text-weight-bold mt-2"
+                    )
+                    for account in mv_accounts[:15]:
+                        notices = sorted({
+                            str(item.get("notice_number"))
+                            for item in mv_notices
+                            if str(item.get("account_record_id")) == str(account.get("id"))
+                        })
+                        with ui.card().classes("w-full p-3 shadow-none border rounded-lg"):
+                            ui.label(
+                                "Aviso(s): " + (", ".join(notices) or "não informado")
+                                + " · Atendimento: "
+                                + str(account.get("attendance_number") or "não informado")
+                            ).classes("text-body2 text-weight-bold")
+                            ui.label(
+                                "Conta: " + str(account.get("account_number") or "não informada")
+                                + " · Valor registrado: " + _money(account.get("account_total"))
+                                + " · Situação no registro: "
+                                + (
+                                    "Fechada" if account.get("is_closed") is True
+                                    else "Aberta" if account.get("is_closed") is False
+                                    else "Não informada"
+                                )
+                            ).classes("text-body2")
+                else:
+                    ui.label(
+                        "Nenhuma conta MV vinculada pelos avisos consultados. "
+                        "Isso não significa que não exista conta no MV."
+                    ).classes("text-caption text-grey-7")
+                with ui.expansion(
+                    f"Grade operacional · {len(occurrences)} registro(s)", icon="event_note"
+                ):
+                    for item in occurrences[:20]:
+                        ui.label(
+                            "Aviso " + str(item.get("notice_number") or "não informado")
+                            + " · " + _date(item.get("procedure_date"))
+                            + " · " + str(item.get("location") or "local não informado")
+                        ).classes("text-body2")
+                        if item.get("notes_original"):
+                            ui.label(
+                                "Observação: " + str(item.get("notes_original"))
+                            ).classes("text-caption text-grey-7")
+                with ui.expansion(
+                    f"Eventos financeiros · {len(events)} registro(s)", icon="receipt_long"
+                ):
+                    for item in events[:20]:
+                        ui.label(
+                            str(item.get("event_type") or "Evento").replace("_", " ").title()
+                            + " · " + _date(item.get("event_at"))
+                            + " · " + str(item.get("closure_mode") or "sem modalidade")
+                        ).classes("text-body2")
+                        if item.get("interpretation_details"):
+                            details = item.get("interpretation_details")
+                            if isinstance(details, dict):
+                                details = details.get("description") or details.get("reason") or ""
+                            if details:
+                                ui.label(str(details)).classes("text-caption text-grey-7")
+                with ui.expansion(
+                    f"Evoluções administrativas · {len(evolutions)} registro(s)",
+                    icon="history",
+                ):
+                    for item in evolutions[:20]:
+                        ui.label(
+                            _date(item.get("evolution_recorded_at"))
+                            + " · " + str(item.get("evolution_type") or "Evolução")
+                        ).classes("text-body2 text-weight-bold")
+                        if item.get("description_raw"):
+                            ui.label(str(item.get("description_raw"))).classes(
+                                "text-body2 whitespace-pre-wrap"
+                            )
+                ui.label(
+                    "As fontes exibidas são os registros retornados pela consulta. "
+                    "Ausência de registro não comprova ausência na origem."
                 ).classes("text-caption text-grey-7")
 
             closure_label, closure_reason, closure_mode = _closure_review_context(events, evolutions)
