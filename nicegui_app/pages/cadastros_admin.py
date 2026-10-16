@@ -17,6 +17,27 @@ def _notify_error(error: Exception) -> None:
     ui.notify(str(error), type="negative", position="top")
 
 
+def _review_before_save(title: str, fields: list[tuple[str, object]], save_action) -> None:
+    """Mostra uma conferência explícita antes de gravar o cadastro."""
+    with ui.dialog() as review, ui.card().classes("w-full max-w-lg p-5 gap-3"):
+        ui.label(title).classes("text-xl font-bold")
+        ui.label("Confira os dados antes de confirmar. Campos vazios serão mantidos em branco.").classes("text-sm text-gray-600")
+        with ui.column().classes("w-full gap-2"):
+            for label, value in fields:
+                with ui.row().classes("w-full justify-between items-start gap-3"):
+                    ui.label(label).classes("font-medium")
+                    ui.label(str(value or "Não informado")).classes("text-right text-gray-600 break-words")
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Voltar e editar", on_click=review.close).props("flat no-caps")
+
+            def confirm() -> None:
+                review.close()
+                save_action()
+
+            ui.button("Confirmar e salvar", icon="check", on_click=confirm).props("unelevated no-caps")
+    review.open()
+
+
 def render_admin_cadastros(user: dict) -> None:
     operadoras = get_admin_operadoras()
     planos = get_admin_planos()
@@ -167,7 +188,11 @@ def _open_operadora_dialog(user: dict, item: AdminOperadora | None) -> None:
 
         with ui.row().classes("portal-admin-register-dialog-actions"):
             ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
-            ui.button("Salvar", icon="check", on_click=save).props("unelevated no-caps").classes("portal-admin-register-primary")
+            ui.button("Revisar e salvar", icon="fact_check", on_click=lambda: _review_before_save(
+                "Revisar operadora",
+                [("Código", code.value), ("Nome completo", name.value), ("Nome curto", short_name.value), ("Status", status.value), ("Site", site.value), ("Observações", notes.value)],
+                save,
+            )).props("unelevated no-caps").classes("portal-admin-register-primary")
 
     dialog.open()
 
@@ -286,6 +311,10 @@ def _open_plano_dialog(user: dict, item: AdminPlano | None, operator_options: di
 
         with ui.row().classes("portal-admin-register-dialog-actions"):
             ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
-            ui.button("Salvar", icon="check", on_click=save).props("unelevated no-caps").classes("portal-admin-register-primary")
+            ui.button("Revisar e salvar", icon="fact_check", on_click=lambda: _review_before_save(
+                "Revisar plano",
+                [("Operadora", operator_options.get(operator.value, "Não informada")), ("Código", code.value), ("Nome", name.value), ("Nome padronizado", standardized.value), ("Tipo", plan_type.value), ("Status", status.value), ("Observação", summary.value)],
+                save,
+            )).props("unelevated no-caps").classes("portal-admin-register-primary")
 
     dialog.open()
