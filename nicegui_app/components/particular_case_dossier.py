@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from nicegui import run, ui
@@ -10,7 +10,7 @@ from nicegui import run, ui
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
 from nicegui_app.components.particular_account_resolution_dialog import open_account_resolution_dialog
 from nicegui_app.components.particular_investigation_dialog import open_particular_investigation_dialog
-from nicegui_app.services.particular_service import ParticularAccess, resolve_particular_account_review
+from nicegui_app.services.particular_service import ParticularAccess, resolve_particular_account_review, register_particular_mv_check
 from nicegui_app.services.particular_work_queue import get_particular_case_dossier
 
 logger = logging.getLogger(__name__)
@@ -668,37 +668,89 @@ def open_particular_case_dossier(
                         def handle_resolution() -> None:
                             finish_case()
 
-                        def open_conclusion() -> None:
-                            # Se a própria evolução já comprova o fechamento e a pendência é
-                            # somente de composição, não perguntamos novamente se houve realização.
-                            # Vamos direto ao desfecho da composição, preservando a evidência original.
-                            if review_reason == "COMPOSICAO_DIVERGENTE" and composition_reason:
-                                open_account_resolution_dialog(
+                        # Registro integrado ao dossiê: sem abrir um segundo modal.
+                        # A composição com desfecho comprovado mantém sua decisão específica.
+                        composition_direct = review_reason == "COMPOSICAO_DIVERGENTE" and bool(composition_reason)
+                        if composition_direct:
+                            ui.button(
+                                "Concluir composição", icon="task_alt",
+                                on_click=lambda: open_account_resolution_dialog(
                                     access=access,
                                     budget_id=budget_id,
                                     budget_number=number,
                                     review_reason=review_reason,
-                                    confirmed_final_value_prefill=(
-                                        str(row.get("mv_account_value") or "") or None
-                                    ),
+                                    confirmed_final_value_prefill=str(row.get("mv_account_value") or "") or None,
                                     on_resolved=finish_case,
-                                )
-                                return
+                                ),
+                            ).props("unelevated no-caps color=primary")
+                        else:
+                            inferred_closure = review_reason == "VALIDAR_VALOR_FINAL" and closure_mode in {"HIGHER", "LOWER"}
+                            with ui.column().classes("w-full gap-2"):
+                                ui.label("REGISTRAR CONCLUSÃO NO MV").classes("text-caption text-weight-bold text-primary")
+                                with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                                    if inferred_closure:
+                                        ui.badge("Fechamento a maior" if closure_mode == "HIGHER" else "Fechamento a menor").props("outline color=primary")
+                                        outcome_input = None
+                                    else:
+                                        outcome_input = ui.select(
+                                            {"PENDING": "Pendente", "REALIZED": "Realizado",
+                                             "NOT_PERFORMED": "Não realizado", "CANCELLED": "Cancelado"},
+                                            value="PENDING", label="Desfecho confirmado",
+                                        ).props("outlined dense").classes("min-w-[170px] flex-1")
+                                    amount_input = ui.input("Valor confirmado (R$)", placeholder="Ex.: 4989,60").props("outlined dense").classes("min-w-[160px] flex-1")
+                                    note_input = ui.input("Observação", placeholder="Evidência que sustenta a decisão").props("outlined dense").classes("min-w-[210px] flex-[2]")
+                                saving = False
 
-                            open_particular_mv_dialog(
-                                access=access,
-                                budget_id=budget_id,
-                                attendance_number=str(row.get("attendance_number") or "") or None,
-                                notice_number=str(row.get("notice_number") or "") or None,
-                                review_reason=review_reason or None,
-                                closure_mode=closure_mode,
-                                on_saved=after_mv,
-                            )
+                                async def save_inline() -> None:
+                                    nonlocal saving
+                                    if saving:
+                                        return
+                                    raw_amount = str(amount_input.value or "").strip()
+                                    normalized_amount = None
+                                    if raw_amount:
+                                        try:
+                                            amount = Decimal(raw_amount.replace(".", "").replace(",", "."))
+                                        except InvalidOperation:
+                                            ui.notify("Informe um valor válido.", type="warning")
+                                            return
+                                        if not amount.is_finite() or amount < 0:
+                                            ui.notify("O valor deve ser válido e não negativo.", type="warning")
+                                            return
+                                        normalized_amount = str(amount)
+                                    if inferred_closure and normalized_amount is None:
+                                        ui.notify("Informe o valor final confirmado no MV.", type="warning")
+                                        return
+                                    resolved_outcome = "REALIZED" if inferred_closure else str(outcome_input.value or "PENDING")
+                                    saving = True
+                                    save_button.disable()
+                                    try:
+                                        check_id = await run.io_bound(
+                                            register_particular_mv_check,
+                                            access=access, budget_id=budget_id,
+                                            outcome=resolved_outcome,
+                                            notice_number=str(row.get("notice_number") or "").strip() or None,
+                                            attendance_number=str(row.get("attendance_number") or "").strip() or None,
+                                            account_value=normalized_amount,
+                                            notes=str(note_input.value or "").strip() or None,
+                                        )
+                                    except Exception:
+                                        logger.exception("Falha ao registrar conclusão integrada.")
+                                        saving = False
+                                        save_button.enable()
+                                        ui.notify("Não foi possível registrar a conclusão.", type="negative")
+                                        return
+                                    ui.notify("Conferência registrada.", type="positive")
+                                    after_mv({
+                                        "check_id": check_id, "outcome": resolved_outcome,
+                                        "account_value": normalized_amount,
+                                        "notes": str(note_input.value or "").strip() or None,
+                                    })
+                                    if not inferred_closure and review_reason != "COMPOSICAO_DIVERGENTE":
+                                        finish_case()
 
-                        ui.button(
-                            "Registrar conclusão", icon="task_alt",
-                            on_click=open_conclusion,
-                        ).props("unelevated no-caps color=primary").classes("px-4")
+                                save_button = ui.button(
+                                    "Registrar conclusão", icon="task_alt", on_click=save_inline
+                                ).props("unelevated no-caps color=primary").classes("self-end")
 
             ui.label(
                     "A conclusão exige validação das evidências; dados não confirmados "
