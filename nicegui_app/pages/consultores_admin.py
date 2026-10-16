@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.consultores_admin_service import (
@@ -490,9 +491,9 @@ def _open_consultant_dialog(
                 on_click=dialog.close,
             ).props("flat no-caps")
             ui.button(
-                "Salvar consultor",
-                icon="check",
-                on_click=save,
+                "Revisar e salvar",
+                icon="fact_check",
+                on_click=lambda: _review_before_save("Revisar consultor", [("Código", code.value), ("Nome", name.value), ("Cargo", job_title.value), ("E-mail", email.value), ("Telefone", phone.value), ("Status", status.value), ("Observações", notes.value)], save),
             ).props("unelevated no-caps").classes(
                 "portal-admin-consultants-primary"
             )
@@ -627,9 +628,9 @@ def _open_wallet_dialog(
                 on_click=dialog.close,
             ).props("flat no-caps")
             ui.button(
-                "Salvar carteira",
-                icon="check",
-                on_click=save,
+                "Revisar e salvar",
+                icon="fact_check",
+                on_click=lambda: _review_before_save("Revisar carteira", [("Consultor", consultants.get(consultant.value, "Não informado")), ("Operadora", operators.get(operator.value, "Não informada")), ("Plano", plans.get(plan.value, ("", "Não informado"))[1] if plan.value else "Não informado"), ("Papel", role.value), ("Status", status.value), ("Observações", notes.value)], save),
             ).props("unelevated no-caps").classes(
                 "portal-admin-consultants-primary"
             )
