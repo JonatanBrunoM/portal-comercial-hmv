@@ -194,10 +194,10 @@ def open_particular_case_dossier(
         ui.notify("Você não possui acesso ao caso.", type="warning")
         return
 
-    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(790px,88vh)"):
-        header = ui.column().classes("w-full px-6 py-3 gap-1 shrink-0").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%); border-bottom:1px solid #e2eaf2")
-        body = ui.column().classes("w-full px-6 py-4 gap-3").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
-        footer = ui.column().classes("w-full px-6 py-3 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07)")
+    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(720px,86vh)"):
+        header = ui.column().classes("w-full px-6 py-2 gap-0 shrink-0").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%); border-bottom:1px solid #e2eaf2")
+        body = ui.column().classes("w-full px-6 py-3 gap-2").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
+        footer = ui.column().classes("w-full px-6 py-2 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07)")
     dialog.open()
 
     async def load() -> None:
@@ -605,136 +605,136 @@ def open_particular_case_dossier(
 
         footer.clear()
         with footer:
-            with ui.row().classes("w-full gap-6 px-4 py-3 flex-wrap rounded-xl").style("background:#eaf2f9; border:1px solid #dce8f3"):
-                with ui.column().classes("gap-0 min-w-[160px]"):
-                    ui.label("Valor de referência").classes("text-caption text-grey-6")
-                    ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-subtitle1 text-weight-bold")
-                with ui.column().classes("gap-0 min-w-[140px]"):
-                    ui.label("Atendimento").classes("text-caption text-grey-6")
-                    ui.label(_text(row.get("attendance_number"))).classes("text-subtitle1 text-weight-bold")
-                with ui.column().classes("gap-0 min-w-[190px]"):
-                    ui.label("Data operacional observada").classes("text-caption text-grey-6")
-                    ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
+            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+                with ui.row().classes("items-center gap-5 flex-wrap"):
+                    with ui.column().classes("gap-0"):
+                        ui.label("REFERÊNCIA").classes("text-caption text-grey-6")
+                        ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-body2 text-weight-bold")
+                    with ui.column().classes("gap-0"):
+                        ui.label("ATENDIMENTO").classes("text-caption text-grey-6")
+                        ui.label(_text(row.get("attendance_number"))).classes("text-body2 text-weight-bold")
+                    with ui.column().classes("gap-0"):
+                        ui.label("DATA OBSERVADA").classes("text-caption text-grey-6")
+                        ui.label(_date(row.get("last_observed_operational_date"))).classes("text-body2 text-weight-bold")
+                with ui.row().classes("items-center gap-2"):
+                    review_reason = effective_review_reason
 
-            with ui.row().classes("w-full gap-2 flex-wrap items-center"):
-                review_reason = effective_review_reason
+                    def finish_case() -> None:
+                        dialog.close()
+                        if on_resolved:
+                            on_resolved()
 
-                def finish_case() -> None:
-                    dialog.close()
-                    if on_resolved:
-                        on_resolved()
-
-                async def resolve_from_mv(saved: dict[str, Any]) -> None:
-                    if review_reason != "VALIDAR_VALOR_FINAL":
-                        return
-                    if str(saved.get("outcome") or "").upper() != "REALIZED":
-                        ui.notify(
-                            "Conferência registrada. O caso permanece na fila porque o MV não confirmou realização.",
-                            type="warning",
-                        )
-                        return
-                    final_value = str(saved.get("account_value") or "").strip()
-                    if not final_value or closure_mode not in {"HIGHER", "LOWER"}:
-                        ui.notify(
-                            "Conferência registrada. Ainda falta informação para concluir o caso.",
-                            type="warning",
-                        )
-                        return
-                    try:
-                        await run.io_bound(
-                            resolve_particular_account_review,
-                            access=access,
-                            budget_id=budget_id,
-                            account_status="CLOSED",
-                            closure_mode=closure_mode,
-                            confirmed_final_value=final_value,
-                            resolution_notes=(
-                                f"Valor final confirmado no MV pela conferência {saved.get('check_id')}."
-                            ),
-                        )
-                    except Exception:
-                        logger.exception("Falha ao concluir automaticamente a revisão após conferência MV.")
-                        ui.notify(
-                            "A conferência foi salva, mas a conclusão automática não pôde ser registrada.",
-                            type="warning",
-                        )
-                        return
-                    ui.notify("Conferência registrada e caso resolvido.", type="positive")
-                    finish_case()
-
-                def after_mv(saved: dict[str, Any]) -> None:
-                    if review_reason == "VALIDAR_VALOR_FINAL":
-                        ui.timer(0.05, lambda: resolve_from_mv(saved), once=True)
-                        return
-                    if (
-                        review_reason == "COMPOSICAO_DIVERGENTE"
-                        and str(saved.get("outcome") or "").upper() == "REALIZED"
-                    ):
-                        open_account_resolution_dialog(
-                            access=access,
-                            budget_id=budget_id,
-                            budget_number=number,
-                            review_reason=review_reason,
-                            confirmed_final_value_prefill=str(saved.get("account_value") or "") or None,
-                            on_resolved=finish_case,
-                        )
-
-                if (
-                    group in {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}
-                    and investigation_candidates
-                    and access.can_write
-                ):
-                    ui.button(
-                        "Concluir investigação",
-                        icon="task_alt",
-                        on_click=lambda: open_particular_investigation_dialog(
-                            access=access,
-                            budget_id=budget_id,
-                            budget_number=number,
-                            candidates=investigation_candidates,
-                            on_resolved=finish_case,
-                        ),
-                    ).props("unelevated no-caps")
-
-                if needs_review and access.can_write:
-                    def handle_resolution() -> None:
+                    async def resolve_from_mv(saved: dict[str, Any]) -> None:
+                        if review_reason != "VALIDAR_VALOR_FINAL":
+                            return
+                        if str(saved.get("outcome") or "").upper() != "REALIZED":
+                            ui.notify(
+                                "Conferência registrada. O caso permanece na fila porque o MV não confirmou realização.",
+                                type="warning",
+                            )
+                            return
+                        final_value = str(saved.get("account_value") or "").strip()
+                        if not final_value or closure_mode not in {"HIGHER", "LOWER"}:
+                            ui.notify(
+                                "Conferência registrada. Ainda falta informação para concluir o caso.",
+                                type="warning",
+                            )
+                            return
+                        try:
+                            await run.io_bound(
+                                resolve_particular_account_review,
+                                access=access,
+                                budget_id=budget_id,
+                                account_status="CLOSED",
+                                closure_mode=closure_mode,
+                                confirmed_final_value=final_value,
+                                resolution_notes=(
+                                    f"Valor final confirmado no MV pela conferência {saved.get('check_id')}."
+                                ),
+                            )
+                        except Exception:
+                            logger.exception("Falha ao concluir automaticamente a revisão após conferência MV.")
+                            ui.notify(
+                                "A conferência foi salva, mas a conclusão automática não pôde ser registrada.",
+                                type="warning",
+                            )
+                            return
+                        ui.notify("Conferência registrada e caso resolvido.", type="positive")
                         finish_case()
 
-                    def open_conclusion() -> None:
-                        # Se a própria evolução já comprova o fechamento e a pendência é
-                        # somente de composição, não perguntamos novamente se houve realização.
-                        # Vamos direto ao desfecho da composição, preservando a evidência original.
-                        if review_reason == "COMPOSICAO_DIVERGENTE" and composition_reason:
+                    def after_mv(saved: dict[str, Any]) -> None:
+                        if review_reason == "VALIDAR_VALOR_FINAL":
+                            ui.timer(0.05, lambda: resolve_from_mv(saved), once=True)
+                            return
+                        if (
+                            review_reason == "COMPOSICAO_DIVERGENTE"
+                            and str(saved.get("outcome") or "").upper() == "REALIZED"
+                        ):
                             open_account_resolution_dialog(
                                 access=access,
                                 budget_id=budget_id,
                                 budget_number=number,
                                 review_reason=review_reason,
-                                confirmed_final_value_prefill=(
-                                    str(row.get("mv_account_value") or "") or None
-                                ),
+                                confirmed_final_value_prefill=str(saved.get("account_value") or "") or None,
                                 on_resolved=finish_case,
                             )
-                            return
 
-                        open_particular_mv_dialog(
-                            access=access,
-                            budget_id=budget_id,
-                            attendance_number=str(row.get("attendance_number") or "") or None,
-                            notice_number=str(row.get("notice_number") or "") or None,
-                            review_reason=review_reason or None,
-                            closure_mode=closure_mode,
-                            on_saved=after_mv,
-                        )
+                    if (
+                        group in {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}
+                        and investigation_candidates
+                        and access.can_write
+                    ):
+                        ui.button(
+                            "Concluir investigação",
+                            icon="task_alt",
+                            on_click=lambda: open_particular_investigation_dialog(
+                                access=access,
+                                budget_id=budget_id,
+                                budget_number=number,
+                                candidates=investigation_candidates,
+                                on_resolved=finish_case,
+                            ),
+                        ).props("unelevated no-caps")
 
-                    ui.button(
-                        "Registrar conclusão", icon="task_alt",
-                        on_click=open_conclusion,
-                    ).props("unelevated no-caps color=primary").classes("px-4")
+                    if needs_review and access.can_write:
+                        def handle_resolution() -> None:
+                            finish_case()
+
+                        def open_conclusion() -> None:
+                            # Se a própria evolução já comprova o fechamento e a pendência é
+                            # somente de composição, não perguntamos novamente se houve realização.
+                            # Vamos direto ao desfecho da composição, preservando a evidência original.
+                            if review_reason == "COMPOSICAO_DIVERGENTE" and composition_reason:
+                                open_account_resolution_dialog(
+                                    access=access,
+                                    budget_id=budget_id,
+                                    budget_number=number,
+                                    review_reason=review_reason,
+                                    confirmed_final_value_prefill=(
+                                        str(row.get("mv_account_value") or "") or None
+                                    ),
+                                    on_resolved=finish_case,
+                                )
+                                return
+
+                            open_particular_mv_dialog(
+                                access=access,
+                                budget_id=budget_id,
+                                attendance_number=str(row.get("attendance_number") or "") or None,
+                                notice_number=str(row.get("notice_number") or "") or None,
+                                review_reason=review_reason or None,
+                                closure_mode=closure_mode,
+                                on_saved=after_mv,
+                            )
+
+                        ui.button(
+                            "Registrar conclusão", icon="task_alt",
+                            on_click=open_conclusion,
+                        ).props("unelevated no-caps color=primary").classes("px-4")
 
             ui.label(
-                "A conclusão exige validação das evidências; dados não confirmados "
-                "permanecem sinalizados para revisão."
+                    "A conclusão exige validação das evidências; dados não confirmados "
+                    "permanecem sinalizados para revisão."
             ).classes("text-caption text-grey-7 px-1")
 
     ui.timer(0.05, load, once=True)
