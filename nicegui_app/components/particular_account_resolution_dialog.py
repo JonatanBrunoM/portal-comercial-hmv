@@ -38,6 +38,13 @@ def open_account_resolution_dialog(
                     "Informe apenas o desfecho confirmado. A divergência identificada permanece preservada para auditoria."
                 ).classes("text-body2 text-grey-7")
 
+                composition_status = ui.select(
+                    {"CLOSED": "Conta fechada", "REOPENED": "Conta reaberta",
+                     "SPECIAL_OUTCOME": "Outro desfecho confirmado",
+                     "INCONCLUSIVE": "Permanece inconclusivo"},
+                    label="Situação financeira confirmada", value="CLOSED",
+                ).props("outlined dense").classes("w-full")
+
                 outcome = ui.select(
                     {
                         "ACCORDING_TO_BUDGET": "Conforme orçamento",
@@ -62,9 +69,12 @@ def open_account_resolution_dialog(
 
                 def sync_composition_fields() -> None:
                     mode = str(outcome.value or "")
-                    final_value.set_visibility(mode in {"WITH_ADJUSTMENT", "HIGHER", "LOWER", "OTHER"})
+                    closed = composition_status.value == "CLOSED"
+                    outcome.set_visibility(closed)
+                    final_value.set_visibility(closed and mode in {"WITH_ADJUSTMENT", "HIGHER", "LOWER", "OTHER"})
 
                 outcome.on("update:model-value", lambda _: sync_composition_fields())
+                composition_status.on("update:model-value", lambda _: sync_composition_fields())
                 sync_composition_fields()
 
             else:
@@ -124,14 +134,17 @@ def open_account_resolution_dialog(
                     return
 
                 if composition_flow:
-                    selected_mode = str(outcome.value or "").strip() or None
-                    if not selected_mode:
+                    selected_status = str(composition_status.value or "").strip()
+                    if not selected_status:
+                        ui.notify("Informe a situação financeira confirmada.", type="warning")
+                        return
+                    selected_mode = (str(outcome.value or "").strip() or None) if selected_status == "CLOSED" else None
+                    if selected_status == "CLOSED" and not selected_mode:
                         ui.notify("Informe como a conta ficou após a conferência.", type="warning")
                         return
-                    selected_status = "CLOSED"
-                    raw_value = str(final_value.value or "").strip()
+                    raw_value = str(final_value.value or "").strip() if selected_status == "CLOSED" else ""
 
-                    if selected_mode in {"HIGHER", "LOWER"} and not raw_value:
+                    if selected_status == "CLOSED" and selected_mode in {"HIGHER", "LOWER"} and not raw_value:
                         ui.notify("Informe o valor final confirmado.", type="warning")
                         return
                 else:
@@ -145,7 +158,7 @@ def open_account_resolution_dialog(
                     if selected_status == "CLOSED" and not selected_mode:
                         ui.notify("Informe como a conta foi fechada.", type="warning")
                         return
-                    if selected_mode in {"HIGHER", "LOWER"} and not raw_value:
+                    if selected_status == "CLOSED" and selected_mode in {"HIGHER", "LOWER"} and not raw_value:
                         ui.notify("Informe o valor final confirmado.", type="warning")
                         return
 
