@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Request
@@ -47,6 +48,7 @@ async def start_google_login(request: Request) -> RedirectResponse:
     if not google_oauth_is_configured():
         return RedirectResponse("/login?error=config", status_code=303)
 
+    logger.info("Iniciando autenticação Google. host=%s", request.url.hostname)
     return await oauth.google.authorize_redirect(
         request,
         _callback_url(),
@@ -56,8 +58,10 @@ async def start_google_login(request: Request) -> RedirectResponse:
 
 
 async def finish_google_login(request: Request) -> RedirectResponse:
+    started = time.monotonic()
     try:
         token = await oauth.google.authorize_access_token(request)
+        logger.info("OAuth Google: token recebido em %.2fs", time.monotonic() - started)
         userinfo = token.get("userinfo")
 
         if not userinfo:
@@ -81,6 +85,7 @@ async def finish_google_login(request: Request) -> RedirectResponse:
             )
             return RedirectResponse("/login?error=domain", status_code=303)
 
+        profile_started = time.monotonic()
         profile = resolve_google_profile(
             email=email,
             name=str(userinfo.get("name") or "").strip(),
@@ -88,6 +93,7 @@ async def finish_google_login(request: Request) -> RedirectResponse:
             google_sub=google_sub,
         )
 
+        logger.info("OAuth Google: perfil resolvido em %.2fs", time.monotonic() - profile_started)
         request.session["portal_auth"] = {
             "authenticated": True,
             "profile_id": profile["id"],
@@ -111,8 +117,11 @@ async def finish_google_login(request: Request) -> RedirectResponse:
 
     except OAuthError as error:
         logger.warning(
-            "Falha OAuth Google. tipo=%s",
+            "Falha OAuth Google. tipo=%s codigo=%s descricao=%s tempo=%.2fs",
             type(error).__name__,
+            str(getattr(error, "error", "") or "")[:100],
+            str(getattr(error, "description", "") or "")[:180],
+            time.monotonic() - started,
         )
         return RedirectResponse("/login?error=oauth", status_code=303)
 
