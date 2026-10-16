@@ -1,6 +1,7 @@
 
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.credenciais_service import (
@@ -263,9 +264,9 @@ def render_admin_credenciais(user: dict) -> None:
                 with ui.row().classes("portal-admin-credentials-dialog-actions"):
                     ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
                     ui.button(
-                        "Salvar credencial",
-                        icon="shield",
-                        on_click=save,
+                        "Revisar e salvar",
+                        icon="fact_check",
+                        on_click=lambda: _review_before_save("Revisar credencial", [("Identificação", identification.value), ("Login", login.value), ("Senha", "Será atualizada" if password.value else "Sem alteração" if item else "Não informada"), ("Dica de acesso", access_tip.value), ("Observações", notes.value), ("Regra de senha", password_rule.value), ("Histórico bloqueado", blocked.value), ("Status", status.value), ("Motivo da troca", reason.value)], save),
                     ).props("unelevated no-caps").classes("portal-admin-credentials-primary")
             dialog.open()
 
