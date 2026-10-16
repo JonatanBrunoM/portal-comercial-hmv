@@ -144,128 +144,148 @@ def open_particular_mv_dialog(
                 dialog.open()
                 return
 
-            with ui.column().classes("w-full gap-1"):
-                ui.label("Qual é a situação confirmada?").classes(
-                    "text-subtitle1 text-weight-bold"
-                ).style("color:#12374d")
-                ui.label("Selecione o resultado identificado no MV.").classes(
-                    "text-body2 text-grey-7"
-                )
-
-            if inferred_closure:
-                closure_label = (
-                    "Fechamento a maior"
-                    if normalized_closure_mode == "HIGHER"
-                    else "Fechamento a menor"
-                )
-                with ui.row().classes("w-full items-center gap-3 p-4 rounded-xl").style(
-                    "background:#e8f4ff;border:1px solid #a9d1f1"
+            # Conferências conclusivas ficam em leitura até edição explícita.
+            previous_outcome = str(latest.get("outcome") or "").upper()
+            previous_conclusive = previous_outcome in {"REALIZED", "NOT_PERFORMED", "CANCELLED"}
+            if previous_conclusive:
+                with ui.column().classes("w-full gap-2 p-3 rounded-xl").style(
+                    "background:#eaf5fc;border:1px solid #cce3f3"
                 ):
-                    ui.icon("verified", size="24px").style("color:#006eaa")
-                    ui.label(closure_label).classes("text-body1 text-weight-bold")
-                outcome = None
-            else:
-                outcome = ui.radio(
-                    options=OUTCOME_OPTIONS,
-                    value="PENDING",
-                ).classes("mv-outcome-cards w-full")
+                    ui.label("Conferência registrada").classes("text-body1 text-weight-bold text-primary")
+                    ui.label("Desfecho: " + OUTCOME_OPTIONS.get(previous_outcome, previous_outcome)
+                             + " · Valor: " + _money(latest.get("account_value"))).classes("text-body2")
+                    if latest.get("notes"):
+                        ui.label("Observação: " + str(latest.get("notes"))).classes("text-body2")
+                    ui.label("A conferência não equivale à resolução financeira da revisão.").classes("text-caption text-grey-7")
+            form_area = ui.column().classes("w-full gap-4")
+            if previous_conclusive:
+                form_area.set_visibility(False)
+                ui.button("Editar revisão", icon="edit",
+                          on_click=lambda: form_area.set_visibility(True)).props("outline no-caps color=primary")
 
-            with ui.grid(columns=2).classes("w-full gap-4 mv-fields-grid"):
-                with ui.column().classes("w-full min-w-0 gap-1"):
-                    ui.label("Valor da conta").classes(
-                        "text-body2 text-weight-medium"
-                    ).style("color:#173b53")
-                    account_value = ui.input(
-                        placeholder="Ex.: 4.989,60",
-                    ).props("outlined prefix=R$ bg-color=white").classes("w-full")
-                with ui.column().classes("w-full min-w-0 gap-1"):
-                    ui.label("Observação da conferência").classes(
-                        "text-body2 text-weight-medium"
-                    ).style("color:#173b53")
-                    notes = ui.textarea(
-                        placeholder="O que foi confirmado no MV?",
-                    ).props("outlined rows=1 bg-color=white").classes("w-full")
-
-            with ui.expansion("Dados de identificação", icon="badge").classes(
-                "w-full rounded-xl"
-            ).style("background:white;border:1px solid #dce8f2"):
-                with ui.row().classes("w-full p-3 gap-3 flex-wrap"):
-                    attendance = ui.input(
-                        label="Atendimento",
-                        value=prefill_attendance,
-                    ).props("outlined dense").classes("flex-1 min-w-[170px]")
-                    notice = ui.input(
-                        label="Aviso",
-                        value=prefill_notice,
-                    ).props("outlined dense").classes("flex-1 min-w-[170px]")
-
-            saving = False
-
-            async def save_check() -> None:
-                nonlocal saving
-                if saving:
-                    return
-
-                raw_amount = str(account_value.value or "").strip()
-                normalized_amount = None
-                if raw_amount:
-                    try:
-                        amount = Decimal(raw_amount.replace(".", "").replace(",", "."))
-                    except InvalidOperation:
-                        ui.notify("Informe um valor válido.", type="warning")
-                        return
-                    if not amount.is_finite() or amount < 0:
-                        ui.notify("O valor deve ser válido e não negativo.", type="warning")
-                        return
-                    normalized_amount = str(amount)
-
-                if inferred_closure and normalized_amount is None:
-                    ui.notify("Informe o valor final confirmado no MV.", type="warning")
-                    return
-
-                resolved_outcome = "REALIZED" if inferred_closure else str(outcome.value or "PENDING")
-
-                saving = True
-                save_button.disable()
-                try:
-                    check_id = await run.io_bound(
-                        register_particular_mv_check,
-                        access=access,
-                        budget_id=budget_id,
-                        outcome=resolved_outcome,
-                        notice_number=str(notice.value or "").strip() or None,
-                        attendance_number=str(attendance.value or "").strip() or None,
-                        account_value=normalized_amount,
-                        notes=str(notes.value or "").strip() or None,
+            with form_area:
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("Qual é a situação confirmada?").classes(
+                        "text-subtitle1 text-weight-bold"
+                    ).style("color:#12374d")
+                    ui.label("Selecione o resultado identificado no MV.").classes(
+                        "text-body2 text-grey-7"
                     )
-                except Exception:
-                    logger.exception("Falha ao registrar conferência MV.")
-                    saving = False
-                    save_button.enable()
-                    ui.notify("Não foi possível registrar a conclusão.", type="negative")
-                    return
 
-                ui.notify("Conclusão registrada.", type="positive")
-                dialog.close()
-                if on_saved:
-                    on_saved({
-                        "check_id": check_id,
-                        "outcome": resolved_outcome,
-                        "account_value": normalized_amount,
-                        "attendance_number": str(attendance.value or "").strip() or None,
-                        "notice_number": str(notice.value or "").strip() or None,
-                        "notes": str(notes.value or "").strip() or None,
-                    })
+                if inferred_closure:
+                    closure_label = (
+                        "Fechamento a maior"
+                        if normalized_closure_mode == "HIGHER"
+                        else "Fechamento a menor"
+                    )
+                    with ui.row().classes("w-full items-center gap-3 p-4 rounded-xl").style(
+                        "background:#e8f4ff;border:1px solid #a9d1f1"
+                    ):
+                        ui.icon("verified", size="24px").style("color:#006eaa")
+                        ui.label(closure_label).classes("text-body1 text-weight-bold")
+                    outcome = None
+                else:
+                    outcome = ui.radio(
+                        options=OUTCOME_OPTIONS,
+                        value="PENDING",
+                    ).classes("mv-outcome-cards w-full")
 
-            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap pt-3").style(
-                "border-top:1px solid #dbe6ef"
-            ):
-                ui.label("Registre somente informações confirmadas.").classes(
-                    "text-caption text-grey-7 flex-1"
-                )
-                save_button = ui.button(
-                    "Confirmar registro", icon="check_circle", on_click=save_check
-                ).props("unelevated no-caps color=primary size=lg").classes(
-                    "px-6 rounded-xl"
-                )
+                with ui.grid(columns=2).classes("w-full gap-4 mv-fields-grid"):
+                    with ui.column().classes("w-full min-w-0 gap-1"):
+                        ui.label("Valor da conta").classes(
+                            "text-body2 text-weight-medium"
+                        ).style("color:#173b53")
+                        account_value = ui.input(
+                            placeholder="Ex.: 4.989,60",
+                        ).props("outlined prefix=R$ bg-color=white").classes("w-full")
+                    with ui.column().classes("w-full min-w-0 gap-1"):
+                        ui.label("Observação da conferência").classes(
+                            "text-body2 text-weight-medium"
+                        ).style("color:#173b53")
+                        notes = ui.textarea(
+                            placeholder="O que foi confirmado no MV?",
+                        ).props("outlined rows=1 bg-color=white").classes("w-full")
+
+                with ui.expansion("Dados de identificação", icon="badge").classes(
+                    "w-full rounded-xl"
+                ).style("background:white;border:1px solid #dce8f2"):
+                    with ui.row().classes("w-full p-3 gap-3 flex-wrap"):
+                        attendance = ui.input(
+                            label="Atendimento",
+                            value=prefill_attendance,
+                        ).props("outlined dense").classes("flex-1 min-w-[170px]")
+                        notice = ui.input(
+                            label="Aviso",
+                            value=prefill_notice,
+                        ).props("outlined dense").classes("flex-1 min-w-[170px]")
+
+                saving = False
+
+                async def save_check() -> None:
+                    nonlocal saving
+                    if saving:
+                        return
+
+                    raw_amount = str(account_value.value or "").strip()
+                    normalized_amount = None
+                    if raw_amount:
+                        try:
+                            amount = Decimal(raw_amount.replace(".", "").replace(",", "."))
+                        except InvalidOperation:
+                            ui.notify("Informe um valor válido.", type="warning")
+                            return
+                        if not amount.is_finite() or amount < 0:
+                            ui.notify("O valor deve ser válido e não negativo.", type="warning")
+                            return
+                        normalized_amount = str(amount)
+
+                    if inferred_closure and normalized_amount is None:
+                        ui.notify("Informe o valor final confirmado no MV.", type="warning")
+                        return
+
+                    resolved_outcome = "REALIZED" if inferred_closure else str(outcome.value or "PENDING")
+
+                    saving = True
+                    save_button.disable()
+                    try:
+                        check_id = await run.io_bound(
+                            register_particular_mv_check,
+                            access=access,
+                            budget_id=budget_id,
+                            outcome=resolved_outcome,
+                            notice_number=str(notice.value or "").strip() or None,
+                            attendance_number=str(attendance.value or "").strip() or None,
+                            account_value=normalized_amount,
+                            notes=str(notes.value or "").strip() or None,
+                        )
+                    except Exception:
+                        logger.exception("Falha ao registrar conferência MV.")
+                        saving = False
+                        save_button.enable()
+                        ui.notify("Não foi possível registrar a conclusão.", type="negative")
+                        return
+
+                    ui.notify("Conclusão registrada.", type="positive")
+                    dialog.close()
+                    if on_saved:
+                        on_saved({
+                            "check_id": check_id,
+                            "outcome": resolved_outcome,
+                            "account_value": normalized_amount,
+                            "attendance_number": str(attendance.value or "").strip() or None,
+                            "notice_number": str(notice.value or "").strip() or None,
+                            "notes": str(notes.value or "").strip() or None,
+                        })
+
+                with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap pt-3").style(
+                    "border-top:1px solid #dbe6ef"
+                ):
+                    ui.label("Registre somente informações confirmadas.").classes(
+                        "text-caption text-grey-7 flex-1"
+                    )
+                    save_button = ui.button(
+                        "Confirmar registro", icon="check_circle", on_click=save_check
+                    ).props("unelevated no-caps color=primary size=lg").classes(
+                        "px-6 rounded-xl"
+                    )
     dialog.open()
