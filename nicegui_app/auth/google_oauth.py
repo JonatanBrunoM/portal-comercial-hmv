@@ -48,7 +48,7 @@ async def start_google_login(request: Request) -> RedirectResponse:
     if not google_oauth_is_configured():
         return RedirectResponse("/login?error=config", status_code=303)
 
-    logger.info("Iniciando autenticação Google. host=%s", request.url.hostname)
+    logger.info("Iniciando autenticação Google. host=%s session_keys=%s", request.url.hostname, sorted(request.session.keys()))
     return await oauth.google.authorize_redirect(
         request,
         _callback_url(),
@@ -59,6 +59,8 @@ async def start_google_login(request: Request) -> RedirectResponse:
 
 async def finish_google_login(request: Request) -> RedirectResponse:
     started = time.monotonic()
+    oauth_keys = sorted(key for key in request.session if key.startswith("_state_google_"))
+    logger.info("Callback Google: state_presente=%s estados_na_sessao=%d session_keys=%s", bool(request.query_params.get("state")), len(oauth_keys), sorted(key for key in request.session if not key.startswith("_state_google_")))
     try:
         token = await oauth.google.authorize_access_token(request)
         logger.info("OAuth Google: token recebido em %.2fs", time.monotonic() - started)
