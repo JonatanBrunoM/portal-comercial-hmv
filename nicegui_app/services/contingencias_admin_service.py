@@ -154,9 +154,6 @@ def save_contingencia(
     if not title:
         raise ValueError("Informe o título da contingência.")
 
-    if not description:
-        raise ValueError("Informe a descrição da contingência.")
-
     if priority not in {"Baixa", "Normal", "Alta", "Crítica"}:
         raise ValueError("Prioridade inválida.")
 
@@ -188,7 +185,7 @@ def save_contingencia(
         "plano_id": plan_id or None,
         "local_id": location_id or None,
         "titulo": title,
-        "descricao": description,
+        "descricao": description or None,
         "orientacao_alternativa": alternative_guidance.strip() or None,
         "contato_alternativo": alternative_contact.strip() or None,
         "prioridade": priority,
