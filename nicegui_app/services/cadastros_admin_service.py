@@ -122,15 +122,13 @@ def save_operadora(
 
     if not name:
         raise ValueError("Informe o nome da operadora.")
-    if not short_name:
-        raise ValueError("Informe o nome curto da operadora.")
     if status not in {"Ativo", "Inativo"}:
         raise ValueError("Status inválido.")
 
     payload = {
         "codigo": code or None,
         "nome": name,
-        "nome_curto": short_name,
+        "nome_curto": short_name or name,
         "status": status,
         "site_url": _validate_url(site_url),
         "observacoes": notes.strip() or None,
@@ -177,8 +175,6 @@ def save_plano(
         raise ValueError("Selecione a operadora.")
     if not name:
         raise ValueError("Informe o nome do plano.")
-    if not standardized_name:
-        raise ValueError("Informe o nome padronizado.")
     if status not in {"Ativo", "Inativo"}:
         raise ValueError("Status inválido.")
 
@@ -186,7 +182,7 @@ def save_plano(
         "operadora_id": operator_id,
         "codigo": code.strip() or None,
         "nome": name,
-        "nome_padronizado": standardized_name,
+        "nome_padronizado": standardized_name or name,
         "tipo_plano": plan_type.strip() or None,
         "observacao_resumida": summary.strip() or None,
         "status": status,
