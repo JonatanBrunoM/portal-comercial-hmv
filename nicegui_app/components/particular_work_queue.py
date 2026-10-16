@@ -9,6 +9,7 @@ from nicegui import run, ui
 
 from nicegui_app.components.particular_case_dossier import open_particular_case_dossier, _technical_label
 from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
+from nicegui_app.components.particular_account_resolution_dialog import open_account_resolution_dialog
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import list_particular_work_queue
 
@@ -376,6 +377,29 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         "Abrir análise completa", icon="open_in_new",
                         on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
                     ).props("outline no-caps color=primary").classes("flex-1")
+                    # A conferência MV já registrada pode fundamentar uma decisão
+                    # financeira, mas não a substitui. A resolução exige confirmação
+                    # explícita e usa a rotina auditável existente no banco.
+                    has_mv_evidence = (
+                        str(selected.get("mv_outcome") or "").upper() == "REALIZED"
+                        and selected.get("mv_account_value") is not None
+                    )
+                    needs_financial_decision = (
+                        str(selected.get("account_automation_status") or "").upper() == "REVIEW_REQUIRED"
+                        and group in REVIEW_GROUPS
+                    )
+                    if access.can_write and has_mv_evidence and needs_financial_decision:
+                        ui.button(
+                            "Concluir revisão financeira", icon="verified",
+                            on_click=lambda case=selected: open_account_resolution_dialog(
+                                access=access,
+                                budget_id=str(case.get("budget_id") or ""),
+                                budget_number=case.get("budget_number"),
+                                review_reason=str(case.get("account_review_reason") or ""),
+                                confirmed_final_value_prefill=str(case.get("mv_account_value") or ""),
+                                on_resolved=lambda: ui.timer(0.05, reload_after_resolution, once=True),
+                            ),
+                        ).props("unelevated no-caps color=positive").classes("flex-1")
                     if access.can_write and str(access.module_role).upper() == "MANAGER" and group in REVIEW_GROUPS:
                         ui.button(
                             "Registrar conclusão", icon="task_alt",
