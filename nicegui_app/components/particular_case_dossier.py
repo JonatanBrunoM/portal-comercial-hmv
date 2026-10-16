@@ -311,20 +311,24 @@ def open_particular_case_dossier(
         return
 
     ui.add_css("""
-    .dossier-conclusion {background:#f0f7fc;border:1px solid #d7e8f4;border-radius:12px;padding:10px 12px}
+    .dossier-conclusion {background:transparent;border:0;border-radius:0;padding:0}
     .dossier-outcome-cards.q-option-group {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
-    .dossier-outcome-cards .q-radio {min-width:0;min-height:53px;display:flex;align-items:center;justify-content:center;
-      gap:5px;margin:0!important;padding:7px 4px;border:1px solid #d3e4f1;border-radius:10px;background:white}
+    .dossier-outcome-cards .q-radio {min-width:0;min-height:38px;display:flex;align-items:center;justify-content:center;
+      gap:4px;margin:0!important;padding:3px 4px;border:1px solid #d3e4f1;border-radius:10px;background:white}
     .dossier-outcome-cards .q-radio:has(.q-radio__inner--truthy) {background:#e0f1fc;border-color:#178bcd}
     .dossier-outcome-cards .q-radio__label {font-size:12px;font-weight:650;color:#173b53}
     .dossier-input .q-field__control {background:white;border-radius:9px}
+    .dossier-metadata {font-size:11px}
+    .dossier-metadata .text-body2 {font-size:12px;line-height:1.2}
+    .dossier-conclusion .q-field--dense .q-field__control {min-height:36px;height:36px}
+    .dossier-conclusion .q-btn {min-height:34px}
     @media(max-width:650px) {.dossier-outcome-cards.q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
       .dossier-inputs {flex-wrap:wrap!important}.dossier-inputs>.dossier-input {width:100%!important;flex:1 0 100%}}
     """)
-    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2; display:flex; flex-direction:column; height:min(720px,86vh)"):
+    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:0; display:flex; flex-direction:column; height:min(790px,91vh)"):
         header = ui.column().classes("w-full px-6 py-2 gap-0 shrink-0").style("background:linear-gradient(110deg,#03466f 0%,#0077ad 100%); border-bottom:1px solid #086b9e")
         body = ui.column().classes("w-full px-6 py-3 gap-2").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
-        footer = ui.column().classes("w-full px-6 py-2 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3; box-shadow:0 -5px 18px rgba(20,52,73,.07)")
+        footer = ui.column().classes("w-full px-5 py-2 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3")
     dialog.open()
 
     async def load() -> None:
@@ -652,8 +656,8 @@ def open_particular_case_dossier(
 
         footer.clear()
         with footer:
-            with ui.column().classes("w-full gap-2"):
-                with ui.row().classes("w-full items-center gap-5 flex-wrap"):
+            with ui.column().classes("w-full gap-1"):
+                with ui.row().classes("w-full items-center gap-5 flex-wrap dossier-metadata"):
                     with ui.column().classes("gap-0"):
                         ui.label("REFERÊNCIA").classes("text-caption text-grey-6")
                         ui.label(_money(row.get("reference_budget_value") or row.get("original_value"))).classes("text-body2 text-weight-bold")
@@ -663,7 +667,7 @@ def open_particular_case_dossier(
                     with ui.column().classes("gap-0"):
                         ui.label("DATA OBSERVADA").classes("text-caption text-grey-6")
                         ui.label(_date(row.get("last_observed_operational_date"))).classes("text-body2 text-weight-bold")
-                with ui.column().classes("w-full gap-2"):
+                with ui.column().classes("w-full gap-1"):
                     review_reason = effective_review_reason
 
                     def finish_case() -> None:
@@ -764,8 +768,8 @@ def open_particular_case_dossier(
                             ).props("unelevated no-caps color=primary")
                         else:
                             inferred_closure = review_reason == "VALIDAR_VALOR_FINAL" and closure_mode in {"HIGHER", "LOWER"}
-                            with ui.column().classes("w-full gap-2 dossier-conclusion"):
-                                ui.label("REGISTRAR CONCLUSÃO NO MV").classes("text-caption text-weight-bold text-primary")
+                            with ui.column().classes("w-full gap-1 dossier-conclusion"):
+                                ui.label("CONCLUSÃO NO MV").classes("text-caption text-weight-bold text-primary")
                                 if inferred_closure:
                                     ui.badge(
                                         "Fechamento a maior" if closure_mode == "HIGHER"
@@ -778,7 +782,7 @@ def open_particular_case_dossier(
                                          "NOT_PERFORMED": "Não realizado", "CANCELLED": "Cancelado"},
                                         value="PENDING",
                                     ).classes("dossier-outcome-cards w-full")
-                                with ui.row().classes("w-full gap-3 items-start no-wrap dossier-inputs"):
+                                with ui.row().classes("w-full gap-2 items-start no-wrap dossier-inputs"):
                                     amount_input = ui.input(
                                         "Valor confirmado (R$)", placeholder="Ex.: 4.989,60"
                                     ).props("outlined dense").classes("w-1/3 dossier-input")
