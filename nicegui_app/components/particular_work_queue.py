@@ -401,17 +401,33 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                             ),
                         ).props("unelevated no-caps color=positive").classes("flex-1")
                     if access.can_write and str(access.module_role).upper() == "MANAGER" and group in REVIEW_GROUPS:
-                        ui.button(
-                            "Registrar conclusão", icon="task_alt",
-                            on_click=lambda case=selected: open_particular_mv_dialog(
-                                access=access,
-                                budget_id=str(case.get("budget_id") or ""),
-                                attendance_number=str(case.get("attendance_number") or "") or None,
-                                review_reason=str(case.get("account_review_reason") or case.get("work_reason") or ""),
-                                closure_mode=str(case.get("closure_mode") or "") or None,
-                                on_saved=lambda _: ui.timer(0.05, reload_after_resolution, once=True),
-                            ),
-                        ).props("unelevated no-caps color=primary").classes("flex-1")
+                        if str(selected.get("account_review_reason") or "").upper() == "COMPOSICAO_DIVERGENTE":
+                            ui.button(
+                                "Concluir composição", icon="task_alt",
+                                on_click=lambda case=selected: open_account_resolution_dialog(
+                                    access=access,
+                                    budget_id=str(case.get("budget_id") or ""),
+                                    budget_number=case.get("budget_number"),
+                                    review_reason="COMPOSICAO_DIVERGENTE",
+                                    confirmed_final_value_prefill=(
+                                        str(case.get("mv_account_value"))
+                                        if case.get("mv_account_value") is not None else None
+                                    ),
+                                    on_resolved=lambda: ui.timer(0.05, reload_after_resolution, once=True),
+                                ),
+                            ).props("unelevated no-caps color=primary").classes("flex-1")
+                        else:
+                            ui.button(
+                                "Registrar conclusão", icon="task_alt",
+                                on_click=lambda case=selected: open_particular_mv_dialog(
+                                    access=access,
+                                    budget_id=str(case.get("budget_id") or ""),
+                                    attendance_number=str(case.get("attendance_number") or "") or None,
+                                    review_reason=str(case.get("account_review_reason") or case.get("work_reason") or ""),
+                                    closure_mode=str(case.get("closure_mode") or "") or None,
+                                    on_saved=lambda _: ui.timer(0.05, reload_after_resolution, once=True),
+                                ),
+                            ).props("unelevated no-caps color=primary").classes("flex-1")
 
     def refresh() -> None:
         state["search"] = str(search.value or "").strip()
