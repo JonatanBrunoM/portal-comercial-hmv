@@ -408,6 +408,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                                 budget_id=str(case.get("budget_id") or ""),
                                 attendance_number=str(case.get("attendance_number") or "") or None,
                                 review_reason=str(case.get("account_review_reason") or case.get("work_reason") or ""),
+                                closure_mode=str(case.get("closure_mode") or "") or None,
                                 on_saved=lambda _: ui.timer(0.05, reload_after_resolution, once=True),
                             ),
                         ).props("unelevated no-caps color=primary").classes("flex-1")
