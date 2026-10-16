@@ -65,68 +65,103 @@ def open_particular_mv_dialog(
     normalized_closure_mode = str(closure_mode or "").strip().upper()
     inferred_closure = normalized_reason == "VALIDAR_VALOR_FINAL" and normalized_closure_mode in {"HIGHER", "LOWER"}
 
-    with ui.dialog() as dialog, ui.card().classes("w-full max-w-[650px] p-0"):
-        with ui.row().classes("w-full items-start justify-between px-5 py-4"):
-            with ui.column().classes("gap-0"):
-                ui.label("REGISTRAR CONCLUSÃO").classes("text-caption text-weight-bold text-primary")
-                ui.label(f'Orçamento #{_text(budget.get("budget_number"))}').classes("text-h6 text-weight-bold")
-                if prefill_attendance:
-                    ui.label(f"Atendimento {prefill_attendance}").classes("text-body2 text-grey-7")
-            ui.button(icon="close", on_click=dialog.close).props("flat round")
-        ui.separator()
-
-        with ui.column().classes("w-full p-5 gap-4"):
-            if latest:
-                with ui.element("div").classes("w-full bg-grey-2 rounded p-3"):
-                    ui.label("Último registro").classes("text-caption text-grey-6")
-                    ui.label(OUTCOME_OPTIONS.get(str(latest.get("outcome")), _text(latest.get("outcome")))).classes(
-                        "text-body2 text-weight-bold"
+    with ui.dialog() as dialog, ui.card().classes(
+        "w-full max-w-[600px] p-0 gap-0 overflow-hidden"
+    ).style("border-radius:18px; box-shadow:0 24px 80px rgba(9,38,60,.20)"):
+        with ui.column().classes("w-full px-6 pt-5 pb-4 gap-2").style(
+            "background:linear-gradient(120deg,#f5faff,#fff);border-bottom:1px solid #e3ebf2"
+        ):
+            with ui.row().classes("w-full items-start justify-between no-wrap"):
+                with ui.column().classes("gap-1"):
+                    ui.label("CENTRAL DE INTELIGÊNCIA  /  REGISTRO RÁPIDO").classes(
+                        "text-caption text-weight-bold text-primary"
                     )
+                    ui.label(f'Orçamento #{_text(budget.get("budget_number"))}').classes(
+                        "text-h5 text-weight-bold"
+                    ).style("color:#12374d")
+                ui.button(icon="close", on_click=dialog.close).props(
+                    "flat round dense color=grey-7"
+                )
+            with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                if prefill_attendance:
+                    ui.badge(f"Atendimento {prefill_attendance}").props(
+                        "outline color=primary"
+                    )
+                if prefill_notice:
+                    ui.badge(f"Aviso {prefill_notice}").props("outline color=primary")
+
+        with ui.column().classes("w-full px-6 py-5 gap-4"):
+            if latest:
+                with ui.row().classes("w-full items-center gap-3 px-3 py-2 rounded-lg").style(
+                    "background:#f0f6fb;border:1px solid #e0ebf5"
+                ):
+                    ui.icon("history", size="19px").classes("text-primary")
+                    with ui.column().classes("gap-0 flex-1"):
+                        ui.label("Última conferência").classes("text-caption text-grey-7")
+                        ui.label(
+                            OUTCOME_OPTIONS.get(
+                                str(latest.get("outcome")),
+                                _text(latest.get("outcome")),
+                            )
+                        ).classes("text-body2 text-weight-bold")
                     if latest.get("account_value") is not None:
-                        ui.label(f'Valor registrado: {_money(latest.get("account_value"))}').classes("text-caption text-grey-7")
+                        ui.label(_money(latest.get("account_value"))).classes(
+                            "text-body2 text-weight-bold"
+                        )
 
             if not can_register:
-                ui.label("O registro da conclusão é restrito aos gestores.").classes("text-body2 text-grey-7")
+                ui.label("O registro da conclusão é restrito aos gestores.").classes(
+                    "text-body2 text-grey-7"
+                )
                 with ui.row().classes("w-full justify-end"):
                     ui.button("Fechar", on_click=dialog.close).props("flat no-caps")
                 dialog.open()
                 return
 
+            ui.label("DESFECHO DA CONFERÊNCIA").classes(
+                "text-caption text-weight-bold text-primary"
+            )
             if inferred_closure:
-                closure_label = "Fechamento a maior" if normalized_closure_mode == "HIGHER" else "Fechamento a menor"
-                ui.label("Confirme somente a informação que falta").classes("text-subtitle1 text-weight-bold")
-                with ui.element("div").classes("w-full rounded-lg bg-blue-50 px-4 py-3"):
-                    ui.label("Desfecho já identificado pelo sistema").classes("text-caption text-grey-6")
+                closure_label = (
+                    "Fechamento a maior"
+                    if normalized_closure_mode == "HIGHER"
+                    else "Fechamento a menor"
+                )
+                with ui.row().classes("w-full items-center gap-2 px-3 py-3 rounded-lg").style(
+                    "background:#edf7ff;border:1px solid #d7e9f7"
+                ):
+                    ui.icon("verified", size="20px").classes("text-primary")
                     ui.label(closure_label).classes("text-body1 text-weight-bold")
                 outcome = None
             else:
-                ui.label("Qual foi o desfecho confirmado no MV?").classes("text-subtitle1 text-weight-bold")
                 outcome = ui.select(
                     options=OUTCOME_OPTIONS,
-                    label="Desfecho confirmado",
+                    label="Desfecho confirmado no MV",
                     value="PENDING",
                 ).props("outlined dense").classes("w-full")
 
             account_value = ui.input(
-                label="Valor final confirmado no MV" if inferred_closure else "Valor da conta",
+                label="Valor final confirmado no MV" if inferred_closure else "Valor da conta (se confirmado)",
                 placeholder="Ex.: 4989,60",
             ).props("outlined dense prefix=R$").classes("w-full")
 
             notes = ui.textarea(
-                label="Observação",
-                placeholder="Registre somente o necessário para sustentar a conclusão.",
-            ).props("outlined autogrow").classes("w-full")
+                label="Observação da conferência",
+                placeholder="Descreva brevemente a evidência que sustenta o registro.",
+            ).props("outlined autogrow rows=2").classes("w-full")
 
-            with ui.expansion("Identificação", icon="tag").classes("w-full border rounded-lg"):
-                with ui.column().classes("w-full p-3 gap-3"):
+            with ui.expansion("Conferir identificação", icon="badge").classes(
+                "w-full rounded-lg"
+            ).style("border:1px solid #e0e9f2"):
+                with ui.row().classes("w-full p-3 gap-3 flex-wrap"):
                     attendance = ui.input(
                         label="Atendimento",
                         value=prefill_attendance,
-                    ).props("outlined dense").classes("w-full")
+                    ).props("outlined dense").classes("flex-1 min-w-[170px]")
                     notice = ui.input(
                         label="Aviso",
                         value=prefill_notice,
-                    ).props("outlined dense").classes("w-full")
+                    ).props("outlined dense").classes("flex-1 min-w-[170px]")
 
             saving = False
 
@@ -186,11 +221,12 @@ def open_particular_mv_dialog(
                         "notes": str(notes.value or "").strip() or None,
                     })
 
-            with ui.row().classes("w-full items-center justify-between gap-2"):
-                ui.label("Um único registro alimenta a decisão do caso e mantém a trilha de auditoria.").classes(
-                    "text-caption text-grey-6"
+            ui.separator().classes("mt-1")
+            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+                ui.label("Registro auditável. Confirme apenas informações verificadas no MV.").classes(
+                    "text-caption text-grey-7 flex-1"
                 )
                 save_button = ui.button(
                     "Registrar conclusão", icon="task_alt", on_click=save_check
-                ).props("unelevated no-caps")
+                ).props("unelevated no-caps color=primary").classes("px-5")
     dialog.open()
