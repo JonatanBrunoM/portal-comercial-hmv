@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.contingencias_admin_service import (
@@ -352,9 +353,9 @@ def _open_dialog(
         with ui.row().classes("portal-admin-contingencies-dialog-actions"):
             ui.button("Cancelar", on_click=dialog.close).props("flat no-caps")
             ui.button(
-                "Salvar contingência",
-                icon="check",
-                on_click=save,
+                "Revisar e salvar",
+                icon="fact_check",
+                on_click=lambda: _review_before_save("Revisar contingência", [("Código", code.value), ("Operadora", operators.get(operator.value, "Não informada")), ("Plano", plans.get(plan.value, {}).get("name", "Não informado") if plan.value else "Não informado"), ("Local", locations.get(location.value, "Não informado")), ("Título", title.value), ("Descrição", description.value), ("Orientação alternativa", alternative_guidance.value), ("Contato alternativo", alternative_contact.value), ("Prioridade", priority.value), ("Início", start_date.value), ("Fim", end_date.value), ("Status", status.value)], save),
             ).props("unelevated no-caps").classes(
                 "portal-admin-contingencies-primary"
             )
