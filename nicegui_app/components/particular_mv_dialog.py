@@ -65,48 +65,74 @@ def open_particular_mv_dialog(
     normalized_closure_mode = str(closure_mode or "").strip().upper()
     inferred_closure = normalized_reason == "VALIDAR_VALOR_FINAL" and normalized_closure_mode in {"HIGHER", "LOWER"}
 
+    ui.add_css("""
+    .mv-outcome-cards .q-option-group {
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;
+    }
+    .mv-outcome-cards .q-radio {
+        min-height:86px;display:flex;flex-direction:column;justify-content:center;
+        gap:7px;margin:0!important;padding:12px 6px;border:1px solid #dbe6ef;
+        border-radius:14px;background:white;transition:all .16s ease;
+        box-shadow:0 3px 12px rgba(20,54,76,.04);
+    }
+    .mv-outcome-cards .q-radio:has(.q-radio__inner--truthy) {
+        background:#e7f4ff;border-color:#1985ca;
+        box-shadow:0 0 0 2px rgba(25,133,202,.12);
+    }
+    .mv-outcome-cards .q-radio__label {
+        font-weight:650;font-size:13px;color:#173b53;text-align:center;padding:0;
+    }
+    @media(max-width:600px) {
+        .mv-outcome-cards .q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    """)
+    # Layout orientado à decisão: cartões selecionáveis substituem o dropdown.
     with ui.dialog() as dialog, ui.card().classes(
-        "w-full max-w-[600px] p-0 gap-0 overflow-hidden"
-    ).style("border-radius:18px; box-shadow:0 24px 80px rgba(9,38,60,.20)"):
-        with ui.column().classes("w-full px-6 pt-5 pb-4 gap-2").style(
-            "background:linear-gradient(120deg,#f5faff,#fff);border-bottom:1px solid #e3ebf2"
+        "w-full max-w-[720px] p-0 gap-0 overflow-hidden"
+    ).style("border-radius:24px; box-shadow:0 32px 90px rgba(6,32,54,.28)"):
+        with ui.column().classes("w-full px-7 pt-6 pb-5 gap-3").style(
+            "background:linear-gradient(120deg,#073a60,#006eaa);color:white"
         ):
             with ui.row().classes("w-full items-start justify-between no-wrap"):
                 with ui.column().classes("gap-1"):
-                    ui.label("CENTRAL DE INTELIGÊNCIA  /  REGISTRO RÁPIDO").classes(
-                        "text-caption text-weight-bold text-primary"
-                    )
+                    ui.label("COMERCIAL PARTICULAR  /  CONCLUSÃO RÁPIDA").classes(
+                        "text-caption text-weight-bold"
+                    ).style("color:#b8e4ff;letter-spacing:.09em")
                     ui.label(f'Orçamento #{_text(budget.get("budget_number"))}').classes(
                         "text-h5 text-weight-bold"
-                    ).style("color:#12374d")
+                    ).style("color:white")
+                    ui.label("Registre o resultado verificado no sistema MV").classes(
+                        "text-body2"
+                    ).style("color:#d9efff")
                 ui.button(icon="close", on_click=dialog.close).props(
-                    "flat round dense color=grey-7"
+                    "flat round dense text-color=white"
                 )
             with ui.row().classes("w-full items-center gap-2 flex-wrap"):
                 if prefill_attendance:
-                    ui.badge(f"Atendimento {prefill_attendance}").props(
-                        "outline color=primary"
-                    )
+                    ui.label(f"Atendimento {prefill_attendance}").classes(
+                        "px-3 py-1 rounded-full text-caption"
+                    ).style("background:rgba(255,255,255,.15);color:white")
                 if prefill_notice:
-                    ui.badge(f"Aviso {prefill_notice}").props("outline color=primary")
+                    ui.label(f"Aviso {prefill_notice}").classes(
+                        "px-3 py-1 rounded-full text-caption"
+                    ).style("background:rgba(255,255,255,.15);color:white")
 
-        with ui.column().classes("w-full px-6 py-5 gap-4"):
+        with ui.column().classes("w-full px-7 py-6 gap-5").style("background:#f7fafc"):
             if latest:
-                with ui.row().classes("w-full items-center gap-3 px-3 py-2 rounded-lg").style(
-                    "background:#f0f6fb;border:1px solid #e0ebf5"
+                with ui.row().classes("w-full items-center gap-3 px-4 py-3 rounded-xl").style(
+                    "background:#eaf3fa;border:1px solid #d6e6f3"
                 ):
-                    ui.icon("history", size="19px").classes("text-primary")
-                    with ui.column().classes("gap-0 flex-1"):
-                        ui.label("Última conferência").classes("text-caption text-grey-7")
-                        ui.label(
-                            OUTCOME_OPTIONS.get(
-                                str(latest.get("outcome")),
-                                _text(latest.get("outcome")),
-                            )
-                        ).classes("text-body2 text-weight-bold")
+                    ui.icon("history", size="20px").style("color:#2676ad")
+                    ui.label("Último registro:").classes("text-body2 text-grey-7")
+                    ui.label(
+                        OUTCOME_OPTIONS.get(
+                            str(latest.get("outcome")),
+                            _text(latest.get("outcome")),
+                        )
+                    ).classes("text-body2 text-weight-bold")
                     if latest.get("account_value") is not None:
                         ui.label(_money(latest.get("account_value"))).classes(
-                            "text-body2 text-weight-bold"
+                            "text-body2 text-weight-bold ml-auto"
                         )
 
             if not can_register:
@@ -118,41 +144,51 @@ def open_particular_mv_dialog(
                 dialog.open()
                 return
 
-            ui.label("DESFECHO DA CONFERÊNCIA").classes(
-                "text-caption text-weight-bold text-primary"
-            )
+            with ui.column().classes("w-full gap-1"):
+                ui.label("Qual é a situação confirmada?").classes(
+                    "text-subtitle1 text-weight-bold"
+                ).style("color:#12374d")
+                ui.label("Selecione o resultado identificado no MV.").classes(
+                    "text-body2 text-grey-7"
+                )
+
             if inferred_closure:
                 closure_label = (
                     "Fechamento a maior"
                     if normalized_closure_mode == "HIGHER"
                     else "Fechamento a menor"
                 )
-                with ui.row().classes("w-full items-center gap-2 px-3 py-3 rounded-lg").style(
-                    "background:#edf7ff;border:1px solid #d7e9f7"
+                with ui.row().classes("w-full items-center gap-3 p-4 rounded-xl").style(
+                    "background:#e8f4ff;border:1px solid #a9d1f1"
                 ):
-                    ui.icon("verified", size="20px").classes("text-primary")
+                    ui.icon("verified", size="24px").style("color:#006eaa")
                     ui.label(closure_label).classes("text-body1 text-weight-bold")
                 outcome = None
             else:
-                outcome = ui.select(
+                outcome = ui.radio(
                     options=OUTCOME_OPTIONS,
-                    label="Desfecho confirmado no MV",
                     value="PENDING",
-                ).props("outlined dense").classes("w-full")
+                ).props("inline").classes("mv-outcome-cards w-full")
 
-            account_value = ui.input(
-                label="Valor final confirmado no MV" if inferred_closure else "Valor da conta (se confirmado)",
-                placeholder="Ex.: 4989,60",
-            ).props("outlined dense prefix=R$").classes("w-full")
+            with ui.row().classes("w-full items-start gap-4 flex-wrap"):
+                with ui.column().classes("flex-1 min-w-[220px] gap-1"):
+                    ui.label("Valor da conta").classes(
+                        "text-body2 text-weight-medium"
+                    ).style("color:#173b53")
+                    account_value = ui.input(
+                        placeholder="Ex.: 4.989,60",
+                    ).props("outlined prefix=R$ bg-color=white").classes("w-full")
+                with ui.column().classes("flex-[2] min-w-[260px] gap-1"):
+                    ui.label("Observação da conferência").classes(
+                        "text-body2 text-weight-medium"
+                    ).style("color:#173b53")
+                    notes = ui.textarea(
+                        placeholder="O que foi confirmado no MV?",
+                    ).props("outlined rows=2 bg-color=white").classes("w-full")
 
-            notes = ui.textarea(
-                label="Observação da conferência",
-                placeholder="Descreva brevemente a evidência que sustenta o registro.",
-            ).props("outlined autogrow rows=2").classes("w-full")
-
-            with ui.expansion("Conferir identificação", icon="badge").classes(
-                "w-full rounded-lg"
-            ).style("border:1px solid #e0e9f2"):
+            with ui.expansion("Dados de identificação", icon="badge").classes(
+                "w-full rounded-xl"
+            ).style("background:white;border:1px solid #dce8f2"):
                 with ui.row().classes("w-full p-3 gap-3 flex-wrap"):
                     attendance = ui.input(
                         label="Atendimento",
@@ -221,12 +257,15 @@ def open_particular_mv_dialog(
                         "notes": str(notes.value or "").strip() or None,
                     })
 
-            ui.separator().classes("mt-1")
-            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-                ui.label("Registro auditável. Confirme apenas informações verificadas no MV.").classes(
+            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap pt-3").style(
+                "border-top:1px solid #dbe6ef"
+            ):
+                ui.label("Registre somente informações confirmadas.").classes(
                     "text-caption text-grey-7 flex-1"
                 )
                 save_button = ui.button(
-                    "Registrar conclusão", icon="task_alt", on_click=save_check
-                ).props("unelevated no-caps color=primary").classes("px-5")
+                    "Confirmar registro", icon="check_circle", on_click=save_check
+                ).props("unelevated no-caps color=primary size=lg").classes(
+                    "px-6 rounded-xl"
+                )
     dialog.open()
