@@ -101,7 +101,9 @@ def render_login(error: str | None = None) -> None:
                             "ser configuradas no Render."
                         )
 
-                with ui.link(target="/auth/google/login").classes(
+                with ui.button(
+                    on_click=lambda: ui.run_javascript('window.location.assign("/auth/google/login")'),
+                ).props("flat no-caps").classes(
                     "portal-google-login-link"
                 ):
                     with ui.element("div").classes("portal-google-login-button"):
