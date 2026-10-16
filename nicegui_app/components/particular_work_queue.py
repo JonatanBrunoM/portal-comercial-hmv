@@ -472,6 +472,9 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         render_rows()
 
     def open_case(budget_id: str) -> None:
+        # A lista pode estar rolada até o fim; posicionar a página no topo
+        # antes de exibir a análise, sem alterar a posição interna do modal.
+        ui.run_javascript("window.scrollTo({top: 0, behavior: 'instant'})")
         open_particular_case_dossier(
             access=access,
             budget_id=budget_id,
