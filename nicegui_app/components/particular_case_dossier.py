@@ -197,7 +197,7 @@ def open_particular_case_dossier(
     with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-full max-w-[1040px] p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:1px solid #e2eaf2"):
         header = ui.column().classes("w-full px-7 py-5 gap-1").style("background:linear-gradient(110deg,#f1f7fc 0%,#fff 75%)")
         ui.separator()
-        body = ui.column().classes("w-full px-7 py-5 gap-4").style("max-height: 73vh; overflow-y:auto; background:#f7f9fc")
+        body = ui.column().classes("w-full px-7 py-4 gap-3").style("height:min(70vh,720px); overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
     dialog.open()
 
     async def load() -> None:
@@ -254,7 +254,7 @@ def open_particular_case_dossier(
 
         body.clear()
         with body:
-            with ui.card().classes("w-full p-5 shadow-none rounded-xl").style("border:1px solid #cfe0f0; border-left:4px solid #4f94cc; background:#fff"):
+            with ui.card().classes("w-full p-4 shadow-none rounded-xl").style("border:1px solid #cfe0f0; border-left:4px solid #4f94cc; background:#fff"):
                 with ui.row().classes("w-full gap-4 items-center no-wrap"):
                     with ui.element("div").classes("rounded-full bg-red-50 p-3" if needs_review else "rounded-full bg-blue-50 p-3"):
                         ui.icon("priority_high" if needs_review else "check_circle", size="28px").classes("text-primary")
@@ -308,7 +308,7 @@ def open_particular_case_dossier(
                     "Valide o desfecho operacional antes de concluir.",
                 )
             if steps:
-                with ui.card().classes("w-full p-4 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
+                with ui.card().classes("w-full p-3 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
                     with ui.row().classes("items-center gap-2"):
                         ui.icon("route", size="20px").classes("text-primary")
                         ui.label("Roteiro de conferência").classes(
@@ -325,7 +325,7 @@ def open_particular_case_dossier(
 
             # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
             # A ausência de registros nesta consulta não comprova ausência na origem.
-            with ui.card().classes("w-full p-4 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
+            with ui.expansion("Fontes identificadas · " + str(len(occurrences) + len(events) + len(evolutions)) + " registros", icon="dataset").classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
                 ui.label("Fontes identificadas").classes("text-subtitle1 text-weight-bold")
                 ui.label(
                     "Registros vinculados a este orçamento nas fontes consultadas."
@@ -614,7 +614,7 @@ def open_particular_case_dossier(
                     ui.label("Data operacional observada").classes("text-caption text-grey-6")
                     ui.label(_date(row.get("last_observed_operational_date"))).classes("text-subtitle1 text-weight-bold")
 
-            with ui.row().classes("w-full gap-2 flex-wrap items-center px-4 py-3 rounded-xl").style("background:#fff; border:1px solid #dce8f3"):
+            with ui.row().classes("w-full gap-2 flex-wrap items-center px-4 py-3 rounded-xl").style("background:#fff; border:1px solid #dce8f3; position:sticky; bottom:0; z-index:5; box-shadow:0 -5px 18px rgba(20,52,73,.10)"):
                 review_reason = effective_review_reason
 
                 def finish_case() -> None:
@@ -728,17 +728,11 @@ def open_particular_case_dossier(
                     ui.button(
                         "Registrar conclusão", icon="task_alt",
                         on_click=open_conclusion,
-                    ).props("unelevated no-caps")
+                    ).props("unelevated no-caps color=primary").classes("px-4")
 
             ui.label(
-                "As decisões registradas preservam o histórico e as evidências vinculadas."
-            ).classes("text-caption text-grey-6")
-
-            ui.separator()
-            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-                ui.label(
-                    "Quando a fonte é ambígua, o motor sinaliza revisão em vez de presumir o desfecho."
-                ).classes("text-caption text-grey-7")
-                ui.button("Fechar", on_click=dialog.close).props("flat no-caps")
+                "A conclusão exige validação das evidências; dados não confirmados "
+                "permanecem sinalizados para revisão."
+            ).classes("text-caption text-grey-7 px-1")
 
     ui.timer(0.05, load, once=True)
