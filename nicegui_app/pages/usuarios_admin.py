@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nicegui import ui
+from nicegui_app.pages.cadastros_admin import _review_before_save
 
 from nicegui_app.layout import portal_layout
 from nicegui_app.services.usuarios_admin_service import (
@@ -184,9 +185,9 @@ def render_admin_usuarios(user: dict) -> None:
                         on_click=dialog.close,
                     ).props("flat no-caps").classes("portal-admin-user-dialog-cancel")
                     ui.button(
-                        "Salvar alterações",
-                        icon="check",
-                        on_click=save,
+                        "Revisar e salvar",
+                        icon="fact_check",
+                        on_click=lambda: _review_before_save("Revisar permissões", [("Perfil geral", "Administrador" if role.value == "admin" else "Usuário"), ("Status", status.value), ("Acesso ao Particular", "Permitido" if particular_enabled.value else "Não permitido"), ("Perfil no Particular", "Gestor" if particular_role.value == "MANAGER" else "Operador" if particular_enabled.value else "Não se aplica")], save),
                     ).props("unelevated no-caps").classes("portal-admin-user-dialog-save")
 
             dialog.open()
