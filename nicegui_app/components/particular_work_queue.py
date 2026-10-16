@@ -472,6 +472,8 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         render_rows()
 
     def open_case(budget_id: str) -> None:
+        ui.notify(f"Diagnóstico: clique recebido para o orçamento {budget_id[:8]}.", type="info", timeout=5000)
+        logger.info("Diagnóstico da fila: abrindo análise do orçamento %s", budget_id)
         open_particular_case_dossier(
             access=access,
             budget_id=budget_id,
