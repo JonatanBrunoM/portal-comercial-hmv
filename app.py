@@ -1,5 +1,7 @@
 import logging
 import os
+import time
+import threading
 from pathlib import Path
 
 from fastapi import Request
@@ -305,22 +307,38 @@ def _build_portal_routes(user: dict) -> dict[str, object]:
     }
 
 
+# Cache breve apenas da visibilidade do atalho. A autorização real do
+# módulo Particular continua sendo validada no serviço a cada operação.
+_PARTICULAR_MENU_TTL = 90.0
+_particular_menu_cache: dict[str, tuple[float, bool]] = {}
+_particular_menu_lock = threading.Lock()
+
+
 def _can_show_particular(user: dict) -> bool:
     profile_id = str(user.get("profile_id") or "").strip()
     if not profile_id:
         return False
 
-    try:
-        context = get_access_context(
-            actor_profile_id=profile_id,
-        )
-    except Exception:
-        logger.exception(
-            "Falha ao verificar acesso ao módulo Particular."
-        )
-        return False
+    now = time.monotonic()
+    with _particular_menu_lock:
+        cached = _particular_menu_cache.get(profile_id)
+        if cached and cached[0] > now:
+            return cached[1]
 
-    return context.get("can_read") is True
+    try:
+        context = get_access_context(actor_profile_id=profile_id)
+        allowed = context.get("can_read") is True
+    except Exception:
+        logger.exception("Falha ao verificar acesso ao módulo Particular.")
+        return False  # Falhas não são armazenadas em cache.
+
+    with _particular_menu_lock:
+        _particular_menu_cache[profile_id] = (
+            time.monotonic() + _PARTICULAR_MENU_TTL,
+            allowed,
+        )
+    return allowed
+
 
 @ui.page("/")
 @ui.page("/{_:path}")
