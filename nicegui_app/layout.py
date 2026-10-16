@@ -227,7 +227,7 @@ def _desktop_sidebar(
                     ui.label(name).classes("portal-profile-name")
                     ui.label(role).classes("portal-profile-role")
 
-                with ui.link(target="/logout").classes("portal-logout-link"):
+                with ui.button(on_click=lambda: ui.run_javascript('window.location.assign("/logout")')).props("flat no-caps").classes("portal-logout-link"):
                     ui.icon("logout").classes("portal-profile-more")
 
 
@@ -298,7 +298,7 @@ def _topbar(user: dict, navigation: PortalNavigationState) -> None:
 
                 ui.separator().classes("portal-user-menu-separator")
 
-                with ui.link(target="/logout").classes("portal-user-menu-action"):
+                with ui.button(on_click=lambda: ui.run_javascript('window.location.assign("/logout")')).props("flat no-caps").classes("portal-user-menu-action"):
                     ui.icon("logout")
                     ui.label("Sair da conta")
 
