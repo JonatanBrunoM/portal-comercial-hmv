@@ -9,6 +9,7 @@ from nicegui import run, ui
 from nicegui_app.services.particular_service import (
     get_particular_mv_check_context,
     register_particular_mv_check,
+    resolve_particular_account_review,
 )
 
 logger = logging.getLogger(__name__)
@@ -239,6 +240,10 @@ def open_particular_mv_dialog(
                             return
                         normalized_amount = str(amount)
 
+                    if inferred_closure and not str(notes.value or "").strip():
+                        ui.notify("Descreva a evidência do valor final confirmado.", type="warning")
+                        return
+
                     if inferred_closure and normalized_amount is None:
                         ui.notify("Informe o valor final confirmado no MV.", type="warning")
                         return
@@ -265,7 +270,39 @@ def open_particular_mv_dialog(
                         ui.notify("Não foi possível registrar a conclusão.", type="negative")
                         return
 
-                    ui.notify("Conclusão registrada.", type="positive")
+                    # Um único fluxo: a conferência é registrada e a revisão
+                    # financeira é concluída quando o modo de fechamento já
+                    # foi identificado e o valor foi confirmado.
+                    if inferred_closure:
+                        try:
+                            await run.io_bound(
+                                resolve_particular_account_review,
+                                access=access,
+                                budget_id=budget_id,
+                                account_status="CLOSED",
+                                closure_mode=normalized_closure_mode,
+                                confirmed_final_value=normalized_amount,
+                                resolution_notes=(
+                                    str(notes.value or "").strip()
+                                    + f" [Conferência MV: {check_id}]"
+                                ),
+                            )
+                        except Exception:
+                            logger.exception("Conferência MV salva, mas resolução financeira falhou.")
+                            ui.notify(
+                                "Conferência salva, mas a revisão financeira não foi encerrada. "
+                                "Não registre novamente: conclua a revisão pela fila.",
+                                type="warning",
+                            )
+                            dialog.close()
+                            if on_saved:
+                                on_saved({"check_id": check_id, "outcome": resolved_outcome,
+                                          "account_value": normalized_amount, "financial_resolved": False})
+                            return
+                    ui.notify(
+                        "Conferência e revisão concluídas." if inferred_closure
+                        else "Conferência registrada.", type="positive"
+                    )
                     dialog.close()
                     if on_saved:
                         on_saved({
