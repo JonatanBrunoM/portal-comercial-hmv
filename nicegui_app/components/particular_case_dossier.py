@@ -263,6 +263,67 @@ def open_particular_case_dossier(
                         ui.label(title).classes("text-h6 text-weight-bold")
                         ui.label(next_action).classes("text-body1")
 
+            # Roteiro orientativo e específico da pendência, sem criar decisão.
+            review_reason = str(
+                row.get("account_review_reason") or row.get("work_reason") or ""
+            ).strip()
+            verification_steps = {
+                "VALIDAR_VALOR_FINAL": (
+                    "Verifique no MV o valor efetivamente fechado.",
+                    "Confirme o valor final somente com evidência conclusiva.",
+                ),
+                "COMPOSICAO_DIVERGENTE": (
+                    "Confira os itens, materiais ou exames divergentes.",
+                    "Registre a conclusão da composição com base no MV.",
+                ),
+                "AJUSTE_SEM_FECHAMENTO_CONCLUSIVO": (
+                    "Identifique o ajuste e os eventos posteriores.",
+                    "Confirme se a conta foi fechada, reaberta ou permanece pendente.",
+                ),
+                "DEVOLUCAO_OU_ESTORNO": (
+                    "Confira o registro de devolução ou estorno.",
+                    "Valide o estado atual da conta após o ajuste.",
+                ),
+                "MULTIPLOS_EVENTOS_MESMA_DATA": (
+                    "Confira os eventos e sua sequência real no MV.",
+                    "Identifique o último estado comprovado antes de concluir.",
+                ),
+                "SEQUENCIA_TEMPORAL_AMBIGUA": (
+                    "Confira fechamento e reabertura na mesma data.",
+                    "Confirme a situação atual sem presumir a ordem dos eventos.",
+                ),
+                "DESFECHO_FINANCEIRO_PENDENTE": (
+                    "Verifique se existe encerramento ou outro desfecho no MV.",
+                    "Registre somente o resultado sustentado pelas evidências.",
+                ),
+            }
+            steps = verification_steps.get(review_reason)
+            if not steps and group in {"GRADE_SEM_OPERACAO", "NEGATIVA_SEM_OPERACAO"}:
+                steps = (
+                    "Confira a grade e os possíveis vínculos com outros orçamentos.",
+                    "Confirme a relação antes de registrar a investigação.",
+                )
+            if not steps and group == "REVISAR_TRAJETORIA":
+                steps = (
+                    "Confira os avisos e as mudanças de data ou local.",
+                    "Valide o desfecho operacional antes de concluir.",
+                )
+            if steps:
+                with ui.card().classes("w-full p-4 shadow-none border rounded-lg"):
+                    with ui.row().classes("items-center gap-2"):
+                        ui.icon("route", size="20px").classes("text-primary")
+                        ui.label("Roteiro de conferência").classes(
+                            "text-subtitle1 text-weight-bold"
+                        )
+                    for index, step in enumerate(steps, start=1):
+                        with ui.row().classes("w-full items-start gap-2 no-wrap"):
+                            ui.badge(str(index), color="primary")
+                            ui.label(step).classes("text-body2")
+                    ui.label(
+                        "Orientação de apoio. A decisão continua sendo registrada "
+                        "pelas ações existentes neste dossiê."
+                    ).classes("text-caption text-grey-7")
+
             # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
             # A ausência de registros nesta consulta não comprova ausência na origem.
             with ui.card().classes("w-full p-4 shadow-none border"):
