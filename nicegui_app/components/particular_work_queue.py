@@ -471,21 +471,7 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         render_scopes()
         render_rows()
 
-    async def open_case(budget_id: str) -> None:
-        # Reposicionar antes de abrir o diálogo: o Quasar bloqueia a
-        # rolagem do fundo assim que o modal é exibido.
-        await ui.run_javascript("""
-            (() => {
-                const candidates = [
-                    document.scrollingElement,
-                    document.querySelector('.q-page-container'),
-                    document.querySelector('.q-page'),
-                    ...document.querySelectorAll('.q-scrollarea__container')
-                ].filter(Boolean);
-                for (const el of candidates) el.scrollTop = 0;
-                window.scrollTo(0, 0);
-            })();
-        """)
+    def open_case(budget_id: str) -> None:
         open_particular_case_dossier(
             access=access,
             budget_id=budget_id,
