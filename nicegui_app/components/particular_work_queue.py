@@ -472,9 +472,22 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
         render_rows()
 
     def open_case(budget_id: str) -> None:
-        # A lista pode estar rolada até o fim; posicionar a página no topo
-        # antes de exibir a análise, sem alterar a posição interna do modal.
-        ui.run_javascript("window.scrollTo({top: 0, behavior: 'instant'})")
+        # A rolagem do portal pode estar em um contêiner interno do Quasar,
+        # não na janela. Reposicionar os contêineres da página, sem tocar
+        # na rolagem interna dos diálogos.
+        ui.run_javascript("""
+            requestAnimationFrame(() => {
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                document.querySelectorAll('body *').forEach(el => {
+                    if (el.closest('.q-dialog')) return;
+                    if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) {
+                        el.scrollTop = 0;
+                    }
+                });
+            });
+        """)
         open_particular_case_dossier(
             access=access,
             budget_id=budget_id,
