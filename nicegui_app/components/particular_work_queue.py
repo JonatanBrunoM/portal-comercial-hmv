@@ -8,6 +8,7 @@ from typing import Any
 from nicegui import run, ui
 
 from nicegui_app.components.particular_case_dossier import open_particular_case_dossier, _technical_label
+from nicegui_app.components.particular_mv_dialog import open_particular_mv_dialog
 from nicegui_app.services.particular_service import ParticularAccess
 from nicegui_app.services.particular_work_queue import list_particular_work_queue
 
@@ -370,10 +371,22 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                     "Resumo da fila. Evidências cruzadas, histórico e decisões "
                     "ficam na análise completa."
                 ).classes("text-caption text-grey-7")
-                ui.button(
-                    "Abrir análise completa", icon="open_in_new",
-                    on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
-                ).props("unelevated no-caps").classes("w-full")
+                with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                    ui.button(
+                        "Abrir análise completa", icon="open_in_new",
+                        on_click=lambda bid=str(selected.get("budget_id") or ""): open_case(bid),
+                    ).props("outline no-caps color=primary").classes("flex-1")
+                    if access.can_write and str(access.module_role).upper() == "MANAGER" and group in REVIEW_GROUPS:
+                        ui.button(
+                            "Registrar conclusão", icon="task_alt",
+                            on_click=lambda case=selected: open_particular_mv_dialog(
+                                access=access,
+                                budget_id=str(case.get("budget_id") or ""),
+                                attendance_number=str(case.get("attendance_number") or "") or None,
+                                review_reason=str(case.get("account_review_reason") or case.get("work_reason") or ""),
+                                on_saved=lambda _: ui.timer(0.05, reload_after_resolution, once=True),
+                            ),
+                        ).props("unelevated no-caps color=primary").classes("flex-1")
 
     def refresh() -> None:
         state["search"] = str(search.value or "").strip()
