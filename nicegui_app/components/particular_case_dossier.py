@@ -63,6 +63,55 @@ def _text(value: Any) -> str:
     return "—" if value is None or str(value).strip() == "" else str(value).strip()
 
 
+
+# Rótulos de interface: nunca alteram os códigos persistidos no banco.
+TECHNICAL_LABELS = {
+    "ACCOUNT_ADJUSTED": "Ajuste registrado na conta",
+    "ACCOUNT_CLOSED": "Conta fechada",
+    "ACCOUNT_REOPENED": "Conta reaberta",
+    "ACCOUNT_OPENED": "Conta aberta",
+    "ACCOUNT_CREATED": "Conta criada",
+    "ACCOUNT_CANCELLED": "Conta cancelada",
+    "ACCOUNT_CANCELED": "Conta cancelada",
+    "SPECIAL_OUTCOME": "Situação financeira especial",
+    "REVIEW_REQUIRED": "Necessita de revisão",
+    "AUTO_RESOLVED": "Análise automática concluída",
+    "MANUALLY_RESOLVED": "Análise concluída manualmente",
+    "ACCORDING_TO_BUDGET": "Conforme orçamento",
+    "HIGHER": "Fechamento a maior",
+    "LOWER": "Fechamento a menor",
+    "WITH_ADJUSTMENT": "Fechamento com ajuste",
+    "PENDING": "Pendente",
+    "REALIZED": "Realizado",
+    "NOT_PERFORMED": "Não realizado",
+    "CANCELLED": "Cancelado",
+    "CONFIRMED": "Confirmado",
+    "CORRECTED": "Corrigido",
+    "DISMISSED": "Descartado após análise",
+    "NOT_ENOUGH_INFORMATION": "Informações insuficientes",
+    "MULTIPLE_NOTICE": "Múltiplos avisos",
+    "POSSIBLE_CANCELLATION": "Possível cancelamento",
+    "POSSIBLE_TRANSFER": "Possível transferência",
+    "SOURCE_CONFLICT": "Conflito entre fontes",
+    "VALUE_DIVERGENCE": "Divergência de valor",
+    "ORIGIN_DIVERGENCE": "Divergência de origem",
+    "STATE_DIVERGENCE": "Divergência de situação",
+}
+
+
+def _technical_label(value: Any) -> str:
+    """Traduz códigos conhecidos e humaniza códigos novos sem expor identificadores crus."""
+    raw = _text(value)
+    if raw == "—":
+        return raw
+    code = raw.upper().strip()
+    if code in TECHNICAL_LABELS:
+        return TECHNICAL_LABELS[code]
+    if "_" in code and all(part.isalnum() for part in code.split("_")):
+        return code.replace("_", " ").capitalize()
+    return raw
+
+
 def _date(value: Any) -> str:
     if not value:
         return "—"
@@ -348,7 +397,7 @@ def open_particular_case_dossier(
                 f"{len(events)} evento(s) · {len(mv_accounts)} conta(s) MV"
             )
             account_detail = (
-                "Último evento: " + _text(latest_event.get("event_type")).replace("_", " ").title()
+                "Último evento: " + _technical_label(latest_event.get("event_type"))
                 + " · " + _date(latest_event.get("event_at"))
                 if events else
                 ("Conta(s) MV vinculada(s), sem evento financeiro associado nesta consulta."
@@ -456,7 +505,7 @@ def open_particular_case_dossier(
                     ui.label("Investigação concluída").classes(
                         "text-caption text-weight-bold text-positive"
                     )
-                    ui.label(outcome_labels.get(outcome, outcome or "Conclusão registrada")).classes(
+                    ui.label(outcome_labels.get(outcome, _technical_label(outcome) if outcome else "Conclusão registrada")).classes(
                         "text-body1 text-weight-bold"
                     )
                     if related_number != "—":
