@@ -66,11 +66,11 @@ def open_particular_mv_dialog(
     inferred_closure = normalized_reason == "VALIDAR_VALOR_FINAL" and normalized_closure_mode in {"HIGHER", "LOWER"}
 
     ui.add_css("""
-    .mv-outcome-cards .q-option-group {
-        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;
+    .mv-outcome-cards.q-option-group {
+        display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;
     }
     .mv-outcome-cards .q-radio {
-        min-height:86px;display:flex;flex-direction:column;justify-content:center;
+        min-width:0;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;
         gap:7px;margin:0!important;padding:12px 6px;border:1px solid #dbe6ef;
         border-radius:14px;background:white;transition:all .16s ease;
         box-shadow:0 3px 12px rgba(20,54,76,.04);
@@ -82,8 +82,8 @@ def open_particular_mv_dialog(
     .mv-outcome-cards .q-radio__label {
         font-weight:650;font-size:13px;color:#173b53;text-align:center;padding:0;
     }
-    @media(max-width:600px) {
-        .mv-outcome-cards .q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
+    .mv-fields-grid .q-field--outlined .q-field__control {min-height:56px;}\n    .mv-fields-grid .q-textarea .q-field__control {min-height:56px;}\n    .mv-fields-grid .q-textarea textarea {min-height:24px!important;resize:vertical;}\n    @media(max-width:600px) {\n        .mv-fields-grid {grid-template-columns:1fr!important;}
+        .mv-outcome-cards.q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     """)
     # Layout orientado à decisão: cartões selecionáveis substituem o dropdown.
@@ -168,23 +168,23 @@ def open_particular_mv_dialog(
                 outcome = ui.radio(
                     options=OUTCOME_OPTIONS,
                     value="PENDING",
-                ).props("inline").classes("mv-outcome-cards w-full")
+                ).classes("mv-outcome-cards w-full")
 
-            with ui.row().classes("w-full items-start gap-4 flex-wrap"):
-                with ui.column().classes("flex-1 min-w-[220px] gap-1"):
+            with ui.grid(columns=2).classes("w-full gap-4 mv-fields-grid"):
+                with ui.column().classes("w-full min-w-0 gap-1"):
                     ui.label("Valor da conta").classes(
                         "text-body2 text-weight-medium"
                     ).style("color:#173b53")
                     account_value = ui.input(
                         placeholder="Ex.: 4.989,60",
                     ).props("outlined prefix=R$ bg-color=white").classes("w-full")
-                with ui.column().classes("flex-[2] min-w-[260px] gap-1"):
+                with ui.column().classes("w-full min-w-0 gap-1"):
                     ui.label("Observação da conferência").classes(
                         "text-body2 text-weight-medium"
                     ).style("color:#173b53")
                     notes = ui.textarea(
                         placeholder="O que foi confirmado no MV?",
-                    ).props("outlined rows=2 bg-color=white").classes("w-full")
+                    ).props("outlined rows=1 bg-color=white").classes("w-full")
 
             with ui.expansion("Dados de identificação", icon="badge").classes(
                 "w-full rounded-xl"
