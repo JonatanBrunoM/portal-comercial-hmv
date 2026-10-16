@@ -401,14 +401,14 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                             ),
                         ).props("unelevated no-caps color=positive").classes("flex-1")
                     if access.can_write and str(access.module_role).upper() == "MANAGER" and group in REVIEW_GROUPS:
-                        if str(selected.get("account_review_reason") or "").upper() == "COMPOSICAO_DIVERGENTE":
+                        if str(selected.get("account_review_reason") or "").upper() in {"COMPOSICAO_DIVERGENTE", "MULTIPLOS_EVENTOS_MESMA_DATA", "SEQUENCIA_TEMPORAL_AMBIGUA"}:
                             ui.button(
-                                "Concluir composição", icon="task_alt",
+                                "Concluir composição" if str(selected.get("account_review_reason") or "").upper() == "COMPOSICAO_DIVERGENTE" else "Confirmar estado da conta", icon="task_alt",
                                 on_click=lambda case=selected: open_account_resolution_dialog(
                                     access=access,
                                     budget_id=str(case.get("budget_id") or ""),
                                     budget_number=case.get("budget_number"),
-                                    review_reason="COMPOSICAO_DIVERGENTE",
+                                    review_reason=str(case.get("account_review_reason") or ""),
                                     confirmed_final_value_prefill=(
                                         str(case.get("mv_account_value"))
                                         if case.get("mv_account_value") is not None else None
