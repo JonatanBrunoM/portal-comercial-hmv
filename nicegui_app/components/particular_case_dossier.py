@@ -311,6 +311,12 @@ def open_particular_case_dossier(
         return
 
     ui.add_css("""
+    /* Fixar a análise na viewport, independente da posição da fila. */
+    .particular-case-dialog.q-dialog .q-dialog__inner {
+      position:fixed!important;inset:0!important;
+      display:flex!important;align-items:center!important;justify-content:center!important;
+      padding:12px!important;overflow:hidden!important;
+    }
     .dossier-conclusion {background:transparent;border:0;border-radius:0;padding:0}
     .dossier-outcome-cards.q-option-group {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
     .dossier-outcome-cards .q-radio {min-width:0;min-height:38px;display:flex;align-items:center;justify-content:center;
@@ -325,7 +331,7 @@ def open_particular_case_dossier(
     @media(max-width:650px) {.dossier-outcome-cards.q-option-group {grid-template-columns:repeat(2,minmax(0,1fr))}
       .dossier-inputs {flex-wrap:wrap!important}.dossier-inputs>.dossier-input {width:100%!important;flex:1 0 100%}}
     """)
-    with ui.dialog().props("maximized=false") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:0; display:flex; flex-direction:column; height:min(790px,91vh)"):
+    with ui.dialog().props("maximized=false position=standard").classes("particular-case-dialog") as dialog, ui.card().classes("w-[min(1080px,96vw)] max-w-none p-0 rounded-2xl shadow-2xl").style("overflow:hidden; border:0; display:flex; flex-direction:column; height:min(790px,91vh)"):
         header = ui.column().classes("w-full px-6 py-2 gap-0 shrink-0").style("background:linear-gradient(110deg,#03466f 0%,#0077ad 100%); border-bottom:1px solid #086b9e")
         body = ui.column().classes("w-full px-6 py-3 gap-2").style("flex:1 1 0; min-height:0; overflow-y:auto; background:#f7f9fc; overscroll-behavior:contain")
         footer = ui.column().classes("w-full px-5 py-2 gap-1 shrink-0").style("background:#fff; border-top:1px solid #dce8f3")
