@@ -126,9 +126,6 @@ def save_contato(
     if not department:
         raise ValueError("Informe o setor ou área do contato.")
 
-    if not purpose:
-        raise ValueError("Informe a finalidade do contato.")
-
     if not contact:
         raise ValueError("Informe o contato.")
 
@@ -154,7 +151,7 @@ def save_contato(
         "operadora_id": operator_id,
         "plano_id": plan_id.strip() or None,
         "nome_setor": department,
-        "finalidade": purpose,
+        "finalidade": purpose or None,
         "tipo": contact_type.strip() or None,
         "contato": contact,
         "responsavel": responsible.strip() or None,
