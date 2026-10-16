@@ -9,10 +9,7 @@ from nicegui import run, ui
 
 from nicegui_app.components.particular_case_dossier import open_particular_case_dossier
 from nicegui_app.services.particular_service import ParticularAccess
-from nicegui_app.services.particular_work_queue import (
-    get_particular_case_dossier,
-    list_particular_work_queue,
-)
+from nicegui_app.services.particular_work_queue import list_particular_work_queue
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +100,33 @@ def _action(row: dict[str, Any]) -> tuple[str, str]:
     if group == "OPERACAO_COMPETENCIA":
         return ("Acompanhar evolução", "Há operação identificada na competência.")
     return ("Consultar caso", code.replace("_", " ").title() if code else "Consulte as evidências disponíveis.")
+
+
+def _queue_signals(row: dict[str, Any]) -> list[str]:
+    """Sinais verificáveis na fotografia da fila; não são novas conclusões."""
+    signals: list[str] = []
+    status = str(row.get("account_status") or "").upper()
+    automation = str(row.get("account_automation_status") or "").upper()
+    trajectory = str(row.get("trajectory_event") or "").strip()
+    count = row.get("occurrence_count")
+    if status == "CLOSED":
+        signals.append("Conta identificada como fechada; pagamento não confirmado.")
+    elif status == "SPECIAL_OUTCOME":
+        signals.append("Desfecho financeiro especial: requer interpretação do histórico.")
+    elif status in {"INCONCLUSIVE", "OPEN"}:
+        signals.append("Situação financeira ainda não conclusiva.")
+    if automation == "REVIEW_REQUIRED":
+        signals.append("Interpretação financeira sinalizada para revisão humana.")
+    if row.get("trajectory_requires_review") is True:
+        title = str(row.get("trajectory_review_title") or "").strip()
+        signals.append(title or "Trajetória operacional sinalizada para revisão.")
+    elif trajectory and trajectory.upper() not in {"NONE", "NO_CHANGE", "STABLE"}:
+        signals.append("Há registro de mudança na trajetória operacional.")
+    if count is not None and str(count).isdigit() and int(count) > 1:
+        signals.append(f"{int(count)} ocorrências operacionais associadas ao orçamento.")
+    if row.get("confirmed_final_value") is not None:
+        signals.append("Valor final confirmado registrado no estado financeiro.")
+    return signals[:2]
 
 
 def render_particular_work_queue(*, access: ParticularAccess, competence: str | None = None, render_duplicates: Any | None = None, duplicates_count: int = 0) -> None:
@@ -332,9 +356,19 @@ def render_particular_work_queue(*, access: ParticularAccess, competence: str | 
                         ui.label(action).classes("text-body1 text-weight-bold")
                     ui.label(explanation).classes("text-body2 text-grey-7")
                     ui.label("Classificação atual da fila, não uma conclusão definitiva.").classes("text-caption text-grey-7")
+                signals = _queue_signals(selected)
+                if signals:
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("SÍNTESE DAS EVIDÊNCIAS").classes(
+                            "text-caption text-weight-bold text-primary"
+                        )
+                        for signal in signals:
+                            with ui.row().classes("w-full items-start gap-2 no-wrap"):
+                                ui.icon("info_outline", size="16px").classes("text-blue-7")
+                                ui.label(signal).classes("text-body2 text-grey-8")
                 ui.label(
-                    "A investigação detalhada, as fontes cruzadas e a conclusão "
-                    "ficam reunidas na análise completa."
+                    "Resumo da fila. Evidências cruzadas, histórico e decisões "
+                    "ficam na análise completa."
                 ).classes("text-caption text-grey-7")
                 ui.button(
                     "Abrir análise completa", icon="open_in_new",
