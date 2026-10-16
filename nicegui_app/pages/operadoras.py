@@ -689,12 +689,13 @@ def render_operadora_detail(user: dict, operator_id: str) -> None:
                                 if _text(plan, "codigo")
                                 else "Sul América · Plano"
                             ).classes("portal-operator-modal-subtitle")
+                    if str(user.get("role") or "").lower() == "admin":
+                        ui.button(icon="edit", on_click=edit_help_texts).props(
+                            "flat round dense aria-label='Editar informações'"
+                        ).classes("portal-operator-modal-close").style("right: 48px")
                     ui.button(icon="close", on_click=dialog.close).props(
                         "flat round dense aria-label='Fechar'"
                     ).classes("portal-operator-modal-close")
-
-                if str(user.get("role") or "").lower() == "admin":
-                    ui.button("Editar informações", icon="edit", on_click=edit_help_texts).props("flat no-caps")
 
                 if coverage:
                     with ui.element("div").classes("portal-operator-modal-grid"):
