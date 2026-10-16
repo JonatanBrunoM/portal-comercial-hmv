@@ -307,46 +307,14 @@ def open_particular_case_dossier(
                     "Confira os avisos e as mudanças de data ou local.",
                     "Valide o desfecho operacional antes de concluir.",
                 )
+            # O roteiro permanece como apoio secundário, sem ocupar a tela inicial.
             if steps:
-                with ui.card().classes("w-full p-3 shadow-none rounded-xl").style("border:1px solid #e2eaf2; background:#fff"):
-                    with ui.row().classes("items-center gap-2"):
-                        ui.icon("route", size="20px").classes("text-primary")
-                        ui.label("Roteiro de conferência").classes(
-                            "text-subtitle1 text-weight-bold"
-                        )
+                with ui.expansion("Orientações de conferência", icon="route").classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
                     for index, step in enumerate(steps, start=1):
-                        with ui.row().classes("w-full items-start gap-2 no-wrap"):
-                            ui.badge(str(index), color="primary")
-                            ui.label(step).classes("text-body2")
-                    ui.label(
-                        "Orientação de apoio. A decisão continua sendo registrada "
-                        "pelas ações existentes neste dossiê."
-                    ).classes("text-caption text-grey-7")
+                        ui.label(f"{index}. {step}").classes("text-body2")
 
             # Resumo baseado apenas nas evidências efetivamente retornadas pelo dossiê.
             # A ausência de registros nesta consulta não comprova ausência na origem.
-            with ui.expansion("Fontes identificadas · " + str(len(occurrences) + len(events) + len(evolutions)) + " registros", icon="dataset").classes("w-full rounded-xl").style("background:#fff; border:1px solid #e2eaf2"):
-                ui.label("Fontes identificadas").classes("text-subtitle1 text-weight-bold")
-                ui.label(
-                    "Registros vinculados a este orçamento nas fontes consultadas."
-                ).classes("text-caption text-grey-7")
-                with ui.row().classes("w-full gap-5 flex-wrap mt-2"):
-                    _metric("Ocorrências operacionais", str(len(occurrences)), "Grade vinculada ao caso")
-                    _metric("Eventos financeiros", str(len(events)), "Eventos retornados na análise")
-                    _metric("Evoluções administrativas", str(len(evolutions)), "Registros associados ao caso")
-                    _metric("Indícios para investigação", str(len(investigation_candidates)), "Possíveis relações, não confirmadas")
-                with ui.row().classes("w-full gap-2 flex-wrap mt-2"):
-                    ui.badge("Orçamento de referência: " + _money(
-                        row.get("reference_budget_value") or row.get("original_value")
-                    )).props("outline")
-                    if row.get("account_status"):
-                        ui.badge(
-                            "Estado da conta: " + _text(row.get("account_status"))
-                        ).props("outline")
-                ui.label(
-                    "A situação financeira não confirma, por si só, o desfecho operacional."
-                ).classes("text-caption text-grey-7")
-
             with ui.expansion(
                 "Explorar evidências · XML, grade e MV",
                 icon="fact_check",
